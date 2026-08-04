@@ -1,11 +1,29 @@
+"use client";
+
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { signIn } from "../actions";
 
-interface LoginPageProps {
-  searchParams: Promise<{ error?: string }>;
-}
+export default function LoginPage() {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const [error, setError] = useState(false);
 
-export default async function LoginPage({ searchParams }: LoginPageProps) {
-  const { error } = await searchParams;
+  function handleSubmit(formData: FormData) {
+    setError(false);
+    startTransition(async () => {
+      const result = await signIn(formData);
+
+      if (result.error) {
+        setError(true);
+        return;
+      }
+
+      // Navigation client pure (History API) : jamais de redirect() serveur
+      // sur cette transition, pour rester en mode standalone sur iOS.
+      router.push("/dashboard");
+    });
+  }
 
   return (
     <div className="w-full max-w-sm rounded-lg border border-foreground/10 bg-foreground/[0.03] p-8 shadow-sm">
@@ -14,7 +32,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
       </h1>
       <p className="mt-1 text-sm text-foreground/60">Suivi financier perso</p>
 
-      <form action={signIn} className="mt-8 flex flex-col gap-4">
+      <form action={handleSubmit} className="mt-8 flex flex-col gap-4">
         <div className="flex flex-col gap-1">
           <label htmlFor="email" className="text-sm font-medium text-foreground">
             Email
@@ -49,9 +67,10 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
 
         <button
           type="submit"
-          className="mt-2 rounded-md bg-foreground px-4 py-2 font-medium text-background transition-colors hover:bg-accent"
+          disabled={isPending}
+          className="mt-2 rounded-md bg-foreground px-4 py-2 font-medium text-background transition-colors hover:bg-accent disabled:opacity-50"
         >
-          Se connecter
+          {isPending ? "Connexion..." : "Se connecter"}
         </button>
       </form>
     </div>
