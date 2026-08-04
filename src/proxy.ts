@@ -8,9 +8,12 @@ export async function proxy(request: NextRequest) {
 export const config = {
   matcher: [
     // Exécute le middleware sur toutes les routes sauf les fichiers statiques
-    // (assets Next.js, manifest/service worker PWA, favicon, images) et les
-    // routes API : celles-ci gèrent leur propre autorisation (ex: la route
-    // cron vérifie CRON_SECRET) plutôt que d'être redirigées vers /login.
-    "/((?!_next/static|_next/image|favicon.ico|manifest.json|sw.js|icons/|api/).*)",
+    // (assets Next.js, manifest/service worker/icônes PWA, page hors-ligne,
+    // favicon, images) et les routes API : celles-ci gèrent leur propre
+    // autorisation (ex: la route cron vérifie CRON_SECRET) plutôt que d'être
+    // redirigées vers /login. Les icônes/offline.html doivent rester
+    // accessibles sans session (favicon visible sur /login, page de secours
+    // utilisable hors-ligne).
+    "/((?!_next/static|_next/image|favicon.ico|manifest.json|sw.js|offline.html|icon.png|apple-icon.png|icons/|api/).*)",
   ],
 };

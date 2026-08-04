@@ -1,0 +1,14 @@
+{
+  "name": "TCIF — Suivi financier",
+  "short_name": "TCIF",
+  "description": "Suivi de dépenses, abonnements et factures — usage perso",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#F6F4EF",
+  "theme_color": "#1B1D1B",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

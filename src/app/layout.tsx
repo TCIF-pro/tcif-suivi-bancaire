@@ -1,7 +1,8 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Space_Grotesk, Archivo } from "next/font/google";
 import { createClient } from "@/lib/supabase/server";
 import { ACCENT_COLORS, isAccentColorId, type AccentColorId } from "@/lib/accent-colors";
+import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
 import "./globals.css";
 
 const spaceGrotesk = Space_Grotesk({
@@ -17,6 +18,19 @@ const archivo = Archivo({
 export const metadata: Metadata = {
   title: "TCIF — Suivi financier",
   description: "Suivi de dépenses, abonnements et factures — usage perso",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "TCIF",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#F6F4EF" },
+    { media: "(prefers-color-scheme: dark)", color: "#1B1D1B" },
+  ],
 };
 
 // Le thème et la couleur d'accentuation sont stockés en base (user_settings),
@@ -72,7 +86,10 @@ export default async function RootLayout({
         } as React.CSSProperties
       }
     >
-      <body className="flex min-h-full flex-col font-sans">{children}</body>
+      <body className="flex min-h-full flex-col font-sans">
+        <ServiceWorkerRegister />
+        {children}
+      </body>
     </html>
   );
 }
