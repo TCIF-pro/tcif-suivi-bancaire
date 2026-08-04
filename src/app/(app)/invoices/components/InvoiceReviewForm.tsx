@@ -1,0 +1,115 @@
+interface InvoiceReviewFormProps {
+  action: (formData: FormData) => void;
+  categories: { id: string; name: string }[];
+  direction: string;
+  extractionConfidence: string | null;
+  defaultValues: {
+    amount: number | null;
+    issued_date: string | null;
+    party_name: string | null;
+    category_id: string | null;
+  };
+}
+
+export function InvoiceReviewForm({
+  action,
+  categories,
+  direction,
+  extractionConfidence,
+  defaultValues,
+}: InvoiceReviewFormProps) {
+  const partyLabel = direction === "sent" ? "Client" : "Fournisseur";
+
+  return (
+    <div className="mx-auto flex w-full max-w-xl flex-col gap-4 rounded-lg border border-foreground/10 bg-foreground/[0.03] p-6 sm:p-8">
+      {extractionConfidence === "failed" ? (
+        <p className="rounded-md border border-accent/60 bg-accent/5 px-3 py-2 text-sm text-foreground/70">
+          Extraction impossible sur ce PDF (probablement scanné) — remplis les
+          champs ci-dessous à la main.
+        </p>
+      ) : (
+        <p className="text-sm text-foreground/60">
+          Champs pré-remplis automatiquement — vérifie-les avant de confirmer.
+        </p>
+      )}
+
+      <form action={action} className="flex flex-col gap-4">
+        <div className="flex flex-col gap-1">
+          <label htmlFor="amount" className="text-sm font-medium text-foreground">
+            Montant (€)
+          </label>
+          <input
+            id="amount"
+            name="amount"
+            type="number"
+            step="0.01"
+            min="0.01"
+            defaultValue={defaultValues.amount ?? ""}
+            className="rounded-md border border-foreground/20 px-3 py-2 text-foreground outline-none focus:border-accent"
+          />
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <label
+            htmlFor="issued_date"
+            className="text-sm font-medium text-foreground"
+          >
+            Date
+          </label>
+          <input
+            id="issued_date"
+            name="issued_date"
+            type="date"
+            defaultValue={defaultValues.issued_date ?? ""}
+            className="rounded-md border border-foreground/20 px-3 py-2 text-foreground outline-none focus:border-accent"
+          />
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <label
+            htmlFor="party_name"
+            className="text-sm font-medium text-foreground"
+          >
+            {partyLabel}
+          </label>
+          <input
+            id="party_name"
+            name="party_name"
+            type="text"
+            defaultValue={defaultValues.party_name ?? ""}
+            className="rounded-md border border-foreground/20 px-3 py-2 text-foreground outline-none focus:border-accent"
+          />
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <label
+            htmlFor="category_id"
+            className="text-sm font-medium text-foreground"
+          >
+            Catégorie
+          </label>
+          <select
+            id="category_id"
+            name="category_id"
+            defaultValue={defaultValues.category_id ?? ""}
+            className="rounded-md border border-foreground/20 bg-background px-3 py-2 text-foreground outline-none focus:border-accent"
+          >
+            <option value="">Aucune</option>
+            {categories.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <button
+          type="submit"
+          className="mt-2 self-start rounded-md bg-foreground px-4 py-2 font-medium text-background transition-colors hover:bg-accent"
+        >
+          Enregistrer
+        </button>
+      </form>
+    </div>
+  );
+}

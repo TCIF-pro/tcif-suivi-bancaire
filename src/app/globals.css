@@ -1,0 +1,30 @@
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --background: #f6f4ef; /* papier */
+  --foreground: #1b1d1b; /* encre */
+  /* --accent-light / --accent-dark sont injectées en inline style sur <html>
+     (voir src/app/layout.tsx) : leur valeur dépend du choix de l'utilisateur
+     (lib/accent-colors.ts), donc pas de valeur en dur ici. */
+  --accent: var(--accent-light);
+}
+
+.dark {
+  --background: #1b1d1b; /* encre devient le fond en sombre */
+  --foreground: #f6f4ef; /* papier devient le texte en sombre */
+  --accent: var(--accent-dark);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-accent: var(--accent);
+  --font-display: var(--font-space-grotesk);
+  --font-sans: var(--font-archivo);
+}
+
+body {
+  background: var(--color-background);
+  color: var(--color-foreground);
+}
