@@ -18,7 +18,7 @@ export async function GET(request: Request) {
 
   const { data: subscriptions } = await supabase
     .from("subscriptions")
-    .select("id, user_id, name, amount, frequency, next_billing_date, category_id")
+    .select("id, user_id, name, amount, frequency, next_billing_date, category_id, account_id")
     .eq("is_active", true)
     .lte("next_billing_date", today);
 
@@ -38,6 +38,7 @@ export async function GET(request: Request) {
             occurred_on: dueDate,
             label: sub.name,
             category_id: sub.category_id,
+            account_id: sub.account_id,
             source: "subscription",
             subscription_id: sub.id,
           },

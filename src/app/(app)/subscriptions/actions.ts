@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 
 function parseSubscriptionFormData(formData: FormData) {
   const categoryId = formData.get("category_id");
+  const accountId = formData.get("account_id");
   const notes = formData.get("notes");
 
   return {
@@ -14,6 +15,7 @@ function parseSubscriptionFormData(formData: FormData) {
     frequency: String(formData.get("frequency")),
     next_billing_date: String(formData.get("next_billing_date")),
     category_id: categoryId ? String(categoryId) : null,
+    account_id: String(accountId),
     notes: notes ? String(notes) : null,
     is_active: formData.get("is_active") === "on",
   };

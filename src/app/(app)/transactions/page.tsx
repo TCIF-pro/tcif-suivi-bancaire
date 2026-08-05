@@ -7,6 +7,7 @@ interface TransactionsPageProps {
   searchParams: Promise<{
     type?: string;
     category_id?: string;
+    account_id?: string;
     from?: string;
     to?: string;
     sort?: string;
@@ -30,22 +31,30 @@ export default async function TransactionsPage({
   const params = await searchParams;
   const supabase = await createClient();
 
-  const { data: categories } = await supabase
-    .from("categories")
-    .select("id, name")
-    .eq("is_archived", false)
-    .order("created_at", { ascending: true });
+  const [{ data: categories }, { data: accounts }] = await Promise.all([
+    supabase
+      .from("categories")
+      .select("id, name")
+      .eq("is_archived", false)
+      .order("created_at", { ascending: true }),
+    supabase
+      .from("accounts")
+      .select("id, name")
+      .eq("is_archived", false)
+      .order("created_at", { ascending: true }),
+  ]);
 
   const sort = SORTS[params.sort as keyof typeof SORTS] ?? SORTS.date_desc;
 
   let query = supabase
     .from("transactions")
-    .select("id, type, amount, occurred_on, label, categories(name)")
+    .select("id, type, amount, occurred_on, label, categories(name), accounts(name)")
     .order(sort.column, { ascending: sort.ascending })
     .limit(MAX_ROWS);
 
   if (params.type) query = query.eq("type", params.type);
   if (params.category_id) query = query.eq("category_id", params.category_id);
+  if (params.account_id) query = query.eq("account_id", params.account_id);
   if (params.from) query = query.gte("occurred_on", params.from);
   if (params.to) query = query.lte("occurred_on", params.to);
 
@@ -58,6 +67,7 @@ export default async function TransactionsPage({
     occurred_on: t.occurred_on,
     label: t.label,
     categoryName: t.categories?.[0]?.name ?? null,
+    accountName: t.accounts?.[0]?.name ?? null,
   }));
 
   return (
@@ -74,7 +84,11 @@ export default async function TransactionsPage({
         </Link>
       </div>
 
-      <TransactionFilters categories={categories ?? []} values={params} />
+      <TransactionFilters
+        categories={categories ?? []}
+        accounts={accounts ?? []}
+        values={params}
+      />
 
       <TransactionList rows={rows} />
     </div>

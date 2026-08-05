@@ -11,6 +11,7 @@ export interface SubscriptionRow {
   frequency: string;
   nextBillingDate: string;
   categoryName: string | null;
+  accountName: string | null;
   isActive: boolean;
 }
 
@@ -44,6 +45,9 @@ export function SubscriptionList({
               Catégorie
             </th>
             <th className="hidden py-2 pr-4 font-medium sm:table-cell">
+              Compte
+            </th>
+            <th className="hidden py-2 pr-4 font-medium sm:table-cell">
               Fréquence
             </th>
             <th className="py-2 pr-4 font-medium">Prochain prélèvement</th>
@@ -64,6 +68,9 @@ export function SubscriptionList({
                 <td className="py-2 pr-4 text-foreground">{row.name}</td>
                 <td className="hidden py-2 pr-4 text-foreground/70 sm:table-cell">
                   {row.categoryName ?? "—"}
+                </td>
+                <td className="hidden py-2 pr-4 text-foreground/70 sm:table-cell">
+                  {row.accountName ?? "—"}
                 </td>
                 <td className="hidden py-2 pr-4 text-foreground/70 sm:table-cell">
                   {FREQUENCY_LABELS[row.frequency] ?? row.frequency}

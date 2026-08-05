@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 
-export async function updateStartingBalance(formData: FormData) {
+export async function updateAccountBalance(accountId: string, formData: FormData) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -14,11 +14,12 @@ export async function updateStartingBalance(formData: FormData) {
   const startingBalanceDate = String(formData.get("starting_balance_date"));
 
   await supabase
-    .from("user_settings")
+    .from("accounts")
     .update({
       starting_balance: startingBalance,
       starting_balance_date: startingBalanceDate,
     })
+    .eq("id", accountId)
     .eq("user_id", user.id);
 
   revalidatePath("/settings");

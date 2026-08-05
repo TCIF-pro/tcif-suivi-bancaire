@@ -3,6 +3,7 @@ import { todayDateString } from "@/lib/dates";
 interface SubscriptionFormProps {
   action: (formData: FormData) => void;
   categories: { id: string; name: string }[];
+  accounts: { id: string; name: string }[];
   submitLabel: string;
   defaultValues?: {
     name?: string;
@@ -10,6 +11,7 @@ interface SubscriptionFormProps {
     frequency?: string;
     next_billing_date?: string;
     category_id?: string | null;
+    account_id?: string | null;
     notes?: string | null;
     is_active?: boolean;
   };
@@ -18,6 +20,7 @@ interface SubscriptionFormProps {
 export function SubscriptionForm({
   action,
   categories,
+  accounts,
   submitLabel,
   defaultValues,
 }: SubscriptionFormProps) {
@@ -92,6 +95,28 @@ export function SubscriptionForm({
           defaultValue={defaultValues?.next_billing_date ?? todayDateString()}
           className="rounded-md border border-foreground/20 px-3 py-2 text-foreground outline-none focus:border-accent"
         />
+      </div>
+
+      <div className="flex flex-col gap-1">
+        <label htmlFor="account_id" className="text-sm font-medium text-foreground">
+          Compte
+        </label>
+        <select
+          id="account_id"
+          name="account_id"
+          required
+          defaultValue={defaultValues?.account_id ?? ""}
+          className="rounded-md border border-foreground/20 bg-background px-3 py-2 text-foreground outline-none focus:border-accent"
+        >
+          <option value="" disabled>
+            Choisir un compte
+          </option>
+          {accounts.map((a) => (
+            <option key={a.id} value={a.id}>
+              {a.name}
+            </option>
+          ))}
+        </select>
       </div>
 
       <div className="flex flex-col gap-1">

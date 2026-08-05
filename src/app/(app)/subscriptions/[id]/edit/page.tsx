@@ -13,20 +13,26 @@ export default async function EditSubscriptionPage({
   const { id } = await params;
   const supabase = await createClient();
 
-  const [{ data: subscription }, { data: categories }] = await Promise.all([
-    supabase
-      .from("subscriptions")
-      .select(
-        "id, name, amount, frequency, next_billing_date, category_id, notes, is_active",
-      )
-      .eq("id", id)
-      .single(),
-    supabase
-      .from("categories")
-      .select("id, name")
-      .eq("is_archived", false)
-      .order("created_at", { ascending: true }),
-  ]);
+  const [{ data: subscription }, { data: categories }, { data: accounts }] =
+    await Promise.all([
+      supabase
+        .from("subscriptions")
+        .select(
+          "id, name, amount, frequency, next_billing_date, category_id, account_id, notes, is_active",
+        )
+        .eq("id", id)
+        .single(),
+      supabase
+        .from("categories")
+        .select("id, name")
+        .eq("is_archived", false)
+        .order("created_at", { ascending: true }),
+      supabase
+        .from("accounts")
+        .select("id, name")
+        .eq("is_archived", false)
+        .order("created_at", { ascending: true }),
+    ]);
 
   if (!subscription) {
     notFound();
@@ -40,6 +46,7 @@ export default async function EditSubscriptionPage({
       <SubscriptionForm
         action={updateSubscription.bind(null, id)}
         categories={categories ?? []}
+        accounts={accounts ?? []}
         submitLabel="Enregistrer"
         defaultValues={{
           name: subscription.name,
@@ -47,6 +54,7 @@ export default async function EditSubscriptionPage({
           frequency: subscription.frequency,
           next_billing_date: subscription.next_billing_date,
           category_id: subscription.category_id,
+          account_id: subscription.account_id,
           notes: subscription.notes,
           is_active: subscription.is_active,
         }}

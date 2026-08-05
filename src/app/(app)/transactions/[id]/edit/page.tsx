@@ -13,18 +13,24 @@ export default async function EditTransactionPage({
   const { id } = await params;
   const supabase = await createClient();
 
-  const [{ data: transaction }, { data: categories }] = await Promise.all([
-    supabase
-      .from("transactions")
-      .select("id, type, amount, occurred_on, label, category_id, notes")
-      .eq("id", id)
-      .single(),
-    supabase
-      .from("categories")
-      .select("id, name")
-      .eq("is_archived", false)
-      .order("created_at", { ascending: true }),
-  ]);
+  const [{ data: transaction }, { data: categories }, { data: accounts }] =
+    await Promise.all([
+      supabase
+        .from("transactions")
+        .select("id, type, amount, occurred_on, label, category_id, account_id, notes")
+        .eq("id", id)
+        .single(),
+      supabase
+        .from("categories")
+        .select("id, name")
+        .eq("is_archived", false)
+        .order("created_at", { ascending: true }),
+      supabase
+        .from("accounts")
+        .select("id, name")
+        .eq("is_archived", false)
+        .order("created_at", { ascending: true }),
+    ]);
 
   if (!transaction) {
     notFound();
@@ -38,6 +44,7 @@ export default async function EditTransactionPage({
       <TransactionForm
         action={updateTransaction.bind(null, id)}
         categories={categories ?? []}
+        accounts={accounts ?? []}
         submitLabel="Enregistrer"
         defaultValues={{
           type: transaction.type,
@@ -45,6 +52,7 @@ export default async function EditTransactionPage({
           occurred_on: transaction.occurred_on,
           label: transaction.label,
           category_id: transaction.category_id,
+          account_id: transaction.account_id,
           notes: transaction.notes,
         }}
       />

@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 
 function parseTransactionFormData(formData: FormData) {
   const categoryId = formData.get("category_id");
+  const accountId = formData.get("account_id");
   const notes = formData.get("notes");
 
   return {
@@ -14,6 +15,7 @@ function parseTransactionFormData(formData: FormData) {
     occurred_on: String(formData.get("occurred_on")),
     label: String(formData.get("label")),
     category_id: categoryId ? String(categoryId) : null,
+    account_id: accountId ? String(accountId) : null,
     notes: notes ? String(notes) : null,
   };
 }

@@ -9,6 +9,7 @@ export interface TransactionRow {
   occurred_on: string;
   label: string;
   categoryName: string | null;
+  accountName: string | null;
 }
 
 export function TransactionList({ rows }: { rows: TransactionRow[] }) {
@@ -30,6 +31,9 @@ export function TransactionList({ rows }: { rows: TransactionRow[] }) {
             <th className="hidden py-2 pr-4 font-medium sm:table-cell">
               Catégorie
             </th>
+            <th className="hidden py-2 pr-4 font-medium sm:table-cell">
+              Compte
+            </th>
             <th className="py-2 pr-4 text-right font-medium">Montant</th>
             <th className="py-2 pr-4 font-medium" aria-hidden="true" />
           </tr>
@@ -43,6 +47,9 @@ export function TransactionList({ rows }: { rows: TransactionRow[] }) {
               <td className="py-2 pr-4 text-foreground">{row.label}</td>
               <td className="hidden py-2 pr-4 text-foreground/70 sm:table-cell">
                 {row.categoryName ?? "—"}
+              </td>
+              <td className="hidden py-2 pr-4 text-foreground/70 sm:table-cell">
+                {row.accountName ?? "Non assigné"}
               </td>
               <td className="py-2 pr-4 text-right font-medium tabular-nums text-foreground">
                 {row.type === "income" ? "+" : "−"}

@@ -11,7 +11,7 @@ export default async function SubscriptionsPage() {
   const { data: subscriptions } = await supabase
     .from("subscriptions")
     .select(
-      "id, name, amount, frequency, next_billing_date, is_active, monthly_equivalent_amount, categories(name)",
+      "id, name, amount, frequency, next_billing_date, is_active, monthly_equivalent_amount, categories(name), accounts(name)",
     )
     .order("is_active", { ascending: false })
     .order("next_billing_date", { ascending: true });
@@ -23,6 +23,7 @@ export default async function SubscriptionsPage() {
     frequency: s.frequency,
     nextBillingDate: s.next_billing_date,
     categoryName: s.categories?.[0]?.name ?? null,
+    accountName: s.accounts?.[0]?.name ?? null,
     isActive: s.is_active,
   }));
 

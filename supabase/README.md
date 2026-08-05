@@ -34,6 +34,7 @@ Dans le dashboard Supabase : **SQL Editor > New query**. Colle et exécute, **da
 4. `migrations/0004_user_settings.sql`
 5. `migrations/0005_accent_color.sql`
 6. `migrations/0006_fix_subscription_billing_unique_index.sql`
+7. `migrations/0007_accounts.sql`
 
 Si tu as créé ton compte (étape 3) **avant** d'appliquer `0002`, le trigger ne se sera pas déclenché rétroactivement : dans ce cas, insère manuellement les 5 catégories via le **Table Editor** (table `categories`), ou repasse par SQL Editor avec une requête d'insertion équivalente. `0004` gère ce cas tout seul (il fait un backfill), pas d'action manuelle nécessaire pour ta ligne de réglages.
 
