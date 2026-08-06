@@ -19,13 +19,43 @@ function netAmount(rows: { type: string; amount: number }[]) {
   );
 }
 
+// Solde de chaque compte non archivé : solde de départ + net des
+// transactions de ce compte depuis sa date de référence (chaque compte a la
+// sienne, pas de date commune).
+async function getAccountBalances(): Promise<
+  { id: string; name: string; balance: number }[]
+> {
+  const supabase = await createClient();
+
+  const { data: accounts } = await supabase
+    .from("accounts")
+    .select("id, name, starting_balance, starting_balance_date")
+    .eq("is_archived", false)
+    .order("created_at", { ascending: true });
+
+  return Promise.all(
+    (accounts ?? []).map(async (a) => {
+      const { data: transactionsSinceStart } = await supabase
+        .from("transactions")
+        .select("type, amount")
+        .eq("account_id", a.id)
+        .gt("occurred_on", a.starting_balance_date);
+
+      return {
+        id: a.id,
+        name: a.name,
+        balance: Number(a.starting_balance) + netAmount(transactionsSinceStart ?? []),
+      };
+    }),
+  );
+}
+
 // Solde actuel + projection. Sur un compte précis : solde de départ de ce
 // compte + net des transactions de ce compte depuis sa date de référence.
-// Sur "Tous" : chaque compte a sa propre date de référence, donc pas de
-// fusion naïve possible — on calcule le solde de chaque compte séparément
-// puis on additionne, et les transactions "Non assigné" (issues de
-// factures) s'ajoutent intégralement, sans filtre de date puisqu'aucun
-// compte ne leur sert de référence.
+// Sur "Tous" : somme des soldes de chaque compte (getAccountBalances), plus
+// les transactions "Non assigné" (issues de factures), ajoutées
+// intégralement, sans filtre de date puisqu'aucun compte ne leur sert de
+// référence.
 async function getRunwayData(accountId?: string) {
   const supabase = await createClient();
   const today = todayDateString();
@@ -49,22 +79,7 @@ async function getRunwayData(accountId?: string) {
 
     currentBalance = startingBalance + netAmount(transactionsSinceStart ?? []);
   } else {
-    const { data: accounts } = await supabase
-      .from("accounts")
-      .select("id, starting_balance, starting_balance_date")
-      .eq("is_archived", false);
-
-    const perAccountBalances = await Promise.all(
-      (accounts ?? []).map(async (a) => {
-        const { data: transactionsSinceStart } = await supabase
-          .from("transactions")
-          .select("type, amount")
-          .eq("account_id", a.id)
-          .gt("occurred_on", a.starting_balance_date);
-
-        return Number(a.starting_balance) + netAmount(transactionsSinceStart ?? []);
-      }),
-    );
+    const accountBalances = await getAccountBalances();
 
     const { data: unassigned } = await supabase
       .from("transactions")
@@ -72,7 +87,7 @@ async function getRunwayData(accountId?: string) {
       .is("account_id", null);
 
     currentBalance =
-      perAccountBalances.reduce((sum, b) => sum + b, 0) + netAmount(unassigned ?? []);
+      accountBalances.reduce((sum, a) => sum + a.balance, 0) + netAmount(unassigned ?? []);
   }
 
   let subscriptionsQuery = supabase
@@ -239,7 +254,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   const today = todayDateString();
   const supabase = await createClient();
 
-  const [{ data: accounts }, runway, kpis, categoryRows, upcomingSubscriptions] =
+  const [{ data: accounts }, runway, kpis, categoryRows, upcomingSubscriptions, accountBalances] =
     await Promise.all([
       supabase
         .from("accounts")
@@ -250,6 +265,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
       getMonthKpis(today, selectedAccountId),
       getCategoryComparison(today, selectedAccountId),
       getUpcomingSubscriptions(today, selectedAccountId),
+      selectedAccountId ? Promise.resolve(null) : getAccountBalances(),
     ]);
 
   return (
@@ -275,12 +291,25 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         </nav>
       </div>
 
-      <div>
-        <p className="text-sm text-foreground/60">Solde actuel</p>
-        <p className="mt-1 font-display text-5xl font-semibold text-foreground">
-          {formatCurrency(runway.currentBalance)}
-        </p>
-      </div>
+      {accountBalances ? (
+        <div className="flex flex-wrap gap-8">
+          {accountBalances.map((a) => (
+            <div key={a.id}>
+              <p className="text-sm text-foreground/60">{a.name}</p>
+              <p className="mt-1 font-display text-5xl font-semibold text-foreground">
+                {formatCurrency(a.balance)}
+              </p>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div>
+          <p className="text-sm text-foreground/60">Solde actuel</p>
+          <p className="mt-1 font-display text-5xl font-semibold text-foreground">
+            {formatCurrency(runway.currentBalance)}
+          </p>
+        </div>
+      )}
 
       <section className="max-w-md rounded-lg border-2 border-accent bg-foreground/[0.03] p-6">
         <h2 className="font-display text-lg font-semibold text-foreground">
