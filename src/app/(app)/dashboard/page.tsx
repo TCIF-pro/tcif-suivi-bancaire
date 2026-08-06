@@ -50,53 +50,37 @@ async function getAccountBalances(): Promise<
   );
 }
 
-// Solde actuel + projection. Sur un compte précis : solde de départ de ce
-// compte + net des transactions de ce compte depuis sa date de référence.
-// Sur "Tous" : somme des soldes de chaque compte (getAccountBalances), plus
-// les transactions "Non assigné" (issues de factures), ajoutées
-// intégralement, sans filtre de date puisqu'aucun compte ne leur sert de
-// référence.
-async function getRunwayData(accountId?: string) {
+// Solde actuel + projection d'UN compte précis : son solde de départ + net
+// de ses transactions depuis sa date de référence, ses abonnements actifs
+// uniquement. Réutilisée pour chaque carte Trésorerie affichée, qu'il y en
+// ait une (compte filtré) ou plusieurs (vue "Tous" : un calcul indépendant
+// par compte, jamais de fusion des soldes/abonnements entre comptes).
+async function getAccountRunway(accountId: string) {
   const supabase = await createClient();
   const today = todayDateString();
-  let currentBalance: number;
 
-  if (accountId) {
-    const { data: account } = await supabase
-      .from("accounts")
-      .select("starting_balance, starting_balance_date")
-      .eq("id", accountId)
-      .single();
+  const { data: account } = await supabase
+    .from("accounts")
+    .select("starting_balance, starting_balance_date")
+    .eq("id", accountId)
+    .single();
 
-    const startingBalance = Number(account?.starting_balance ?? 0);
-    const startingBalanceDate = account?.starting_balance_date ?? today;
+  const startingBalance = Number(account?.starting_balance ?? 0);
+  const startingBalanceDate = account?.starting_balance_date ?? today;
 
-    const { data: transactionsSinceStart } = await supabase
-      .from("transactions")
-      .select("type, amount")
-      .eq("account_id", accountId)
-      .gt("occurred_on", startingBalanceDate);
+  const { data: transactionsSinceStart } = await supabase
+    .from("transactions")
+    .select("type, amount")
+    .eq("account_id", accountId)
+    .gt("occurred_on", startingBalanceDate);
 
-    currentBalance = startingBalance + netAmount(transactionsSinceStart ?? []);
-  } else {
-    const accountBalances = await getAccountBalances();
+  const currentBalance = startingBalance + netAmount(transactionsSinceStart ?? []);
 
-    const { data: unassigned } = await supabase
-      .from("transactions")
-      .select("type, amount")
-      .is("account_id", null);
-
-    currentBalance =
-      accountBalances.reduce((sum, a) => sum + a.balance, 0) + netAmount(unassigned ?? []);
-  }
-
-  let subscriptionsQuery = supabase
+  const { data: activeSubscriptions } = await supabase
     .from("subscriptions")
     .select("id, amount, frequency, next_billing_date")
-    .eq("is_active", true);
-  if (accountId) subscriptionsQuery = subscriptionsQuery.eq("account_id", accountId);
-
-  const { data: activeSubscriptions } = await subscriptionsQuery;
+    .eq("is_active", true)
+    .eq("account_id", accountId);
 
   return computeRunway(
     currentBalance,
@@ -254,18 +238,32 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   const today = todayDateString();
   const supabase = await createClient();
 
-  const [{ data: accounts }, runway, kpis, categoryRows, upcomingSubscriptions, accountBalances] =
+  const { data: accounts } = await supabase
+    .from("accounts")
+    .select("id, name")
+    .eq("is_archived", false)
+    .order("created_at", { ascending: true });
+
+  // Une carte Trésorerie par compte affiché : un seul (compte filtré) ou
+  // tous (vue "Tous") — jamais de calcul combiné, chaque compte garde son
+  // propre solde de départ et ses propres abonnements actifs.
+  const accountsToShow = selectedAccountId
+    ? (accounts ?? []).filter((a) => a.id === selectedAccountId)
+    : (accounts ?? []);
+
+  const [kpis, categoryRows, upcomingSubscriptions, accountBalances, runways] =
     await Promise.all([
-      supabase
-        .from("accounts")
-        .select("id, name")
-        .eq("is_archived", false)
-        .order("created_at", { ascending: true }),
-      getRunwayData(selectedAccountId),
       getMonthKpis(today, selectedAccountId),
       getCategoryComparison(today, selectedAccountId),
       getUpcomingSubscriptions(today, selectedAccountId),
       selectedAccountId ? Promise.resolve(null) : getAccountBalances(),
+      Promise.all(
+        accountsToShow.map(async (a) => ({
+          id: a.id,
+          name: a.name,
+          runway: await getAccountRunway(a.id),
+        })),
+      ),
     ]);
 
   return (
@@ -306,34 +304,42 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         <div>
           <p className="text-sm text-foreground/60">Solde actuel</p>
           <p className="mt-1 font-display text-5xl font-semibold text-foreground">
-            {formatCurrency(runway.currentBalance)}
+            {formatCurrency(runways[0].runway.currentBalance)}
           </p>
         </div>
       )}
 
-      <section className="max-w-md rounded-lg border-2 border-accent bg-foreground/[0.03] p-6">
-        <h2 className="font-display text-lg font-semibold text-foreground">
-          Trésorerie prévisionnelle
-        </h2>
+      <div className="flex flex-wrap gap-6">
+        {runways.map((r) => (
+          <section
+            key={r.id}
+            className="max-w-md flex-1 rounded-lg border-2 border-accent bg-foreground/[0.03] p-6"
+          >
+            <h2 className="font-display text-lg font-semibold text-foreground">
+              Trésorerie prévisionnelle
+              {runways.length > 1 ? ` — ${r.name}` : ""}
+            </h2>
 
-        {runway.horizonExceeded ? (
-          <p className="mt-4 text-foreground/70">
-            Pas d&apos;échéance connue dans les 24 prochains mois.
-          </p>
-        ) : (
-          <>
-            <p className="mt-4 font-display text-5xl font-semibold text-accent">
-              {runway.daysRemaining} j
-            </p>
-            <p className="mt-1 text-sm text-foreground/60">
-              avant rupture de trésorerie estimée
-            </p>
-            <p className="mt-2 text-foreground/70">
-              le {formatDateLong(runway.zeroDate!)}
-            </p>
-          </>
-        )}
-      </section>
+            {r.runway.horizonExceeded ? (
+              <p className="mt-4 text-foreground/70">
+                Pas d&apos;échéance connue dans les 24 prochains mois.
+              </p>
+            ) : (
+              <>
+                <p className="mt-4 font-display text-5xl font-semibold text-accent">
+                  {r.runway.daysRemaining} j
+                </p>
+                <p className="mt-1 text-sm text-foreground/60">
+                  avant rupture de trésorerie estimée
+                </p>
+                <p className="mt-2 text-foreground/70">
+                  le {formatDateLong(r.runway.zeroDate!)}
+                </p>
+              </>
+            )}
+          </section>
+        ))}
+      </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <StatTile label="Flux net (ce mois)" value={formatCurrency(kpis.balanceOfMonth)} />
