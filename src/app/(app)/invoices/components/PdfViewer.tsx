@@ -4,12 +4,12 @@ export function PdfViewer({ url, fileName }: { url: string; fileName: string }) 
       <iframe
         src={url}
         title={fileName}
-        className="h-[70vh] w-full rounded-lg border border-foreground/10 bg-foreground/[0.03]"
+        className="h-[70vh] w-full rounded-xl border border-border bg-surface shadow-card"
       />
       <a
         href={url}
         download={fileName}
-        className="self-start text-sm text-foreground/60 hover:text-accent"
+        className="self-start text-sm text-muted hover:text-accent"
       >
         Télécharger le PDF
       </a>

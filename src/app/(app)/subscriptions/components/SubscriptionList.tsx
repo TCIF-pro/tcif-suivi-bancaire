@@ -29,7 +29,7 @@ export function SubscriptionList({
 }) {
   if (rows.length === 0) {
     return (
-      <p className="text-sm text-foreground/60">
+      <p className="text-sm text-muted">
         Aucun abonnement pour l&apos;instant.
       </p>
     );
@@ -39,7 +39,7 @@ export function SubscriptionList({
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-foreground/10 text-left text-foreground/60">
+          <tr className="border-b border-border text-left text-muted">
             <th className="py-2 pr-4 font-medium">Nom</th>
             <th className="hidden py-2 pr-4 font-medium sm:table-cell">
               Catégorie
@@ -63,21 +63,21 @@ export function SubscriptionList({
             return (
               <tr
                 key={row.id}
-                className={`border-b border-foreground/5 ${row.isActive ? "" : "opacity-50"}`}
+                className={`border-b border-border ${row.isActive ? "" : "opacity-50"}`}
               >
                 <td className="py-2 pr-4 text-foreground">{row.name}</td>
-                <td className="hidden py-2 pr-4 text-foreground/70 sm:table-cell">
+                <td className="hidden py-2 pr-4 text-muted sm:table-cell">
                   {row.categoryName ?? "—"}
                 </td>
-                <td className="hidden py-2 pr-4 text-foreground/70 sm:table-cell">
+                <td className="hidden py-2 pr-4 text-muted sm:table-cell">
                   {row.accountName ?? "—"}
                 </td>
-                <td className="hidden py-2 pr-4 text-foreground/70 sm:table-cell">
+                <td className="hidden py-2 pr-4 text-muted sm:table-cell">
                   {FREQUENCY_LABELS[row.frequency] ?? row.frequency}
                 </td>
                 <td className="py-2 pr-4 whitespace-nowrap">
                   <span
-                    className={isSoon ? "font-medium text-accent" : "text-foreground/70"}
+                    className={isSoon ? "font-medium text-accent" : "text-muted"}
                   >
                     {formatDateShort(row.nextBillingDate)}
                   </span>
@@ -94,7 +94,7 @@ export function SubscriptionList({
                   <div className="flex items-center justify-end gap-3">
                     <Link
                       href={`/subscriptions/${row.id}/edit`}
-                      className="text-foreground/60 hover:text-accent"
+                      className="text-muted hover:text-accent"
                     >
                       Modifier
                     </Link>

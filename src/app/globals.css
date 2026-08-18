@@ -2,8 +2,20 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  --background: #f6f4ef; /* papier */
-  --foreground: #1b1d1b; /* encre */
+  --background: #f5f6f8; /* fond de page */
+  --surface: #ffffff; /* cartes, inputs, popovers */
+  --foreground: #1c1e21; /* texte principal */
+  --muted: #6b7280; /* texte secondaire */
+  --border: #e5e7eb;
+  --danger: #dc2626;
+  --danger-bg: #fee2e2;
+  --positive: #166534;
+  --positive-bg: #dcfce7;
+  --pending: #1e40af;
+  --pending-bg: #dbeafe;
+  --warning: #92400e;
+  --warning-bg: #fef3c7;
+  --shadow-card-value: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
   /* --accent-light / --accent-dark sont injectées en inline style sur <html>
      (voir src/app/layout.tsx) : leur valeur dépend du choix de l'utilisateur
      (lib/accent-colors.ts), donc pas de valeur en dur ici. */
@@ -11,20 +23,51 @@
 }
 
 .dark {
-  --background: #1b1d1b; /* encre devient le fond en sombre */
-  --foreground: #f6f4ef; /* papier devient le texte en sombre */
+  --background: #101216;
+  --surface: #1a1d23;
+  --foreground: #e8e9ec;
+  --muted: #9aa0ac;
+  --border: #2c303a;
+  --danger: #f87171;
+  --danger-bg: #451a1a;
+  --positive: #86efac;
+  --positive-bg: #14532d;
+  --pending: #93c5fd;
+  --pending-bg: #1e3a8a;
+  --warning: #fcd34d;
+  --warning-bg: #78350f;
+  --shadow-card-value: 0 1px 3px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.3);
   --accent: var(--accent-dark);
 }
 
 @theme inline {
   --color-background: var(--background);
+  --color-surface: var(--surface);
   --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
   --color-accent: var(--accent);
+  --color-danger: var(--danger);
+  --color-danger-bg: var(--danger-bg);
+  --color-positive: var(--positive);
+  --color-positive-bg: var(--positive-bg);
+  --color-pending: var(--pending);
+  --color-pending-bg: var(--pending-bg);
+  --color-warning: var(--warning);
+  --color-warning-bg: var(--warning-bg);
+  --shadow-card: var(--shadow-card-value);
   --font-display: var(--font-space-grotesk);
   --font-sans: var(--font-archivo);
+}
+
+html {
+  transition: background-color 0.15s ease;
 }
 
 body {
   background: var(--color-background);
   color: var(--color-foreground);
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
 }

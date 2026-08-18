@@ -24,7 +24,7 @@ export default async function AppLayout({
 
   return (
     <div className="flex min-h-full flex-1 flex-col bg-background">
-      <header className="sticky top-0 z-10 flex items-center justify-between border-b border-foreground/10 bg-background px-4 py-3 sm:px-6 sm:py-4">
+      <header className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-background px-4 py-3 sm:px-6 sm:py-4">
         <span className="font-display text-lg font-semibold text-foreground">
           TCIF
         </span>
@@ -34,7 +34,7 @@ export default async function AppLayout({
             <Link
               key={link.href}
               href={link.href}
-              className="text-sm font-medium text-foreground/60 hover:text-accent"
+              className="text-sm font-medium text-muted hover:text-accent"
             >
               {link.label}
             </Link>
@@ -42,7 +42,7 @@ export default async function AppLayout({
           <form action={signOut}>
             <button
               type="submit"
-              className="text-sm font-medium text-foreground/60 hover:text-accent"
+              className="text-sm font-medium text-muted hover:text-accent"
             >
               Déconnexion
             </button>

@@ -12,7 +12,7 @@ export function DeleteTransactionButton({ id }: { id: string }) {
         }
       }}
     >
-      <button type="submit" className="text-foreground/60 hover:text-red-600">
+      <button type="submit" className="text-muted hover:text-danger">
         Supprimer
       </button>
     </form>

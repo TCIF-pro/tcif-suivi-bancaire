@@ -25,11 +25,11 @@ export default async function SettingsPage() {
         Réglages
       </h1>
 
-      <section className="max-w-md rounded-lg border border-foreground/10 bg-foreground/[0.03] p-6">
+      <section className="max-w-md rounded-xl border border-border bg-surface p-6 shadow-card">
         <h2 className="font-display text-lg font-semibold text-foreground">
           Comptes
         </h2>
-        <p className="mt-1 text-sm text-foreground/60">
+        <p className="mt-1 text-sm text-muted">
           Solde de départ par compte, pour la trésorerie et les KPIs du
           dashboard.
         </p>
@@ -39,7 +39,7 @@ export default async function SettingsPage() {
             <form
               key={account.id}
               action={updateAccountBalance.bind(null, account.id)}
-              className="flex flex-col gap-3 border-t border-foreground/10 pt-4 first:border-t-0 first:pt-0"
+              className="flex flex-col gap-3 border-t border-border pt-4 first:border-t-0 first:pt-0"
             >
               <p className="font-medium text-foreground">{account.name}</p>
 
@@ -57,7 +57,7 @@ export default async function SettingsPage() {
                   step="0.01"
                   required
                   defaultValue={account.starting_balance}
-                  className="rounded-md border border-foreground/20 px-3 py-2 text-foreground outline-none focus:border-accent"
+                  className="rounded-lg border border-border bg-surface px-3 py-2 text-foreground outline-none focus:border-accent"
                 />
               </div>
 
@@ -74,13 +74,13 @@ export default async function SettingsPage() {
                   type="date"
                   required
                   defaultValue={account.starting_balance_date}
-                  className="rounded-md border border-foreground/20 px-3 py-2 text-foreground outline-none focus:border-accent"
+                  className="rounded-lg border border-border bg-surface px-3 py-2 text-foreground outline-none focus:border-accent"
                 />
               </div>
 
               <button
                 type="submit"
-                className="mt-1 self-start rounded-md bg-foreground px-4 py-2 font-medium text-background transition-colors hover:bg-accent"
+                className="mt-1 self-start rounded-lg bg-foreground px-4 py-2 font-medium text-background transition-colors hover:bg-accent"
               >
                 Enregistrer
               </button>
@@ -89,7 +89,7 @@ export default async function SettingsPage() {
         </div>
       </section>
 
-      <section className="max-w-md rounded-lg border border-foreground/10 bg-foreground/[0.03] p-6">
+      <section className="max-w-md rounded-xl border border-border bg-surface p-6 shadow-card">
         <h2 className="font-display text-lg font-semibold text-foreground">
           Apparence
         </h2>
@@ -116,7 +116,7 @@ export default async function SettingsPage() {
 
           <button
             type="submit"
-            className="rounded-md bg-foreground px-4 py-2 font-medium text-background transition-colors hover:bg-accent"
+            className="rounded-lg bg-foreground px-4 py-2 font-medium text-background transition-colors hover:bg-accent"
           >
             Appliquer
           </button>
@@ -124,7 +124,7 @@ export default async function SettingsPage() {
 
         <form
           action={updateAccentColor}
-          className="mt-6 flex flex-wrap items-center gap-4 border-t border-foreground/10 pt-6"
+          className="mt-6 flex flex-wrap items-center gap-4 border-t border-border pt-6"
         >
           {Object.entries(ACCENT_COLORS).map(([id, color]) => (
             <label
@@ -147,7 +147,7 @@ export default async function SettingsPage() {
 
           <button
             type="submit"
-            className="rounded-md bg-foreground px-4 py-2 font-medium text-background transition-colors hover:bg-accent"
+            className="rounded-lg bg-foreground px-4 py-2 font-medium text-background transition-colors hover:bg-accent"
           >
             Appliquer
           </button>

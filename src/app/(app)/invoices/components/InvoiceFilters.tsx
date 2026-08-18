@@ -7,8 +7,8 @@ interface InvoiceFiltersProps {
 
 export function InvoiceFilters({ values }: InvoiceFiltersProps) {
   const inputClass =
-    "w-full rounded-md border border-foreground/20 bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-accent";
-  const labelClass = "text-xs text-foreground/60";
+    "w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none focus:border-accent";
+  const labelClass = "text-xs text-muted";
   const fieldClass = "flex w-full flex-col gap-1 sm:w-auto";
 
   return (
@@ -49,13 +49,13 @@ export function InvoiceFilters({ values }: InvoiceFiltersProps) {
 
       <button
         type="submit"
-        className="rounded-md bg-foreground px-4 py-2 text-sm font-medium text-background transition-colors hover:bg-accent"
+        className="rounded-lg bg-foreground px-4 py-2 text-sm font-medium text-background transition-colors hover:bg-accent"
       >
         Filtrer
       </button>
       <a
         href="/invoices"
-        className="text-sm text-foreground/60 hover:text-accent"
+        className="text-sm text-muted hover:text-accent"
       >
         Réinitialiser
       </a>

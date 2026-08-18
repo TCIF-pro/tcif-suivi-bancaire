@@ -16,7 +16,7 @@ interface UpcomingSubscriptionsProps {
 export function UpcomingSubscriptions({ today, rows }: UpcomingSubscriptionsProps) {
   if (rows.length === 0) {
     return (
-      <p className="text-sm text-foreground/60">
+      <p className="text-sm text-muted">
         Aucun prélèvement d&apos;abonnement dans les 7 prochains jours.
       </p>
     );
@@ -33,13 +33,13 @@ export function UpcomingSubscriptions({ today, rows }: UpcomingSubscriptionsProp
             key={row.id}
             className={`flex items-center justify-between gap-4 text-sm ${
               isSoon
-                ? "rounded-md border border-accent/60 bg-accent/5 px-3 py-2"
+                ? "rounded-lg border border-accent/60 bg-accent/5 px-3 py-2"
                 : ""
             }`}
           >
             <div>
               <p className="font-medium text-foreground">{row.name}</p>
-              <p className="text-foreground/60">
+              <p className="text-muted">
                 {formatDateLong(row.nextBillingDate)}
               </p>
             </div>
@@ -47,7 +47,7 @@ export function UpcomingSubscriptions({ today, rows }: UpcomingSubscriptionsProp
               <p className="font-medium text-foreground">
                 {formatCurrency(row.amount)}
               </p>
-              <p className={isSoon ? "font-medium text-accent" : "text-foreground/60"}>
+              <p className={isSoon ? "font-medium text-accent" : "text-muted"}>
                 {daysLeft === 0
                   ? "aujourd'hui"
                   : `dans ${daysLeft} jour${daysLeft !== 1 ? "s" : ""}`}

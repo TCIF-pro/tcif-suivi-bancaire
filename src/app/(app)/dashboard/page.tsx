@@ -221,7 +221,7 @@ function AccountFilterLink({
       className={`rounded-full px-3 py-1 text-sm font-medium transition-colors ${
         active
           ? "bg-foreground text-background"
-          : "border border-foreground/20 text-foreground/70 hover:border-accent hover:text-accent"
+          : "border border-border text-muted hover:border-accent hover:text-accent"
       }`}
     >
       {label}
@@ -293,7 +293,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         <div className="flex flex-wrap gap-8">
           {accountBalances.map((a) => (
             <div key={a.id}>
-              <p className="text-sm text-foreground/60">{a.name}</p>
+              <p className="text-sm text-muted">{a.name}</p>
               <p className="mt-1 font-display text-5xl font-semibold text-foreground">
                 {formatCurrency(a.balance)}
               </p>
@@ -302,7 +302,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         </div>
       ) : (
         <div>
-          <p className="text-sm text-foreground/60">Solde actuel</p>
+          <p className="text-sm text-muted">Solde actuel</p>
           <p className="mt-1 font-display text-5xl font-semibold text-foreground">
             {formatCurrency(runways[0].runway.currentBalance)}
           </p>
@@ -313,7 +313,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         {runways.map((r) => (
           <section
             key={r.id}
-            className="max-w-md flex-1 rounded-lg border-2 border-accent bg-foreground/[0.03] p-6"
+            className="max-w-md flex-1 rounded-xl border-2 border-accent bg-surface p-6 shadow-card"
           >
             <h2 className="font-display text-lg font-semibold text-foreground">
               Trésorerie prévisionnelle
@@ -321,7 +321,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
             </h2>
 
             {r.runway.horizonExceeded ? (
-              <p className="mt-4 text-foreground/70">
+              <p className="mt-4 text-muted">
                 Pas d&apos;échéance connue dans les 24 prochains mois.
               </p>
             ) : (
@@ -329,10 +329,10 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
                 <p className="mt-4 font-display text-5xl font-semibold text-accent">
                   {r.runway.daysRemaining} j
                 </p>
-                <p className="mt-1 text-sm text-foreground/60">
+                <p className="mt-1 text-sm text-muted">
                   avant rupture de trésorerie estimée
                 </p>
-                <p className="mt-2 text-foreground/70">
+                <p className="mt-2 text-muted">
                   le {formatDateLong(r.runway.zeroDate!)}
                 </p>
               </>
@@ -350,11 +350,11 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         />
       </div>
 
-      <section className="rounded-lg border border-foreground/10 bg-foreground/[0.03] p-6">
+      <section className="rounded-xl border border-border bg-surface p-6 shadow-card">
         <h2 className="font-display text-lg font-semibold text-foreground">
           Dépenses par catégorie
         </h2>
-        <p className="mt-1 text-sm text-foreground/60">
+        <p className="mt-1 text-sm text-muted">
           Mois en cours comparé au mois précédent.
         </p>
         <div className="mt-4">
@@ -362,11 +362,11 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         </div>
       </section>
 
-      <section className="max-w-md rounded-lg border border-foreground/10 bg-foreground/[0.03] p-6">
+      <section className="max-w-md rounded-xl border border-border bg-surface p-6 shadow-card">
         <h2 className="font-display text-lg font-semibold text-foreground">
           Prochains prélèvements
         </h2>
-        <p className="mt-1 text-sm text-foreground/60">7 prochains jours</p>
+        <p className="mt-1 text-sm text-muted">7 prochains jours</p>
         <div className="mt-4">
           <UpcomingSubscriptions today={today} rows={upcomingSubscriptions} />
         </div>

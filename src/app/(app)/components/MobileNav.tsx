@@ -15,7 +15,7 @@ export function MobileNav() {
         onClick={() => setOpen((o) => !o)}
         aria-label={open ? "Fermer le menu" : "Ouvrir le menu"}
         aria-expanded={open}
-        className="p-1 text-foreground/70 hover:text-accent"
+        className="p-1 text-muted hover:text-accent"
       >
         {open ? (
           <svg
@@ -47,14 +47,14 @@ export function MobileNav() {
           {/* calque transparent : cliquer en dehors du menu le ferme */}
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
 
-          <div className="absolute right-0 top-full z-20 mt-2 w-56 rounded-lg border border-foreground/10 bg-background p-2 shadow-lg">
+          <div className="absolute right-0 top-full z-20 mt-2 w-56 rounded-xl border border-border bg-surface p-2 shadow-card">
             <nav className="flex flex-col">
               {NAV_LINKS.map((link) => (
                 <Link
                   key={link.href}
                   href={link.href}
                   onClick={() => setOpen(false)}
-                  className="rounded-md px-3 py-2 text-sm font-medium text-foreground/70 hover:bg-foreground/[0.05] hover:text-accent"
+                  className="rounded-lg px-3 py-2 text-sm font-medium text-muted hover:bg-background hover:text-accent"
                 >
                   {link.label}
                 </Link>
@@ -62,7 +62,7 @@ export function MobileNav() {
               <form action={signOut}>
                 <button
                   type="submit"
-                  className="w-full rounded-md px-3 py-2 text-left text-sm font-medium text-foreground/70 hover:bg-foreground/[0.05] hover:text-accent"
+                  className="w-full rounded-lg px-3 py-2 text-left text-sm font-medium text-muted hover:bg-background hover:text-accent"
                 >
                   Déconnexion
                 </button>

@@ -15,7 +15,7 @@ export interface TransactionRow {
 export function TransactionList({ rows }: { rows: TransactionRow[] }) {
   if (rows.length === 0) {
     return (
-      <p className="text-sm text-foreground/60">
+      <p className="text-sm text-muted">
         Aucune transaction pour ces filtres.
       </p>
     );
@@ -25,7 +25,7 @@ export function TransactionList({ rows }: { rows: TransactionRow[] }) {
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-foreground/10 text-left text-foreground/60">
+          <tr className="border-b border-border text-left text-muted">
             <th className="py-2 pr-4 font-medium">Date</th>
             <th className="py-2 pr-4 font-medium">Libellé</th>
             <th className="hidden py-2 pr-4 font-medium sm:table-cell">
@@ -40,15 +40,15 @@ export function TransactionList({ rows }: { rows: TransactionRow[] }) {
         </thead>
         <tbody>
           {rows.map((row) => (
-            <tr key={row.id} className="border-b border-foreground/5">
-              <td className="py-2 pr-4 whitespace-nowrap text-foreground/70">
+            <tr key={row.id} className="border-b border-border">
+              <td className="py-2 pr-4 whitespace-nowrap text-muted">
                 {formatDateShort(row.occurred_on)}
               </td>
               <td className="py-2 pr-4 text-foreground">{row.label}</td>
-              <td className="hidden py-2 pr-4 text-foreground/70 sm:table-cell">
+              <td className="hidden py-2 pr-4 text-muted sm:table-cell">
                 {row.categoryName ?? "—"}
               </td>
-              <td className="hidden py-2 pr-4 text-foreground/70 sm:table-cell">
+              <td className="hidden py-2 pr-4 text-muted sm:table-cell">
                 {row.accountName ?? "Non assigné"}
               </td>
               <td className="py-2 pr-4 text-right font-medium tabular-nums text-foreground">
@@ -59,7 +59,7 @@ export function TransactionList({ rows }: { rows: TransactionRow[] }) {
                 <div className="flex items-center justify-end gap-3">
                   <Link
                     href={`/transactions/${row.id}/edit`}
-                    className="text-foreground/60 hover:text-accent"
+                    className="text-muted hover:text-accent"
                   >
                     Modifier
                   </Link>

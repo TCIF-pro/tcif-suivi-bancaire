@@ -9,7 +9,7 @@ export default function UploadInvoicePage() {
 
       <form
         action={uploadInvoice}
-        className="mx-auto flex w-full max-w-xl flex-col gap-4 rounded-lg border border-foreground/10 bg-foreground/[0.03] p-6 sm:p-8"
+        className="mx-auto flex w-full max-w-xl flex-col gap-4 rounded-xl border border-border bg-surface p-6 shadow-card sm:p-8"
       >
         <div className="flex flex-col gap-1">
           <label htmlFor="file" className="text-sm font-medium text-foreground">
@@ -21,7 +21,7 @@ export default function UploadInvoicePage() {
             type="file"
             accept="application/pdf"
             required
-            className="text-sm text-foreground file:mr-3 file:rounded-md file:border-0 file:bg-foreground file:px-3 file:py-2 file:text-sm file:font-medium file:text-background"
+            className="text-sm text-foreground file:mr-3 file:rounded-lg file:border-0 file:bg-foreground file:px-3 file:py-2 file:text-sm file:font-medium file:text-background"
           />
         </div>
 
@@ -50,7 +50,7 @@ export default function UploadInvoicePage() {
 
         <button
           type="submit"
-          className="mt-2 self-start rounded-md bg-foreground px-4 py-2 font-medium text-background transition-colors hover:bg-accent"
+          className="mt-2 self-start rounded-lg bg-foreground px-4 py-2 font-medium text-background transition-colors hover:bg-accent"
         >
           Importer
         </button>

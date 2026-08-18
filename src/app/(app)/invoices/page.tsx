@@ -38,7 +38,7 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
         </h1>
         <Link
           href="/invoices/upload"
-          className="rounded-md bg-foreground px-4 py-2 text-sm font-medium text-background transition-colors hover:bg-accent"
+          className="rounded-lg bg-foreground px-4 py-2 text-sm font-medium text-background transition-colors hover:bg-accent"
         >
           Importer un PDF
         </Link>

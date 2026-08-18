@@ -20,7 +20,7 @@ export function CategoryChart({ rows }: CategoryChartProps) {
 
   if (!hasData) {
     return (
-      <p className="text-sm text-foreground/60">
+      <p className="text-sm text-muted">
         Pas encore de dépenses ce mois-ci ni le mois dernier.
       </p>
     );
@@ -30,7 +30,7 @@ export function CategoryChart({ rows }: CategoryChartProps) {
 
   return (
     <div>
-      <div className="flex items-center gap-4 text-xs text-foreground/60">
+      <div className="flex items-center gap-4 text-xs text-muted">
         <span className="flex items-center gap-1.5">
           <span className="h-2.5 w-2.5 rounded-full bg-accent/40" />
           Mois précédent
@@ -51,13 +51,13 @@ export function CategoryChart({ rows }: CategoryChartProps) {
               key={row.categoryId}
               className="flex items-center gap-2 sm:gap-4"
             >
-              <span className="w-16 shrink-0 truncate text-xs text-foreground/70 sm:w-24 sm:text-sm">
+              <span className="w-16 shrink-0 truncate text-xs text-muted sm:w-24 sm:text-sm">
                 {row.name}
               </span>
 
-              <div className="relative h-2 flex-1 rounded-full bg-foreground/10">
+              <div className="relative h-2 flex-1 rounded-full bg-border">
                 <div
-                  className="absolute top-1/2 h-0.5 -translate-y-1/2 rounded-full bg-foreground/20"
+                  className="absolute top-1/2 h-0.5 -translate-y-1/2 rounded-full bg-muted/50"
                   style={{
                     left: `${Math.min(prevPct, currPct)}%`,
                     width: `${Math.abs(currPct - prevPct)}%`,
@@ -75,7 +75,7 @@ export function CategoryChart({ rows }: CategoryChartProps) {
                 />
               </div>
 
-              <span className="w-24 shrink-0 text-right text-xs text-foreground/70 sm:w-36 sm:text-sm">
+              <span className="w-24 shrink-0 text-right text-xs text-muted sm:w-36 sm:text-sm">
                 {formatCurrency(row.previous)} → {formatCurrency(row.current)}
               </span>
             </div>

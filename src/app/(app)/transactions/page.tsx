@@ -78,7 +78,7 @@ export default async function TransactionsPage({
         </h1>
         <Link
           href="/transactions/new"
-          className="rounded-md bg-foreground px-4 py-2 text-sm font-medium text-background transition-colors hover:bg-accent"
+          className="rounded-lg bg-foreground px-4 py-2 text-sm font-medium text-background transition-colors hover:bg-accent"
         >
           Ajouter
         </Link>

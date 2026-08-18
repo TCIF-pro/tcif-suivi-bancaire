@@ -17,6 +17,16 @@ const STATUS_LABELS: Record<string, string> = {
   converted: "Convertie",
 };
 
+// Badges de statut : vert pour l'état "réglé" (confirmée/convertie), ambre
+// pour ce qui attend une action de ma part (à vérifier), gris neutre pour
+// l'archivage — cf. palette de tokens dans globals.css.
+const STATUS_BADGE_CLASSES: Record<string, string> = {
+  pending_review: "bg-warning-bg text-warning",
+  confirmed: "bg-positive-bg text-positive",
+  converted: "bg-positive-bg text-positive",
+  archived: "bg-border text-muted",
+};
+
 const DOC_TYPE_LABELS: Record<string, string> = {
   facture: "Facture",
   devis: "Devis",
@@ -25,7 +35,7 @@ const DOC_TYPE_LABELS: Record<string, string> = {
 export function InvoiceList({ rows }: { rows: InvoiceRow[] }) {
   if (rows.length === 0) {
     return (
-      <p className="text-sm text-foreground/60">
+      <p className="text-sm text-muted">
         Aucune facture ni devis pour ces filtres.
       </p>
     );
@@ -35,7 +45,7 @@ export function InvoiceList({ rows }: { rows: InvoiceRow[] }) {
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-foreground/10 text-left text-foreground/60">
+          <tr className="border-b border-border text-left text-muted">
             <th className="py-2 pr-4 font-medium">Type</th>
             <th className="py-2 pr-4 font-medium">
               Fournisseur / Client
@@ -49,7 +59,7 @@ export function InvoiceList({ rows }: { rows: InvoiceRow[] }) {
         </thead>
         <tbody>
           {rows.map((row) => (
-            <tr key={row.id} className="border-b border-foreground/5">
+            <tr key={row.id} className="border-b border-border">
               <td className="py-2 pr-4 text-foreground">
                 {DOC_TYPE_LABELS[row.docType] ?? row.docType}
               </td>
@@ -58,14 +68,18 @@ export function InvoiceList({ rows }: { rows: InvoiceRow[] }) {
                   {row.partyName ?? "—"}
                 </Link>
               </td>
-              <td className="hidden py-2 pr-4 text-foreground/70 sm:table-cell">
+              <td className="hidden py-2 pr-4 text-muted sm:table-cell">
                 {row.issuedDate ? formatDateShort(row.issuedDate) : "—"}
               </td>
               <td className="py-2 pr-4 text-right font-medium tabular-nums text-foreground">
                 {row.amount !== null ? formatCurrency(row.amount) : "—"}
               </td>
-              <td className="py-2 pr-4 text-foreground/70">
-                {STATUS_LABELS[row.status] ?? row.status}
+              <td className="py-2 pr-4">
+                <span
+                  className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap ${STATUS_BADGE_CLASSES[row.status] ?? "bg-border text-muted"}`}
+                >
+                  {STATUS_LABELS[row.status] ?? row.status}
+                </span>
               </td>
             </tr>
           ))}

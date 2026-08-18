@@ -14,7 +14,7 @@ export function DeleteInvoiceButton({ id }: { id: string }) {
     >
       <button
         type="submit"
-        className="rounded-md border border-foreground/20 px-4 py-2 text-sm font-medium text-foreground/70 transition-colors hover:border-red-600 hover:text-red-600"
+        className="rounded-lg bg-danger-bg px-4 py-2 text-sm font-medium text-danger transition-opacity hover:opacity-80"
       >
         Supprimer
       </button>

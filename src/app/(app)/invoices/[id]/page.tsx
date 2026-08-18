@@ -23,6 +23,13 @@ const STATUS_LABELS: Record<string, string> = {
   converted: "Convertie",
 };
 
+const STATUS_BADGE_CLASSES: Record<string, string> = {
+  pending_review: "bg-warning-bg text-warning",
+  confirmed: "bg-positive-bg text-positive",
+  converted: "bg-positive-bg text-positive",
+  archived: "bg-border text-muted",
+};
+
 export default async function InvoiceDetailPage({ params }: InvoiceDetailPageProps) {
   const { id } = await params;
   const supabase = await createClient();
@@ -67,15 +74,19 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
           {DOC_TYPE_LABELS[invoice.doc_type] ?? invoice.doc_type} —{" "}
           {invoice.party_name ?? invoice.file_name}
         </h1>
-        <p className="mt-1 text-sm text-foreground/60">
-          Statut : {STATUS_LABELS[invoice.status] ?? invoice.status}
-          {invoice.amount !== null && ` · ${formatCurrency(invoice.amount)}`}
-          {invoice.issued_date && ` · ${formatDateLong(invoice.issued_date)}`}
+        <p className="mt-2 flex flex-wrap items-center gap-2 text-sm text-muted">
+          <span
+            className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap ${STATUS_BADGE_CLASSES[invoice.status] ?? "bg-border text-muted"}`}
+          >
+            {STATUS_LABELS[invoice.status] ?? invoice.status}
+          </span>
+          {invoice.amount !== null && <span>{formatCurrency(invoice.amount)}</span>}
+          {invoice.issued_date && <span>{formatDateLong(invoice.issued_date)}</span>}
         </p>
         {invoice.converted_from_devis_id && (
           <Link
             href={`/invoices/${invoice.converted_from_devis_id}`}
-            className="mt-1 inline-block text-sm text-foreground/60 hover:text-accent"
+            className="mt-1 inline-block text-sm text-muted hover:text-accent"
           >
             Voir le devis d&apos;origine
           </Link>
@@ -83,7 +94,7 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
         {convertedTo && (
           <Link
             href={`/invoices/${convertedTo.id}`}
-            className="mt-1 inline-block text-sm text-foreground/60 hover:text-accent"
+            className="mt-1 inline-block text-sm text-muted hover:text-accent"
           >
             Voir la facture issue de ce devis
           </Link>
@@ -95,7 +106,7 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
           <form action={convertDevisToFacture.bind(null, id)}>
             <button
               type="submit"
-              className="rounded-md border border-accent px-4 py-2 text-sm font-medium text-accent transition-colors hover:bg-accent/10"
+              className="rounded-lg border border-accent px-4 py-2 text-sm font-medium text-accent transition-colors hover:bg-accent/10"
             >
               Transformer en facture
             </button>
@@ -105,7 +116,7 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
           <form action={archiveInvoice.bind(null, id)}>
             <button
               type="submit"
-              className="rounded-md border border-foreground/20 px-4 py-2 text-sm font-medium text-foreground/70 hover:border-accent hover:text-accent"
+              className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-muted hover:border-accent hover:text-accent"
             >
               Archiver
             </button>

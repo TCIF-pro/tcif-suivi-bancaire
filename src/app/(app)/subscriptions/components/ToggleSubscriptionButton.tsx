@@ -11,7 +11,7 @@ export function ToggleSubscriptionButton({
 }) {
   return (
     <form action={toggleSubscriptionActive.bind(null, id, !isActive)}>
-      <button type="submit" className="text-foreground/60 hover:text-accent">
+      <button type="submit" className="text-muted hover:text-accent">
         {isActive ? "Mettre en pause" : "Réactiver"}
       </button>
     </form>

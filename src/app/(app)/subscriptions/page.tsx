@@ -39,20 +39,20 @@ export default async function SubscriptionsPage() {
         </h1>
         <Link
           href="/subscriptions/new"
-          className="rounded-md bg-foreground px-4 py-2 text-sm font-medium text-background transition-colors hover:bg-accent"
+          className="rounded-lg bg-foreground px-4 py-2 text-sm font-medium text-background transition-colors hover:bg-accent"
         >
           Ajouter
         </Link>
       </div>
 
-      <div className="max-w-xs rounded-lg border border-foreground/10 bg-foreground/[0.03] p-6">
-        <p className="text-sm text-foreground/60">
+      <div className="max-w-xs rounded-xl border border-border bg-surface p-6 shadow-card">
+        <p className="text-sm text-muted">
           Coût récurrent réel (mensualisé)
         </p>
         <p className="mt-2 font-display text-3xl font-semibold text-foreground">
           {formatCurrency(totalMonthlyEquivalent)}
         </p>
-        <p className="mt-1 text-sm text-foreground/60">
+        <p className="mt-1 text-sm text-muted">
           Total des abonnements actifs, annuels ramenés au mois.
         </p>
       </div>
