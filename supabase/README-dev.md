@@ -70,6 +70,7 @@ et ne mélange pas deux fichiers dans la même requête.
    Puis, au fil de la V2, chaque nouvelle migration dans l'ordre :
 
    - [ ] `0008_quick_labels.sql`
+   - [ ] `0009_savings_and_horizon.sql`
 
 > ⚠️ Ordre important : `0002` installe un déclencheur qui crée automatiquement tes
 > catégories par défaut **au moment où un compte est créé**. Il faut donc l'appliquer

@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { parseTransactionType } from "@/lib/transactions/types";
 
 function parseTransactionFormData(formData: FormData) {
   const categoryId = formData.get("category_id");
@@ -10,7 +11,9 @@ function parseTransactionFormData(formData: FormData) {
   const notes = formData.get("notes");
 
   return {
-    type: String(formData.get("type")),
+    // Passe par le parseur partagé : un type inconnu retombe sur "expense"
+    // plutôt que de heurter la contrainte CHECK de la base.
+    type: parseTransactionType(formData.get("type")),
     amount: Number(formData.get("amount")),
     occurred_on: String(formData.get("occurred_on")),
     label: String(formData.get("label")),

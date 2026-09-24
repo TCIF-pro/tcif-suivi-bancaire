@@ -6,12 +6,14 @@ import { formatCurrency } from "@/lib/format";
 // - `expense` : ce qui sort du compte — rouge, préfixé « − »
 // - `income`  : ce qui entre     — vert,  préfixé « + »
 // - `solde`   : un solde, qui peut être négatif — rouge s'il l'est
-// - `neutral` : un montant sans direction (épargne, total d'abonnements...)
+// - `savings` : un virement d'épargne — il sort du compte, donc préfixé
+//               « − », mais en couleur neutre : cet argent n'est pas perdu
+// - `neutral` : un montant sans direction (total d'abonnements...)
 //
 // La couleur n'est JAMAIS seule à porter l'information : le signe − / + est
 // toujours affiché. Environ 8 % des hommes distinguent mal le rouge du vert,
 // et l'app doit s'ouvrir à d'autres utilisateurs.
-export type MontantTon = "expense" | "income" | "solde" | "neutral";
+export type MontantTon = "expense" | "income" | "savings" | "solde" | "neutral";
 
 export type MontantTaille = "xs" | "sm" | "md" | "lg" | "hero";
 
@@ -29,6 +31,7 @@ const TAILLES: Record<MontantTaille, string> = {
 const TONS: Record<MontantTon, string> = {
   expense: "text-expense",
   income: "text-income",
+  savings: "text-foreground",
   solde: "text-foreground",
   neutral: "text-foreground",
 };
@@ -53,7 +56,7 @@ export function Montant({
   let signe = "";
   let couleur = TONS[ton];
 
-  if (ton === "expense") {
+  if (ton === "expense" || ton === "savings") {
     signe = "− ";
   } else if (ton === "income") {
     signe = "+ ";

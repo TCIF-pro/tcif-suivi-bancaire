@@ -1,4 +1,9 @@
 import { todayDateString } from "@/lib/dates";
+import {
+  TRANSACTION_TYPES,
+  TRANSACTION_TYPE_LABELS,
+  parseTransactionType,
+} from "@/lib/transactions/types";
 import { LibellesRapides, type LibelleRapide } from "./LibellesRapides";
 
 interface TransactionFormProps {
@@ -36,25 +41,24 @@ export function TransactionForm({
     >
       <LibellesRapides libelles={libellesRapides} />
 
-      <div className="flex gap-6">
-        <label className="flex items-center gap-2 text-sm text-foreground">
-          <input
-            type="radio"
-            name="type"
-            value="expense"
-            defaultChecked={defaultValues?.type !== "income"}
-          />
-          Dépense
-        </label>
-        <label className="flex items-center gap-2 text-sm text-foreground">
-          <input
-            type="radio"
-            name="type"
-            value="income"
-            defaultChecked={defaultValues?.type === "income"}
-          />
-          Revenu
-        </label>
+      {/* « Épargne » sort bien du compte courant, mais n'est pas comptée
+          comme une dépense : ni dans les totaux du mois, ni dans le graphique
+          par catégorie. Voir lib/transactions/types.ts. */}
+      <div className="flex flex-wrap gap-5">
+        {TRANSACTION_TYPES.map((type) => (
+          <label
+            key={type}
+            className="flex items-center gap-2 text-sm text-foreground"
+          >
+            <input
+              type="radio"
+              name="type"
+              value={type}
+              defaultChecked={parseTransactionType(defaultValues?.type) === type}
+            />
+            {TRANSACTION_TYPE_LABELS[type]}
+          </label>
+        ))}
       </div>
 
       <div className="flex flex-col gap-1">

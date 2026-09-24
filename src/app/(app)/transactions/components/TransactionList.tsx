@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { formatDateShort } from "@/lib/format";
-import { Montant } from "../../components/Montant";
+import { Montant, type MontantTon } from "../../components/Montant";
+import { parseTransactionType } from "@/lib/transactions/types";
 import { BOUTON_ICONE, PencilIcon } from "../../components/icons";
 import { DeleteTransactionButton } from "./DeleteTransactionButton";
 
@@ -13,6 +14,15 @@ export interface TransactionRow {
   categoryName: string | null;
   accountName: string | null;
 }
+
+// Le type de la transaction décide de la couleur ET du signe affichés :
+// une épargne sort du compte (« − ») mais reste en couleur neutre, parce que
+// cet argent n'est pas perdu.
+const TON_PAR_TYPE: Record<string, MontantTon> = {
+  expense: "expense",
+  income: "income",
+  savings: "savings",
+};
 
 export function TransactionList({
   rows,
@@ -54,6 +64,11 @@ export function TransactionList({
                     à venir
                   </span>
                 )}
+                {parseTransactionType(row.type) === "savings" && (
+                  <span className="shrink-0 rounded-full bg-border px-2 py-0.5 text-[0.625rem] font-semibold text-muted">
+                    épargne
+                  </span>
+                )}
               </div>
               <p className="mt-0.5 truncate text-xs font-medium text-muted">
                 {details.join(" · ")}
@@ -65,7 +80,7 @@ export function TransactionList({
                 trait, d'une ligne à l'autre. */}
             <Montant
               value={row.amount}
-              ton={row.type === "income" ? "income" : "expense"}
+              ton={TON_PAR_TYPE[parseTransactionType(row.type)]}
               taille="sm"
               className={`shrink-0 ${aVenir ? "opacity-60" : ""}`}
             />

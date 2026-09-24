@@ -18,7 +18,7 @@ export default async function EditSubscriptionPage({
       supabase
         .from("subscriptions")
         .select(
-          "id, name, amount, frequency, next_billing_date, category_id, account_id, notes, is_active",
+          "id, name, amount, frequency, next_billing_date, category_id, account_id, notes, is_active, is_savings",
         )
         .eq("id", id)
         .single(),
@@ -57,6 +57,7 @@ export default async function EditSubscriptionPage({
           account_id: subscription.account_id,
           notes: subscription.notes,
           is_active: subscription.is_active,
+          is_savings: subscription.is_savings,
         }}
       />
     </div>

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { updateUpcomingHorizon } from "../settings/actions";
 import { computeRunway } from "@/lib/runway/compute";
 import {
   todayDateString,
@@ -7,6 +8,7 @@ import {
   addMonthsToDateString,
   addDaysToDateString,
 } from "@/lib/dates";
+import { formatCurrency } from "@/lib/format";
 import { Montant } from "../components/Montant";
 import { StatTile } from "./components/BalanceCard";
 import { BarreHorizon } from "./components/BarreHorizon";
@@ -141,6 +143,27 @@ async function getMonthKpis(today: string, accountId?: string) {
     .filter((t) => t.type === "expense")
     .reduce((sum, t) => sum + Number(t.amount), 0);
 
+  // L'épargne est déjà exclue de `totalExpenses` par ce filtre : elle n'a
+  // jamais le type "expense". Ici on la compte pour elle-même.
+  const savingsOfMonth = (monthTransactions ?? [])
+    .filter((t) => t.type === "savings")
+    .reduce((sum, t) => sum + Number(t.amount), 0);
+
+  // Total épargné depuis le début : pas de borne de départ, mais la même
+  // règle que partout — rien de daté dans le futur.
+  let savingsQuery = supabase
+    .from("transactions")
+    .select("amount")
+    .eq("type", "savings")
+    .lte("occurred_on", today);
+  if (accountId) savingsQuery = savingsQuery.eq("account_id", accountId);
+  const { data: allSavings } = await savingsQuery;
+
+  const savingsAllTime = (allSavings ?? []).reduce(
+    (sum, t) => sum + Number(t.amount),
+    0,
+  );
+
   let subscriptionsQuery = supabase
     .from("subscriptions")
     .select("monthly_equivalent_amount")
@@ -153,7 +176,13 @@ async function getMonthKpis(today: string, accountId?: string) {
     0,
   );
 
-  return { balanceOfMonth, totalExpenses, totalSubscriptions };
+  return {
+    balanceOfMonth,
+    totalExpenses,
+    totalSubscriptions,
+    savingsOfMonth,
+    savingsAllTime,
+  };
 }
 
 async function getCategoryComparison(
@@ -212,16 +241,23 @@ async function getCategoryComparison(
   return rows.sort((a, b) => b.current - a.current);
 }
 
-async function getUpcomingSubscriptions(today: string, accountId?: string) {
+async function getUpcomingSubscriptions(
+  today: string,
+  horizonDays: number,
+  accountId?: string,
+) {
   const supabase = await createClient();
-  const in7Days = addDaysToDateString(today, 7);
+  const fin = addDaysToDateString(today, horizonDays);
 
+  // `account_id` est désormais remonté : c'est ce qui permet de poser les
+  // repères de chaque prélèvement sur la barre du BON compte, y compris en
+  // vue « Tous » — ce qui n'était pas possible jusqu'ici.
   let query = supabase
     .from("subscriptions")
-    .select("id, name, amount, next_billing_date")
+    .select("id, name, amount, next_billing_date, account_id, is_savings")
     .eq("is_active", true)
     .gte("next_billing_date", today)
-    .lte("next_billing_date", in7Days)
+    .lte("next_billing_date", fin)
     .order("next_billing_date", { ascending: true });
   if (accountId) query = query.eq("account_id", accountId);
 
@@ -232,6 +268,8 @@ async function getUpcomingSubscriptions(today: string, accountId?: string) {
     name: s.name,
     amount: Number(s.amount),
     nextBillingDate: s.next_billing_date,
+    accountId: s.account_id as string | null,
+    isSavings: Boolean(s.is_savings),
   }));
 }
 
@@ -291,11 +329,19 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   const today = todayDateString();
   const supabase = await createClient();
 
-  const { data: accounts } = await supabase
-    .from("accounts")
-    .select("id, name")
-    .eq("is_archived", false)
-    .order("created_at", { ascending: true });
+  const [{ data: accounts }, { data: settings }] = await Promise.all([
+    supabase
+      .from("accounts")
+      .select("id, name")
+      .eq("is_archived", false)
+      .order("created_at", { ascending: true }),
+    supabase.from("user_settings").select("upcoming_horizon_days").single(),
+  ]);
+
+  // Horizon des prochains prélèvements, mémorisé en base (migration 0009).
+  // Une valeur inattendue retombe sur 7 jours plutôt que de casser l'affichage.
+  const horizonBrut = Number(settings?.upcoming_horizon_days);
+  const horizonDays = [7, 14, 30].includes(horizonBrut) ? horizonBrut : 7;
 
   // Une carte Trésorerie par compte affiché : un seul (compte filtré) ou
   // tous (vue "Tous") — jamais de calcul combiné, chaque compte garde son
@@ -314,7 +360,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   ] = await Promise.all([
       getMonthKpis(today, selectedAccountId),
       getCategoryComparison(today, selectedAccountId),
-      getUpcomingSubscriptions(today, selectedAccountId),
+      getUpcomingSubscriptions(today, horizonDays, selectedAccountId),
       getUpcomingTransactions(today, selectedAccountId),
       selectedAccountId ? Promise.resolve(null) : getAccountBalances(),
       Promise.all(
@@ -339,22 +385,17 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     runway: r.runway,
   }));
 
-  // Repères à poser sur la barre d'horizon d'un compte donné.
-  //
-  // Les transactions portent leur `account_id`, on les filtre donc proprement.
-  // Les prélèvements d'abonnement, eux, ne sont pas rattachés à leur compte
-  // dans la requête actuelle : on ne les ajoute que lorsqu'une seule barre est
-  // affichée, sinon on poserait les échéances d'un compte sur la barre d'un
-  // autre. L'étape 3.2 réglera ce point avec le sélecteur d'horizon.
+  // Repères à poser sur la barre d'horizon d'un compte donné. Transactions et
+  // prélèvements portent tous les deux leur compte : chaque repère tombe donc
+  // sur la bonne barre, y compris en vue « Tous ».
   function reperesDuCompte(accountId: string) {
     const transactions = upcomingTransactions
       .filter((t) => t.accountId === accountId)
       .map((t) => ({ id: t.id, date: t.date }));
 
-    const abonnements =
-      cartes.length === 1
-        ? upcomingSubscriptions.map((s) => ({ id: s.id, date: s.nextBillingDate }))
-        : [];
+    const abonnements = upcomingSubscriptions
+      .filter((s) => s.accountId === accountId)
+      .map((s) => ({ id: s.id, date: s.nextBillingDate }));
 
     return [...transactions, ...abonnements];
   }
@@ -415,9 +456,15 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         </section>
       ))}
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatTile label="Flux net (ce mois)" value={kpis.balanceOfMonth} ton="solde" />
         <StatTile label="Dépenses (ce mois)" value={kpis.totalExpenses} ton="expense" />
+        <StatTile
+          label="Épargné (ce mois)"
+          value={kpis.savingsOfMonth}
+          ton="neutral"
+          hint={`${formatCurrency(kpis.savingsAllTime)} depuis le début`}
+        />
         <StatTile
           label="Abonnements (mensualisé)"
           value={kpis.totalSubscriptions}
@@ -442,9 +489,34 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
           <h2 className="font-display text-base font-bold text-foreground">
             Prochains prélèvements
           </h2>
-          <p className="mt-1 text-sm text-muted">7 prochains jours</p>
+
+          {/* Le choix est enregistré dans les réglages, donc il te suit d'un
+              appareil à l'autre — comme le thème et la couleur. */}
+          <form action={updateUpcomingHorizon} className="mt-3 flex gap-2">
+            {[7, 14, 30].map((jours) => (
+              <button
+                key={jours}
+                type="submit"
+                name="days"
+                value={jours}
+                aria-pressed={horizonDays === jours}
+                className={`h-9 rounded-full px-3 text-xs font-semibold transition-colors ${
+                  horizonDays === jours
+                    ? "bg-accent text-on-accent"
+                    : "border border-border text-muted hover:text-foreground"
+                }`}
+              >
+                {jours === 30 ? "1 mois" : `${jours} jours`}
+              </button>
+            ))}
+          </form>
+
           <div className="mt-4">
-            <UpcomingSubscriptions today={today} rows={upcomingSubscriptions} />
+            <UpcomingSubscriptions
+              today={today}
+              rows={upcomingSubscriptions}
+              horizonDays={horizonDays}
+            />
           </div>
         </section>
       </div>

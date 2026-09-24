@@ -18,6 +18,9 @@ function parseSubscriptionFormData(formData: FormData) {
     account_id: String(accountId),
     notes: notes ? String(notes) : null,
     is_active: formData.get("is_active") === "on",
+    // Source de vérité pour la tâche planifiée : c'est ce drapeau qui lui dit
+    // de générer une transaction de type "savings" plutôt que "expense".
+    is_savings: formData.get("is_savings") === "on",
   };
 }
 

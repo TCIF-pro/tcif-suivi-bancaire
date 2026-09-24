@@ -142,3 +142,27 @@ export async function deleteQuickLabel(id: string) {
   revalidatePath("/settings");
   revalidatePath("/transactions/new");
 }
+
+// Horizon des « prochains prélèvements » affichés sur le tableau de bord.
+// Mémorisé en base, comme le thème et la couleur : le choix suit
+// l'utilisateur d'un appareil à l'autre.
+export async function updateUpcomingHorizon(formData: FormData) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return;
+
+  // La contrainte CHECK de la base n'accepte que ces trois valeurs : on filtre
+  // ici aussi pour qu'une valeur inattendue retombe sur 7 au lieu de faire
+  // échouer l'écriture en silence.
+  const brut = Number(formData.get("days"));
+  const days = [7, 14, 30].includes(brut) ? brut : 7;
+
+  await supabase
+    .from("user_settings")
+    .update({ upcoming_horizon_days: days })
+    .eq("user_id", user.id);
+
+  revalidatePath("/dashboard");
+}

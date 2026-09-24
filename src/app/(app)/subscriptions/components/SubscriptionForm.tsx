@@ -14,6 +14,7 @@ interface SubscriptionFormProps {
     account_id?: string | null;
     notes?: string | null;
     is_active?: boolean;
+    is_savings?: boolean;
   };
 }
 
@@ -159,6 +160,21 @@ export function SubscriptionForm({
         />
         Actif
       </label>
+
+      <div className="flex flex-col gap-1">
+        <label className="flex items-center gap-2 text-sm text-foreground">
+          <input
+            type="checkbox"
+            name="is_savings"
+            defaultChecked={defaultValues?.is_savings ?? false}
+          />
+          C&apos;est de l&apos;épargne
+        </label>
+        <p className="text-xs text-muted">
+          Ex. : virement automatique vers un livret. Le montant sort bien du
+          compte courant, mais n&apos;est pas compté comme une dépense.
+        </p>
+      </div>
 
       <button
         type="submit"
