@@ -41,7 +41,7 @@ export function BottomNav() {
   // bande grise. Avec une marge haute plus faible, tout le contenu était
   // plaqué vers le haut de la barre.
   //
-  // `max(1.25rem, env(safe-area-inset-bottom))` : iOS ne déclare une zone de
+  // `max(0.875rem, env(safe-area-inset-bottom))` : iOS ne déclare une zone de
   // sécurité que dans certains modes d'affichage, d'où le plancher — sans lui
   // la barre collerait au bord de l'écran.
   //
@@ -50,7 +50,7 @@ export function BottomNav() {
   return (
     <nav
       aria-label="Navigation principale"
-      className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-surface pt-[max(1.25rem,env(safe-area-inset-bottom))] pb-[max(1.25rem,env(safe-area-inset-bottom))] md:hidden"
+      className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-surface pt-[max(0.875rem,env(safe-area-inset-bottom))] pb-[max(0.875rem,env(safe-area-inset-bottom))] md:hidden"
     >
       <div className="mx-auto flex max-w-md items-center gap-1 px-2">
         {gauche.map(lien)}
