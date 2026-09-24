@@ -9,7 +9,7 @@ import { LibellesRapides, type LibelleRapide } from "./LibellesRapides";
 interface TransactionFormProps {
   action: (formData: FormData) => void;
   categories: { id: string; name: string }[];
-  accounts: { id: string; name: string }[];
+  accounts: { id: string; name: string; kind?: string }[];
   /** Boutons de pré-remplissage. Vide = la section n'apparaît pas. */
   libellesRapides?: LibelleRapide[];
   submitLabel: string;
@@ -21,6 +21,7 @@ interface TransactionFormProps {
     category_id?: string | null;
     account_id?: string | null;
     notes?: string | null;
+    transfer_account_id?: string | null;
   };
 }
 
@@ -34,6 +35,9 @@ export function TransactionForm({
   submitLabel,
   defaultValues,
 }: TransactionFormProps) {
+  // Proposé par défaut comme destination : le premier livret.
+  const comptesEpargne = accounts.filter((a) => a.kind === "savings");
+
   return (
     <form
       action={action}
@@ -125,6 +129,37 @@ export function TransactionForm({
             </option>
           ))}
         </select>
+      </div>
+
+      {/* Compte d'arrivée d'un virement d'épargne. Il ne s'affiche que
+          lorsque « Épargne » est coché — par une règle CSS (`.champ-virement`
+          dans globals.css) qui regarde le bouton radio, sans JavaScript et
+          sans transformer les champs en champs contrôlés : le pré-remplissage
+          par URL et les libellés rapides continuent donc de fonctionner. */}
+      <div className="champ-virement flex flex-col gap-1">
+        <label
+          htmlFor="transfer_account_id"
+          className="text-sm font-medium text-foreground"
+        >
+          Vers quel compte
+        </label>
+        <select
+          id="transfer_account_id"
+          name="transfer_account_id"
+          defaultValue={defaultValues?.transfer_account_id ?? comptesEpargne[0]?.id ?? ""}
+          className="rounded-xl border border-border bg-surface px-3.5 py-3 text-foreground outline-none focus:border-accent focus:ring-2 focus:ring-accent/25"
+        >
+          <option value="">Choisir un compte</option>
+          {accounts.map((a) => (
+            <option key={a.id} value={a.id}>
+              {a.name}
+            </option>
+          ))}
+        </select>
+        <p className="text-xs text-muted">
+          L&apos;argent quitte le compte du dessus et arrive sur celui-ci. Pour
+          reprendre de l&apos;argent sur un livret, inverse simplement les deux.
+        </p>
       </div>
 
       <div className="flex flex-col gap-1">

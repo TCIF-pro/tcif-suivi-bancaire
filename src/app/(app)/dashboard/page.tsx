@@ -8,97 +8,94 @@ import {
   addMonthsToDateString,
   addDaysToDateString,
 } from "@/lib/dates";
-import { formatCurrency } from "@/lib/format";
+import {
+  deltaPourCompte,
+  fluxNet,
+  netPourCompte,
+  parseAccountKind,
+  type AccountKind,
+} from "@/lib/accounts/balance";
 import { Montant } from "../components/Montant";
 import { StatTile } from "./components/BalanceCard";
 import { BarreHorizon } from "./components/BarreHorizon";
 import { CategoryChart, type CategoryComparisonRow } from "./components/CategoryChart";
 import { UpcomingSubscriptions } from "./components/UpcomingSubscriptions";
 
-function netAmount(rows: { type: string; amount: number }[]) {
-  return rows.reduce(
-    (sum, t) => sum + (t.type === "income" ? Number(t.amount) : -Number(t.amount)),
-    0,
-  );
+interface CompteBrut {
+  id: string;
+  name: string;
+  kind: AccountKind;
+  starting_balance: number | string;
+  starting_balance_date: string;
 }
 
-// Solde de chaque compte non archivé : solde de départ + net des
-// transactions de ce compte depuis sa date de référence (chaque compte a la
-// sienne, pas de date commune).
-async function getAccountBalances(): Promise<
-  { id: string; name: string; balance: number }[]
-> {
+// Toutes les lignes qui touchent un compte : celles qui en partent
+// (`account_id`) ET les virements qui y arrivent (`transfer_account_id`).
+// C'est cette deuxième moitié qui permet à un compte d'épargne d'avoir un
+// solde, et à un retrait de livret de recréditer le compte courant.
+async function lignesDuCompte(compte: CompteBrut, today: string) {
   const supabase = await createClient();
-  const today = todayDateString();
 
-  const { data: accounts } = await supabase
-    .from("accounts")
-    .select("id, name, starting_balance, starting_balance_date")
-    .eq("is_archived", false)
-    .order("created_at", { ascending: true });
-
-  return Promise.all(
-    (accounts ?? []).map(async (a) => {
-      const { data: transactionsSinceStart } = await supabase
-        .from("transactions")
-        .select("type, amount")
-        .eq("account_id", a.id)
-        .gt("occurred_on", a.starting_balance_date)
-        // Une transaction datée dans le futur n'entre pas encore dans le
-        // solde. Elle y entrera toute seule le jour dit : ce filtre est
-        // recalculé à chaque affichage, aucune tâche planifiée nécessaire.
-        .lte("occurred_on", today);
-
-      return {
-        id: a.id,
-        name: a.name,
-        balance: Number(a.starting_balance) + netAmount(transactionsSinceStart ?? []),
-      };
-    }),
-  );
-}
-
-// Solde actuel + projection d'UN compte précis : son solde de départ + net
-// de ses transactions depuis sa date de référence, ses abonnements actifs
-// uniquement. Réutilisée pour chaque carte Trésorerie affichée, qu'il y en
-// ait une (compte filtré) ou plusieurs (vue "Tous" : un calcul indépendant
-// par compte, jamais de fusion des soldes/abonnements entre comptes).
-async function getAccountRunway(accountId: string) {
-  const supabase = await createClient();
-  const today = todayDateString();
-
-  const { data: account } = await supabase
-    .from("accounts")
-    .select("starting_balance, starting_balance_date")
-    .eq("id", accountId)
-    .single();
-
-  const startingBalance = Number(account?.starting_balance ?? 0);
-  const startingBalanceDate = account?.starting_balance_date ?? today;
-
-  const { data: transactionsSinceStart } = await supabase
+  const { data } = await supabase
     .from("transactions")
-    .select("type, amount")
-    .eq("account_id", accountId)
-    .gt("occurred_on", startingBalanceDate)
+    .select("type, amount, account_id, transfer_account_id")
+    .or(`account_id.eq.${compte.id},transfer_account_id.eq.${compte.id}`)
+    .gt("occurred_on", compte.starting_balance_date)
+    // Une transaction datée dans le futur n'entre pas encore dans le solde.
+    // Elle y entrera toute seule le jour dit : ce filtre est recalculé à
+    // chaque affichage, aucune tâche planifiée nécessaire.
     .lte("occurred_on", today);
 
-  const currentBalance = startingBalance + netAmount(transactionsSinceStart ?? []);
+  return data ?? [];
+}
+
+async function soldeDuCompte(compte: CompteBrut, today: string): Promise<number> {
+  const lignes = await lignesDuCompte(compte, today);
+  return Number(compte.starting_balance) + netPourCompte(lignes, compte.id);
+}
+
+// Mouvement net d'épargne du mois pour un compte : ce qui y est entré moins
+// ce qui en est ressorti. Sur un livret, c'est « épargné ce mois-ci ».
+async function fluxDuMois(compte: CompteBrut, today: string): Promise<number> {
+  const supabase = await createClient();
+  const debut = startOfMonthDateString(today);
+
+  const { data } = await supabase
+    .from("transactions")
+    .select("type, amount, account_id, transfer_account_id")
+    .or(`account_id.eq.${compte.id},transfer_account_id.eq.${compte.id}`)
+    .gte("occurred_on", debut)
+    .lte("occurred_on", today);
+
+  return netPourCompte(data ?? [], compte.id);
+}
+
+// Trésorerie prévisionnelle d'UN compte courant : son solde actuel, ses
+// abonnements actifs, et ses transactions déjà saisies mais datées dans le
+// futur. Un calcul indépendant par compte, jamais de fusion entre comptes.
+//
+// Ne concerne QUE les comptes courants : un livret ne se vide pas tout seul,
+// une date de rupture n'y voudrait rien dire.
+async function getAccountRunway(compte: CompteBrut, today: string) {
+  const supabase = await createClient();
+
+  const currentBalance = await soldeDuCompte(compte, today);
 
   // Les transactions à venir ne comptent pas dans le solde, mais elles sont
   // connues : la prévision les simule à leur date, au même titre que les
-  // prélèvements d'abonnement. Un salaire futur repousse donc la rupture.
+  // prélèvements d'abonnement. Un salaire futur repousse donc la rupture, et
+  // un retrait de livret à venir la repousse aussi puisqu'il arrive ici.
   const { data: futureTransactions } = await supabase
     .from("transactions")
-    .select("id, type, amount, occurred_on")
-    .eq("account_id", accountId)
+    .select("id, type, amount, occurred_on, account_id, transfer_account_id")
+    .or(`account_id.eq.${compte.id},transfer_account_id.eq.${compte.id}`)
     .gt("occurred_on", today);
 
   const { data: activeSubscriptions } = await supabase
     .from("subscriptions")
     .select("id, amount, frequency, next_billing_date")
     .eq("is_active", true)
-    .eq("account_id", accountId);
+    .eq("account_id", compte.id);
 
   return computeRunway(
     currentBalance,
@@ -109,12 +106,12 @@ async function getAccountRunway(accountId: string) {
       frequency: s.frequency,
       nextBillingDate: s.next_billing_date,
     })),
-    // Montant SIGNÉ : en base, `amount` est toujours positif et c'est `type`
-    // qui porte le sens. Le moteur de prévision, lui, additionne — un revenu
-    // doit donc arriver en positif et une dépense en négatif.
+    // Montant SIGNÉ pour ce compte : en base `amount` est toujours positif et
+    // c'est `type` (plus le sens du virement) qui porte le signe. Le moteur de
+    // prévision, lui, additionne.
     (futureTransactions ?? []).map((t) => ({
       id: t.id,
-      amount: t.type === "income" ? Number(t.amount) : -Number(t.amount),
+      amount: deltaPourCompte(t, compte.id),
       date: t.occurred_on,
     })),
   );
@@ -137,32 +134,14 @@ async function getMonthKpis(today: string, accountId?: string) {
   if (accountId) monthQuery = monthQuery.eq("account_id", accountId);
   const { data: monthTransactions } = await monthQuery;
 
-  const balanceOfMonth = netAmount(monthTransactions ?? []);
+  // Les virements d'épargne sont exclus : déplacer de l'argent d'un de ses
+  // comptes vers un autre n'est ni un revenu ni une dépense. C'est la carte
+  // Épargne qui rend compte de ces mouvements-là.
+  const balanceOfMonth = fluxNet(monthTransactions ?? []);
 
   const totalExpenses = (monthTransactions ?? [])
     .filter((t) => t.type === "expense")
     .reduce((sum, t) => sum + Number(t.amount), 0);
-
-  // L'épargne est déjà exclue de `totalExpenses` par ce filtre : elle n'a
-  // jamais le type "expense". Ici on la compte pour elle-même.
-  const savingsOfMonth = (monthTransactions ?? [])
-    .filter((t) => t.type === "savings")
-    .reduce((sum, t) => sum + Number(t.amount), 0);
-
-  // Total épargné depuis le début : pas de borne de départ, mais la même
-  // règle que partout — rien de daté dans le futur.
-  let savingsQuery = supabase
-    .from("transactions")
-    .select("amount")
-    .eq("type", "savings")
-    .lte("occurred_on", today);
-  if (accountId) savingsQuery = savingsQuery.eq("account_id", accountId);
-  const { data: allSavings } = await savingsQuery;
-
-  const savingsAllTime = (allSavings ?? []).reduce(
-    (sum, t) => sum + Number(t.amount),
-    0,
-  );
 
   let subscriptionsQuery = supabase
     .from("subscriptions")
@@ -176,13 +155,7 @@ async function getMonthKpis(today: string, accountId?: string) {
     0,
   );
 
-  return {
-    balanceOfMonth,
-    totalExpenses,
-    totalSubscriptions,
-    savingsOfMonth,
-    savingsAllTime,
-  };
+  return { balanceOfMonth, totalExpenses, totalSubscriptions };
 }
 
 async function getCategoryComparison(
@@ -332,7 +305,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   const [{ data: accounts }, { data: settings }] = await Promise.all([
     supabase
       .from("accounts")
-      .select("id, name")
+      .select("id, name, kind, starting_balance, starting_balance_date")
       .eq("is_archived", false)
       .order("created_at", { ascending: true }),
     supabase.from("user_settings").select("upcoming_horizon_days").single(),
@@ -343,47 +316,45 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   const horizonBrut = Number(settings?.upcoming_horizon_days);
   const horizonDays = [7, 14, 30].includes(horizonBrut) ? horizonBrut : 7;
 
-  // Une carte Trésorerie par compte affiché : un seul (compte filtré) ou
-  // tous (vue "Tous") — jamais de calcul combiné, chaque compte garde son
-  // propre solde de départ et ses propres abonnements actifs.
-  const accountsToShow = selectedAccountId
-    ? (accounts ?? []).filter((a) => a.id === selectedAccountId)
-    : (accounts ?? []);
+  const comptes: CompteBrut[] = (accounts ?? []).map((a) => ({
+    id: a.id,
+    name: a.name,
+    kind: parseAccountKind(a.kind),
+    starting_balance: a.starting_balance,
+    starting_balance_date: a.starting_balance_date,
+  }));
 
-  const [
-    kpis,
-    categoryRows,
-    upcomingSubscriptions,
-    upcomingTransactions,
-    accountBalances,
-    runways,
-  ] = await Promise.all([
+  // Une carte par compte affiché : un seul (compte filtré) ou tous (vue
+  // « Tous ») — jamais de calcul combiné, chaque compte garde son propre solde
+  // de départ et ses propres abonnements.
+  const comptesAffiches = selectedAccountId
+    ? comptes.filter((a) => a.id === selectedAccountId)
+    : comptes;
+
+  const [kpis, categoryRows, upcomingSubscriptions, upcomingTransactions, cartes] =
+    await Promise.all([
       getMonthKpis(today, selectedAccountId),
       getCategoryComparison(today, selectedAccountId),
       getUpcomingSubscriptions(today, horizonDays, selectedAccountId),
       getUpcomingTransactions(today, selectedAccountId),
-      selectedAccountId ? Promise.resolve(null) : getAccountBalances(),
       Promise.all(
-        accountsToShow.map(async (a) => ({
-          id: a.id,
-          name: a.name,
-          runway: await getAccountRunway(a.id),
+        comptesAffiches.map(async (compte) => ({
+          id: compte.id,
+          name: compte.name,
+          kind: compte.kind,
+          balance: await soldeDuCompte(compte, today),
+          // Un livret ne se vide pas tout seul : pas de trésorerie
+          // prévisionnelle, mais le mouvement du mois, qui est l'information
+          // utile là-bas (« épargné ce mois-ci »).
+          runway:
+            compte.kind === "checking"
+              ? await getAccountRunway(compte, today)
+              : null,
+          fluxMois:
+            compte.kind === "savings" ? await fluxDuMois(compte, today) : null,
         })),
       ),
     ]);
-
-  // Un solde et une barre d'horizon par compte affiché. Les valeurs sont
-  // exactement celles calculées plus haut : `accountBalances` en vue « Tous »,
-  // le solde du runway quand un seul compte est filtré — rien n'a changé côté
-  // calcul, on ne fait que les rassembler dans une même carte.
-  const cartes = runways.map((r) => ({
-    id: r.id,
-    name: r.name,
-    balance:
-      accountBalances?.find((a) => a.id === r.id)?.balance ??
-      r.runway.currentBalance,
-    runway: r.runway,
-  }));
 
   // Repères à poser sur la barre d'horizon d'un compte donné. Transactions et
   // prélèvements portent tous les deux leur compte : chaque repère tombe donc
@@ -412,7 +383,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
             label="Tous"
             active={!selectedAccountId}
           />
-          {(accounts ?? []).map((a) => (
+          {comptes.map((a) => (
             <AccountFilterLink
               key={a.id}
               href={`/dashboard?account=${a.id}`}
@@ -433,7 +404,8 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
           <div className="flex flex-col gap-7 lg:flex-row lg:items-center lg:gap-14">
             <div className="lg:shrink-0">
               <p className="text-sm font-medium text-muted">
-                Solde disponible{cartes.length > 1 ? ` · ${carte.name}` : ""}
+                {carte.kind === "savings" ? "Épargne" : "Solde disponible"}
+                {cartes.length > 1 ? ` · ${carte.name}` : ""}
               </p>
               <Montant
                 value={carte.balance}
@@ -441,30 +413,43 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
                 taille="hero"
                 className="mt-2 block"
               />
+
+              {carte.kind === "savings" && (
+                <p className="mt-3 text-sm font-medium text-muted">
+                  {carte.fluxMois && carte.fluxMois !== 0 ? (
+                    <>
+                      <Montant
+                        value={carte.fluxMois}
+                        ton={carte.fluxMois > 0 ? "income" : "expense"}
+                        taille="sm"
+                      />{" "}
+                      ce mois-ci
+                    </>
+                  ) : (
+                    "Aucun mouvement ce mois-ci"
+                  )}
+                </p>
+              )}
             </div>
 
-            <div className="lg:min-w-0 lg:flex-1">
-              <BarreHorizon
-                today={today}
-                daysRemaining={carte.runway.daysRemaining}
-                zeroDate={carte.runway.zeroDate}
-                horizonExceeded={carte.runway.horizonExceeded}
-                reperes={reperesDuCompte(carte.id)}
-              />
-            </div>
+            {carte.runway && (
+              <div className="lg:min-w-0 lg:flex-1">
+                <BarreHorizon
+                  today={today}
+                  daysRemaining={carte.runway.daysRemaining}
+                  zeroDate={carte.runway.zeroDate}
+                  horizonExceeded={carte.runway.horizonExceeded}
+                  reperes={reperesDuCompte(carte.id)}
+                />
+              </div>
+            )}
           </div>
         </section>
       ))}
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <StatTile label="Flux net (ce mois)" value={kpis.balanceOfMonth} ton="solde" />
         <StatTile label="Dépenses (ce mois)" value={kpis.totalExpenses} ton="expense" />
-        <StatTile
-          label="Épargné (ce mois)"
-          value={kpis.savingsOfMonth}
-          ton="neutral"
-          hint={`${formatCurrency(kpis.savingsAllTime)} depuis le début`}
-        />
         <StatTile
           label="Abonnements (mensualisé)"
           value={kpis.totalSubscriptions}

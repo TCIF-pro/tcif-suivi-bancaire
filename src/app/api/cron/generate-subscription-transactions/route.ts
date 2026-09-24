@@ -18,7 +18,7 @@ export async function GET(request: Request) {
 
   const { data: subscriptions } = await supabase
     .from("subscriptions")
-    .select("id, user_id, name, amount, frequency, next_billing_date, category_id, account_id, is_savings")
+    .select("id, user_id, name, amount, frequency, next_billing_date, category_id, account_id, is_savings, transfer_account_id")
     .eq("is_active", true)
     .lte("next_billing_date", today);
 
@@ -38,6 +38,10 @@ export async function GET(request: Request) {
             // comptée ni dans les totaux de dépenses ni dans le graphique
             // par catégorie.
             type: sub.is_savings ? "savings" : "expense",
+            // Compte d'arrivée : renseigné pour un virement d'épargne, nul
+            // sinon. Sans lui, l'argent quitterait le compte courant sans
+            // être recrédité sur le livret.
+            transfer_account_id: sub.is_savings ? sub.transfer_account_id : null,
             amount: sub.amount,
             occurred_on: dueDate,
             label: sub.name,

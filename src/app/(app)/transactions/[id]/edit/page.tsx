@@ -17,7 +17,9 @@ export default async function EditTransactionPage({
     await Promise.all([
       supabase
         .from("transactions")
-        .select("id, type, amount, occurred_on, label, category_id, account_id, notes")
+        .select(
+          "id, type, amount, occurred_on, label, category_id, account_id, notes, transfer_account_id",
+        )
         .eq("id", id)
         .single(),
       supabase
@@ -27,7 +29,7 @@ export default async function EditTransactionPage({
         .order("created_at", { ascending: true }),
       supabase
         .from("accounts")
-        .select("id, name")
+        .select("id, name, kind")
         .eq("is_archived", false)
         .order("created_at", { ascending: true }),
     ]);
@@ -67,6 +69,7 @@ export default async function EditTransactionPage({
           category_id: transaction.category_id,
           account_id: transaction.account_id,
           notes: transaction.notes,
+          transfer_account_id: transaction.transfer_account_id,
         }}
       />
     </div>

@@ -140,3 +140,18 @@ details.filtres > summary::-webkit-details-marker {
     content-visibility: visible;
   }
 }
+
+/* Champ « vers quel compte » du formulaire de transaction : visible seulement
+   quand « Épargne » est coché. Sans JavaScript, et surtout sans transformer
+   les champs en champs contrôlés — c'est ce qui permet au pré-remplissage par
+   URL (raccourci iOS) et aux libellés rapides de continuer à écrire
+   directement dans le formulaire. */
+form:not(:has(input[name="type"][value="savings"]:checked)) .champ-virement {
+  display: none;
+}
+
+/* Même principe pour l'abonnement : le compte d'arrivée ne s'affiche que si
+   la case « C'est de l'épargne » est cochée. */
+form:not(:has(input[name="is_savings"]:checked)) .champ-virement-abo {
+  display: none;
+}

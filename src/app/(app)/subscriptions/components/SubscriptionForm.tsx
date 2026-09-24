@@ -15,6 +15,7 @@ interface SubscriptionFormProps {
     notes?: string | null;
     is_active?: boolean;
     is_savings?: boolean;
+    transfer_account_id?: string | null;
   };
 }
 
@@ -174,6 +175,30 @@ export function SubscriptionForm({
           Ex. : virement automatique vers un livret. Le montant sort bien du
           compte courant, mais n&apos;est pas compté comme une dépense.
         </p>
+      </div>
+
+      {/* Visible seulement si la case ci-dessus est cochée (règle CSS
+          `.champ-virement-abo`, voir globals.css). */}
+      <div className="champ-virement-abo flex flex-col gap-1">
+        <label
+          htmlFor="transfer_account_id"
+          className="text-sm font-medium text-foreground"
+        >
+          Vers quel compte
+        </label>
+        <select
+          id="transfer_account_id"
+          name="transfer_account_id"
+          defaultValue={defaultValues?.transfer_account_id ?? ""}
+          className="rounded-xl border border-border bg-surface px-3.5 py-3 text-foreground outline-none focus:border-accent focus:ring-2 focus:ring-accent/25"
+        >
+          <option value="">Choisir un compte</option>
+          {accounts.map((a) => (
+            <option key={a.id} value={a.id}>
+              {a.name}
+            </option>
+          ))}
+        </select>
       </div>
 
       <button

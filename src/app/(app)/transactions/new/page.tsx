@@ -37,7 +37,7 @@ export default async function NewTransactionPage({
       .order("created_at", { ascending: true }),
     supabase
       .from("accounts")
-      .select("id, name")
+      .select("id, name, kind")
       .eq("is_archived", false)
       .order("created_at", { ascending: true }),
   ]);

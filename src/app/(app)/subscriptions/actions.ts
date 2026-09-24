@@ -8,6 +8,8 @@ function parseSubscriptionFormData(formData: FormData) {
   const categoryId = formData.get("category_id");
   const accountId = formData.get("account_id");
   const notes = formData.get("notes");
+  const transferAccountId = formData.get("transfer_account_id");
+  const isSavings = formData.get("is_savings") === "on";
 
   return {
     name: String(formData.get("name")),
@@ -18,9 +20,12 @@ function parseSubscriptionFormData(formData: FormData) {
     account_id: String(accountId),
     notes: notes ? String(notes) : null,
     is_active: formData.get("is_active") === "on",
-    // Source de vérité pour la tâche planifiée : c'est ce drapeau qui lui dit
-    // de générer une transaction de type "savings" plutôt que "expense".
-    is_savings: formData.get("is_savings") === "on",
+    // Source de vérité pour la tâche planifiée : ce drapeau lui dit de
+    // générer une transaction de type "savings" plutôt que "expense", et la
+    // destination lui dit sur quel compte la créditer.
+    is_savings: isSavings,
+    transfer_account_id:
+      isSavings && transferAccountId ? String(transferAccountId) : null,
   };
 }
 
