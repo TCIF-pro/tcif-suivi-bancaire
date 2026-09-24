@@ -52,6 +52,14 @@ export function SideNav({
       <div className="flex-1" />
 
       <Link
+        href="/support"
+        aria-current={pathname.startsWith("/support") ? "page" : undefined}
+        className="mb-3 flex h-10 items-center rounded-xl px-3 text-sm font-medium text-muted hover:bg-background hover:text-foreground"
+      >
+        Contacter le support
+      </Link>
+
+      <Link
         href="/transactions/new"
         className="flex h-12 items-center justify-center gap-2 rounded-xl bg-accent text-sm font-bold text-on-accent"
       >

@@ -107,3 +107,16 @@ export async function changerActivation(userId: string, activer: boolean) {
 
   revalidatePath("/admin");
 }
+
+// Marquer un message du support comme traité, ou le rouvrir.
+export async function changerTraitementMessage(messageId: string, traite: boolean) {
+  if (!(await exigerAdmin())) return;
+
+  const { error } = await createAdminClient()
+    .from("support_messages")
+    .update({ traite })
+    .eq("id", messageId);
+  if (error) console.error("[admin] message du support non mis à jour", error);
+
+  revalidatePath("/admin");
+}

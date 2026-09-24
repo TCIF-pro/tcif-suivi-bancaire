@@ -29,6 +29,7 @@ Si une erreur rouge apparaît : **s'arrêter**, ne pas passer à la suivante.
 - [ ] `0014_invoice_account.sql` — compte rattaché aux factures
 - [ ] `0015_ownership_checks.sql` — **sécurité** : une ligne ne peut référencer que
       des lignes de son propriétaire ; règle de déplacement du stockage renforcée
+- [ ] `0016_support_messages.sql` — messages du support
 
 ## 3. Variables d'environnement Vercel
 
@@ -42,6 +43,11 @@ avec les environnements où elle existe (Production, Preview, Development).
       prélèvement.
 - [ ] `SUPABASE_SERVICE_ROLE_KEY` est défini en Production, et **n'a pas** de
       préfixe `NEXT_PUBLIC_`.
+- [ ] **`RESEND_API_KEY`, `EMAIL_FROM` et `SUPPORT_EMAIL_TO`** sont définis en
+      Production ET en Preview (voir `.env.local.example`). En Production,
+      `EMAIL_FROM="TCIF <no-reply@notif.tcif-pro.fr>"` — l'adresse de test de
+      Resend n'écrirait qu'à toi. Sans ces variables, les messages du support
+      sont enregistrés mais tu n'es pas prévenu.
 - [ ] En **Production**, `NEXT_PUBLIC_SUPABASE_URL` pointe vers la base de **prod**.
 - [ ] En **Preview**, les variables Supabase **ne pointent pas** vers la base de
       prod — sinon chaque branche déployée pour essai écrirait dans tes vraies
@@ -58,15 +64,30 @@ avec les environnements où elle existe (Production, Preview, Development).
       ```
 
       Puis vérifier que la requête a bien touché **1 ligne**.
-- [ ] Authentication → URL Configuration : **Site URL** = l'adresse de l'app en
-      ligne, et dans **Redirect URLs** ajouter `https://<ton-domaine>/auth/confirm`.
-      Sans ça, le lien « mot de passe oublié » ne ramène pas dans l'app.
+- [ ] Authentication → URL Configuration :
+      - **Site URL** : `https://app.tcif-pro.fr`
+      - **Redirect URLs**, ajouter les deux adresses de l'app :
+        - `https://app.tcif-pro.fr/auth/confirm`
+        - `https://<À COMPLÉTER>.vercel.app/auth/confirm` ← ton adresse Vercel
+          réelle (Vercel → projet → Settings → Domains)
+
+      Sans elles, les liens des emails (« mot de passe oublié ») ne ramènent pas
+      dans l'app en ligne : Supabase refuse toute adresse de retour qu'il ne
+      connaît pas et renvoie vers la Site URL.
 - [ ] Authentication → Sign In / Providers : l'inscription publique est
       **toujours désactivée**. Les comptes se créent depuis `/admin`.
-- [ ] **Service d'envoi d'emails (SMTP)** : branché à l'étape 6.2. Sans lui,
-      Supabase n'envoie les emails de réinitialisation qu'aux membres de ton
-      équipe Supabase — tes utilisateurs ne recevraient rien. **Ne pas ouvrir
-      l'app à quelqu'un d'autre avant que ce point soit fait.**
+- [ ] **Envoi des emails de Supabase par Resend (SMTP)** : Project Settings →
+      Authentication → SMTP Settings → Enable Custom SMTP.
+      - Host `smtp.resend.com`, port `465`, username `resend`
+      - Password : **une clé Resend dédiée**, distincte de celle de l'app — on
+        peut ainsi en révoquer une sans couper l'autre
+      - Sender email `no-reply@notif.tcif-pro.fr`, sender name `TCIF`
+
+      Sans ce réglage, Supabase n'envoie les emails de réinitialisation qu'aux
+      membres de ton équipe Supabase : tes utilisateurs ne recevraient rien.
+      **Ne pas ouvrir l'app à quelqu'un d'autre avant que ce point soit fait**,
+      et que le domaine `notif.tcif-pro.fr` soit vérifié chez Resend (voir
+      `docs/domaine-et-emails.md`).
 
 ## 5. Après les migrations — à faire dans l'app, connecté à la prod
 
@@ -100,3 +121,9 @@ avec les environnements où elle existe (Production, Preview, Development).
       ```
 
       Un `500` voudrait dire que `CRON_SECRET` manque (retour au point 3).
+- [ ] Envoyer un message depuis **Contacter le support** : il doit arriver sur
+      `contact@tcif-pro.fr`, et apparaître dans `/admin` **sans** la mention
+      « notification non envoyée ».
+- [ ] « Mot de passe oublié » avec une adresse qui n'est PAS celle de ton compte
+      Supabase : l'email doit arriver, et son lien ramener sur
+      `app.tcif-pro.fr/changer-mot-de-passe`.

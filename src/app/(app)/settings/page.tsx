@@ -103,6 +103,14 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
         Réglages
       </h1>
 
+      <Link
+        href="/support"
+        className="flex max-w-md items-center justify-between rounded-2xl border border-border bg-surface px-5 py-4 text-sm font-semibold text-foreground shadow-card transition-colors hover:border-accent"
+      >
+        Contacter le support
+        <span aria-hidden="true">→</span>
+      </Link>
+
       {/* Visible pour le seul compte administrateur. Ce n'est qu'un raccourci :
           la page /admin revérifie elle-même le rôle, masquer ce lien ne
           protégerait rien. */}

@@ -77,6 +77,7 @@ et ne mélange pas deux fichiers dans la même requête.
    - [ ] `0013_dashboard_cards.sql`
    - [ ] `0014_invoice_account.sql`
    - [ ] `0015_ownership_checks.sql`
+   - [ ] `0016_support_messages.sql`
 
    Le jour de la mise en ligne, c'est `MISE-EN-PROD.md` qu'il faut suivre.
 
