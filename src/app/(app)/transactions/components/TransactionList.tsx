@@ -14,7 +14,14 @@ export interface TransactionRow {
   accountName: string | null;
 }
 
-export function TransactionList({ rows }: { rows: TransactionRow[] }) {
+export function TransactionList({
+  rows,
+  aVenir = false,
+}: {
+  rows: TransactionRow[];
+  /** Lignes datées dans le futur : elles portent un badge et sont estompées. */
+  aVenir?: boolean;
+}) {
   if (rows.length === 0) {
     return (
       <div className="rounded-2xl border border-dashed border-border px-5 py-10 text-center">
@@ -38,9 +45,16 @@ export function TransactionList({ rows }: { rows: TransactionRow[] }) {
         return (
           <li key={row.id} className="flex items-center gap-2 px-3 py-2 sm:px-4">
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-semibold text-foreground">
-                {row.label}
-              </p>
+              <div className="flex items-center gap-2">
+                <p className="truncate text-sm font-semibold text-foreground">
+                  {row.label}
+                </p>
+                {aVenir && (
+                  <span className="shrink-0 rounded-full bg-pending-bg px-2 py-0.5 text-[0.625rem] font-semibold text-pending">
+                    à venir
+                  </span>
+                )}
+              </div>
               <p className="mt-0.5 truncate text-xs font-medium text-muted">
                 {details.join(" · ")}
               </p>
@@ -53,7 +67,7 @@ export function TransactionList({ rows }: { rows: TransactionRow[] }) {
               value={row.amount}
               ton={row.type === "income" ? "income" : "expense"}
               taille="sm"
-              className="shrink-0"
+              className={`shrink-0 ${aVenir ? "opacity-60" : ""}`}
             />
 
             <div className="flex shrink-0 items-center">

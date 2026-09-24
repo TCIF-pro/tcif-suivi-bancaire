@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { todayDateString } from "@/lib/dates";
 import { relationName } from "@/lib/supabase/relations";
 import { TransactionFilters } from "./components/TransactionFilters";
 import { TransactionList, type TransactionRow } from "./components/TransactionList";
@@ -71,6 +72,14 @@ export default async function TransactionsPage({
     accountName: relationName(t.accounts),
   }));
 
+  // Une transaction datée dans le futur n'est pas encore comptée dans le
+  // solde : on la sort de la liste principale pour qu'on ne la confonde pas
+  // avec de l'argent déjà parti. Elle rejoindra la liste toute seule le jour
+  // de sa date, sans intervention.
+  const today = todayDateString();
+  const aVenir = rows.filter((r) => r.occurred_on > today);
+  const passees = rows.filter((r) => r.occurred_on <= today);
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
@@ -91,7 +100,22 @@ export default async function TransactionsPage({
         values={params}
       />
 
-      <TransactionList rows={rows} />
+      {aVenir.length > 0 && (
+        <section className="flex flex-col gap-3">
+          <div className="flex items-baseline gap-2">
+            <h2 className="font-display text-base font-bold text-foreground">
+              À venir
+            </h2>
+            <span className="text-sm font-medium text-muted">
+              {aVenir.length} transaction{aVenir.length > 1 ? "s" : ""} pas encore
+              comptée{aVenir.length > 1 ? "s" : ""} dans le solde
+            </span>
+          </div>
+          <TransactionList rows={aVenir} aVenir />
+        </section>
+      )}
+
+      <TransactionList rows={passees} />
     </div>
   );
 }

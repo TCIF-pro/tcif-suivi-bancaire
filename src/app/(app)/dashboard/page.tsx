@@ -27,6 +27,7 @@ async function getAccountBalances(): Promise<
   { id: string; name: string; balance: number }[]
 > {
   const supabase = await createClient();
+  const today = todayDateString();
 
   const { data: accounts } = await supabase
     .from("accounts")
@@ -40,7 +41,11 @@ async function getAccountBalances(): Promise<
         .from("transactions")
         .select("type, amount")
         .eq("account_id", a.id)
-        .gt("occurred_on", a.starting_balance_date);
+        .gt("occurred_on", a.starting_balance_date)
+        // Une transaction datée dans le futur n'entre pas encore dans le
+        // solde. Elle y entrera toute seule le jour dit : ce filtre est
+        // recalculé à chaque affichage, aucune tâche planifiée nécessaire.
+        .lte("occurred_on", today);
 
       return {
         id: a.id,
@@ -73,9 +78,19 @@ async function getAccountRunway(accountId: string) {
     .from("transactions")
     .select("type, amount")
     .eq("account_id", accountId)
-    .gt("occurred_on", startingBalanceDate);
+    .gt("occurred_on", startingBalanceDate)
+    .lte("occurred_on", today);
 
   const currentBalance = startingBalance + netAmount(transactionsSinceStart ?? []);
+
+  // Les transactions à venir ne comptent pas dans le solde, mais elles sont
+  // connues : la prévision les simule à leur date, au même titre que les
+  // prélèvements d'abonnement. Un salaire futur repousse donc la rupture.
+  const { data: futureTransactions } = await supabase
+    .from("transactions")
+    .select("id, type, amount, occurred_on")
+    .eq("account_id", accountId)
+    .gt("occurred_on", today);
 
   const { data: activeSubscriptions } = await supabase
     .from("subscriptions")
@@ -92,6 +107,14 @@ async function getAccountRunway(accountId: string) {
       frequency: s.frequency,
       nextBillingDate: s.next_billing_date,
     })),
+    // Montant SIGNÉ : en base, `amount` est toujours positif et c'est `type`
+    // qui porte le sens. Le moteur de prévision, lui, additionne — un revenu
+    // doit donc arriver en positif et une dépense en négatif.
+    (futureTransactions ?? []).map((t) => ({
+      id: t.id,
+      amount: t.type === "income" ? Number(t.amount) : -Number(t.amount),
+      date: t.occurred_on,
+    })),
   );
 }
 
@@ -100,11 +123,15 @@ async function getMonthKpis(today: string, accountId?: string) {
   const startCurrent = startOfMonthDateString(today);
   const startNext = addMonthsToDateString(startCurrent, 1);
 
+  // Même règle que le solde : les transactions à venir ne sont comptées dans
+  // aucun total du mois, sinon les dépenses affichées ne correspondraient plus
+  // à ce qui a réellement quitté le compte.
   let monthQuery = supabase
     .from("transactions")
     .select("type, amount")
     .gte("occurred_on", startCurrent)
-    .lt("occurred_on", startNext);
+    .lt("occurred_on", startNext)
+    .lte("occurred_on", today);
   if (accountId) monthQuery = monthQuery.eq("account_id", accountId);
   const { data: monthTransactions } = await monthQuery;
 
@@ -149,7 +176,8 @@ async function getCategoryComparison(
     .select("category_id, amount")
     .eq("type", "expense")
     .gte("occurred_on", startCurrent)
-    .lt("occurred_on", startNext);
+    .lt("occurred_on", startNext)
+    .lte("occurred_on", today);
   if (accountId) currentQuery = currentQuery.eq("account_id", accountId);
   const { data: currentExpenses } = await currentQuery;
 
@@ -207,6 +235,30 @@ async function getUpcomingSubscriptions(today: string, accountId?: string) {
   }));
 }
 
+// Transactions déjà saisies mais datées dans le futur, sur l'horizon affiché
+// par la barre (3 mois). Contrairement aux abonnements, elles portent leur
+// `account_id` : on peut donc poser leurs repères sur la bonne barre même en
+// vue « Tous ».
+async function getUpcomingTransactions(today: string, accountId?: string) {
+  const supabase = await createClient();
+
+  let query = supabase
+    .from("transactions")
+    .select("id, occurred_on, account_id")
+    .gt("occurred_on", today)
+    .lte("occurred_on", addDaysToDateString(today, 90))
+    .order("occurred_on", { ascending: true });
+  if (accountId) query = query.eq("account_id", accountId);
+
+  const { data } = await query;
+
+  return (data ?? []).map((t) => ({
+    id: t.id,
+    date: t.occurred_on,
+    accountId: t.account_id as string | null,
+  }));
+}
+
 function AccountFilterLink({
   href,
   label,
@@ -252,11 +304,18 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     ? (accounts ?? []).filter((a) => a.id === selectedAccountId)
     : (accounts ?? []);
 
-  const [kpis, categoryRows, upcomingSubscriptions, accountBalances, runways] =
-    await Promise.all([
+  const [
+    kpis,
+    categoryRows,
+    upcomingSubscriptions,
+    upcomingTransactions,
+    accountBalances,
+    runways,
+  ] = await Promise.all([
       getMonthKpis(today, selectedAccountId),
       getCategoryComparison(today, selectedAccountId),
       getUpcomingSubscriptions(today, selectedAccountId),
+      getUpcomingTransactions(today, selectedAccountId),
       selectedAccountId ? Promise.resolve(null) : getAccountBalances(),
       Promise.all(
         accountsToShow.map(async (a) => ({
@@ -280,14 +339,25 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     runway: r.runway,
   }));
 
-  // Les prélèvements à venir ne sont rattachés à aucun compte dans la requête
-  // actuelle : on ne pose donc des repères sur la barre que lorsqu'un seul
-  // compte est affiché, sinon on afficherait les échéances d'un compte sur la
-  // barre d'un autre. L'étape 3.2 réglera ça avec le sélecteur d'horizon.
-  const reperes =
-    cartes.length === 1
-      ? upcomingSubscriptions.map((s) => ({ id: s.id, date: s.nextBillingDate }))
-      : [];
+  // Repères à poser sur la barre d'horizon d'un compte donné.
+  //
+  // Les transactions portent leur `account_id`, on les filtre donc proprement.
+  // Les prélèvements d'abonnement, eux, ne sont pas rattachés à leur compte
+  // dans la requête actuelle : on ne les ajoute que lorsqu'une seule barre est
+  // affichée, sinon on poserait les échéances d'un compte sur la barre d'un
+  // autre. L'étape 3.2 réglera ce point avec le sélecteur d'horizon.
+  function reperesDuCompte(accountId: string) {
+    const transactions = upcomingTransactions
+      .filter((t) => t.accountId === accountId)
+      .map((t) => ({ id: t.id, date: t.date }));
+
+    const abonnements =
+      cartes.length === 1
+        ? upcomingSubscriptions.map((s) => ({ id: s.id, date: s.nextBillingDate }))
+        : [];
+
+    return [...transactions, ...abonnements];
+  }
 
   return (
     <div className="flex flex-col gap-5">
@@ -338,7 +408,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
                 daysRemaining={carte.runway.daysRemaining}
                 zeroDate={carte.runway.zeroDate}
                 horizonExceeded={carte.runway.horizonExceeded}
-                reperes={reperes}
+                reperes={reperesDuCompte(carte.id)}
               />
             </div>
           </div>
