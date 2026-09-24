@@ -1,5 +1,6 @@
 "use server";
 
+import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 
@@ -188,4 +189,121 @@ export async function setAccountArchived(accountId: string, archived: boolean) {
   // Un compte masqué disparaît des sélecteurs, des listes et des totaux :
   // toutes les pages sont concernées, pas seulement les réglages.
   revalidatePath("/", "layout");
+}
+
+// ---------------------------------------------------------------------------
+// Catégories
+//
+// Quatre tables pointent vers une catégorie : transactions, subscriptions,
+// invoices et quick_labels. Aucune n'a de `on delete cascade` — c'était voulu
+// dès la migration 0001, pour qu'une suppression ne puisse pas effacer en
+// silence le classement de tout un historique. On ne contourne pas cette
+// sécurité : on réaffecte d'abord, on supprime ensuite.
+//
+// Les noms sont uniques par utilisateur, sans tenir compte de la casse
+// (index `categories_user_name_uniq`). Une collision remonte un message
+// lisible plutôt qu'un échec muet.
+// ---------------------------------------------------------------------------
+
+const TABLES_AVEC_CATEGORIE = [
+  "transactions",
+  "subscriptions",
+  "invoices",
+  "quick_labels",
+] as const;
+
+function retourReglages(erreur?: string): never {
+  redirect(erreur ? `/settings?erreur=${erreur}` : "/settings");
+}
+
+export async function createCategory(formData: FormData) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return;
+
+  const name = String(formData.get("name") ?? "").trim();
+  if (!name) retourReglages("categorie-vide");
+
+  const { error } = await supabase
+    .from("categories")
+    .insert({ user_id: user.id, name });
+
+  if (error) {
+    console.error("[categories] création refusée", error);
+    retourReglages("categorie-existe");
+  }
+
+  revalidatePath("/", "layout");
+  retourReglages();
+}
+
+export async function renameCategory(id: string, formData: FormData) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return;
+
+  const name = String(formData.get("name") ?? "").trim();
+  if (!name) retourReglages("categorie-vide");
+
+  const { error } = await supabase
+    .from("categories")
+    .update({ name, updated_at: new Date().toISOString() })
+    .eq("id", id)
+    .eq("user_id", user.id);
+
+  if (error) {
+    console.error("[categories] renommage refusé", error);
+    retourReglages("categorie-existe");
+  }
+
+  revalidatePath("/", "layout");
+  retourReglages();
+}
+
+export async function deleteCategory(id: string, formData: FormData) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return;
+
+  // Chaîne vide = « aucune catégorie » : les éléments concernés se retrouvent
+  // sans classement, ce qui reste préférable à un refus de suppression.
+  const brut = formData.get("reassign_to");
+  const reassignTo = brut ? String(brut) : null;
+
+  if (reassignTo === id) retourReglages("categorie-elle-meme");
+
+  // Réaffectation AVANT suppression : sans ça, la base refuse de supprimer
+  // une catégorie encore référencée.
+  for (const table of TABLES_AVEC_CATEGORIE) {
+    const { error } = await supabase
+      .from(table)
+      .update({ category_id: reassignTo })
+      .eq("category_id", id)
+      .eq("user_id", user.id);
+
+    if (error) {
+      console.error(`[categories] réaffectation impossible dans ${table}`, error);
+      retourReglages("categorie-reaffectation");
+    }
+  }
+
+  const { error } = await supabase
+    .from("categories")
+    .delete()
+    .eq("id", id)
+    .eq("user_id", user.id);
+
+  if (error) {
+    console.error("[categories] suppression refusée", error);
+    retourReglages("categorie-suppression");
+  }
+
+  revalidatePath("/", "layout");
+  retourReglages();
 }

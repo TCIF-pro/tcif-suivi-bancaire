@@ -7,8 +7,26 @@ import {
   setAccountArchived,
 } from "./actions";
 import { QuickLabelsSection } from "./components/QuickLabelsSection";
+import { CategoriesSection } from "./components/CategoriesSection";
 
-export default async function SettingsPage() {
+const MESSAGES_ERREUR: Record<string, string> = {
+  "categorie-vide": "Le nom ne peut pas être vide.",
+  "categorie-existe":
+    "Tu as déjà une catégorie de ce nom. Les noms doivent être différents, majuscules comprises.",
+  "categorie-elle-meme":
+    "Impossible de réaffecter une catégorie à elle-même : choisis-en une autre.",
+  "categorie-reaffectation":
+    "La réaffectation a échoué, rien n'a été supprimé. Retente, et préviens-moi si ça se reproduit.",
+  "categorie-suppression":
+    "La suppression a échoué. Des éléments utilisent peut-être encore cette catégorie.",
+};
+
+interface SettingsPageProps {
+  searchParams: Promise<{ erreur?: string }>;
+}
+
+export default async function SettingsPage({ searchParams }: SettingsPageProps) {
+  const { erreur } = await searchParams;
   const supabase = await createClient();
   const [
     { data: settings },
@@ -34,6 +52,24 @@ export default async function SettingsPage() {
       .order("position", { ascending: true }),
   ]);
 
+  // Combien d'éléments utilisent chaque catégorie, dans les quatre tables qui
+  // la référencent. On ne remonte que la colonne `category_id` : c'est assez
+  // pour compter, et ça reste léger même avec beaucoup de lignes.
+  const [tx, subs, inv, labels] = await Promise.all([
+    supabase.from("transactions").select("category_id"),
+    supabase.from("subscriptions").select("category_id"),
+    supabase.from("invoices").select("category_id"),
+    supabase.from("quick_labels").select("category_id"),
+  ]);
+
+  const usages = new Map<string, number>();
+  for (const lot of [tx.data, subs.data, inv.data, labels.data]) {
+    for (const ligne of lot ?? []) {
+      if (!ligne.category_id) continue;
+      usages.set(ligne.category_id, (usages.get(ligne.category_id) ?? 0) + 1);
+    }
+  }
+
   const comptesVisibles = (accounts ?? []).filter((a) => !a.is_archived);
   const comptesMasques = (accounts ?? []).filter((a) => a.is_archived);
 
@@ -48,6 +84,15 @@ export default async function SettingsPage() {
       <h1 className="font-display text-2xl font-bold tracking-tight text-foreground">
         Réglages
       </h1>
+
+      {erreur && (
+        <p
+          role="alert"
+          className="max-w-2xl rounded-xl bg-danger-bg px-4 py-3 text-sm font-medium text-danger"
+        >
+          {MESSAGES_ERREUR[erreur] ?? "L'opération a échoué."}
+        </p>
+      )}
 
       <section className="max-w-md rounded-2xl border border-border bg-surface p-5 shadow-card sm:p-6">
         <h2 className="font-display text-base font-bold text-foreground">
@@ -159,6 +204,14 @@ export default async function SettingsPage() {
           )}
         </div>
       </section>
+
+      <CategoriesSection
+        categories={(categories ?? []).map((c) => ({
+          id: c.id,
+          name: c.name,
+          usages: usages.get(c.id) ?? 0,
+        }))}
+      />
 
       <QuickLabelsSection
         libelles={(quickLabels ?? []).map((q) => ({
