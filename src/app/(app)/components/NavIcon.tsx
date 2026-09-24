@@ -20,10 +20,15 @@ const CHEMINS: Record<NavIconName, React.ReactNode> = {
       <path d="M9 13h6M9 17h4" />
     </>
   ),
+  // Des curseurs de réglage, PAS une roue dentée à rayons : celle-ci se
+  // confondait avec l'icône soleil du bouton mode clair, juste à côté dans
+  // l'en-tête.
   settings: (
     <>
-      <circle cx="12" cy="12" r="3" />
-      <path d="M12 3v2m0 14v2M3 12h2m14 0h2M5.6 5.6l1.4 1.4m10 10 1.4 1.4m0-12.8-1.4 1.4m-10 10-1.4 1.4" />
+      <path d="M4 7h8M16 7h4" />
+      <circle cx="14" cy="7" r="2" />
+      <path d="M4 17h4M12 17h8" />
+      <circle cx="10" cy="17" r="2" />
     </>
   ),
 };

@@ -66,9 +66,9 @@ export default async function AppLayout({
           </div>
         </header>
 
-        {/* `pb-28` sur téléphone : la barre du bas est en `fixed`, sans cette
+        {/* `pb-36` sur téléphone : la barre du bas est en `fixed`, sans cette
             marge le dernier élément de chaque page passerait dessous. */}
-        <main className="flex-1 px-4 pb-28 pt-5 md:px-8 md:pb-10 md:pt-8">
+        <main className="flex-1 px-4 pb-36 pt-5 md:px-8 md:pb-10 md:pt-8">
           <div className="mx-auto w-full max-w-5xl">{children}</div>
         </main>
 
