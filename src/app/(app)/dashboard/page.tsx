@@ -17,7 +17,7 @@ import {
 } from "@/lib/accounts/balance";
 import { Montant } from "../components/Montant";
 import { StatTile } from "./components/BalanceCard";
-import { BarreHorizon } from "./components/BarreHorizon";
+import { EtatTresorerie } from "./components/EtatTresorerie";
 import { CategoryChart, type CategoryComparisonRow } from "./components/CategoryChart";
 import { UpcomingSubscriptions } from "./components/UpcomingSubscriptions";
 
@@ -246,30 +246,6 @@ async function getUpcomingSubscriptions(
   }));
 }
 
-// Transactions déjà saisies mais datées dans le futur, sur l'horizon affiché
-// par la barre (3 mois). Contrairement aux abonnements, elles portent leur
-// `account_id` : on peut donc poser leurs repères sur la bonne barre même en
-// vue « Tous ».
-async function getUpcomingTransactions(today: string, accountId?: string) {
-  const supabase = await createClient();
-
-  let query = supabase
-    .from("transactions")
-    .select("id, occurred_on, account_id")
-    .gt("occurred_on", today)
-    .lte("occurred_on", addDaysToDateString(today, 90))
-    .order("occurred_on", { ascending: true });
-  if (accountId) query = query.eq("account_id", accountId);
-
-  const { data } = await query;
-
-  return (data ?? []).map((t) => ({
-    id: t.id,
-    date: t.occurred_on,
-    accountId: t.account_id as string | null,
-  }));
-}
-
 function AccountFilterLink({
   href,
   label,
@@ -331,12 +307,10 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     ? comptes.filter((a) => a.id === selectedAccountId)
     : comptes;
 
-  const [kpis, categoryRows, upcomingSubscriptions, upcomingTransactions, cartes] =
-    await Promise.all([
+  const [kpis, categoryRows, upcomingSubscriptions, cartes] = await Promise.all([
       getMonthKpis(today, selectedAccountId),
       getCategoryComparison(today, selectedAccountId),
       getUpcomingSubscriptions(today, horizonDays, selectedAccountId),
-      getUpcomingTransactions(today, selectedAccountId),
       Promise.all(
         comptesAffiches.map(async (compte) => ({
           id: compte.id,
@@ -355,21 +329,6 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         })),
       ),
     ]);
-
-  // Repères à poser sur la barre d'horizon d'un compte donné. Transactions et
-  // prélèvements portent tous les deux leur compte : chaque repère tombe donc
-  // sur la bonne barre, y compris en vue « Tous ».
-  function reperesDuCompte(accountId: string) {
-    const transactions = upcomingTransactions
-      .filter((t) => t.accountId === accountId)
-      .map((t) => ({ id: t.id, date: t.date }));
-
-    const abonnements = upcomingSubscriptions
-      .filter((s) => s.accountId === accountId)
-      .map((s) => ({ id: s.id, date: s.nextBillingDate }));
-
-    return [...transactions, ...abonnements];
-  }
 
   return (
     <div className="flex flex-col gap-5">
@@ -399,9 +358,9 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
           key={carte.id}
           className="rounded-2xl border border-border bg-surface p-5 shadow-card sm:p-6"
         >
-          {/* Sur grand écran, la barre passe à côté du solde plutôt qu'en
-              dessous : c'est là qu'elle est la plus lisible. */}
-          <div className="flex flex-col gap-7 lg:flex-row lg:items-center lg:gap-14">
+          {/* Sur grand écran, l'état de trésorerie passe à côté du solde
+              plutôt qu'en dessous : la largeur est disponible. */}
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between lg:gap-10">
             <div className="lg:shrink-0">
               <p className="text-sm font-medium text-muted">
                 {carte.kind === "savings" ? "Épargne" : "Solde disponible"}
@@ -434,12 +393,11 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 
             {carte.runway && (
               <div className="lg:min-w-0 lg:flex-1">
-                <BarreHorizon
-                  today={today}
+                <EtatTresorerie
+                  balance={carte.balance}
                   daysRemaining={carte.runway.daysRemaining}
                   zeroDate={carte.runway.zeroDate}
                   horizonExceeded={carte.runway.horizonExceeded}
-                  reperes={reperesDuCompte(carte.id)}
                 />
               </div>
             )}
