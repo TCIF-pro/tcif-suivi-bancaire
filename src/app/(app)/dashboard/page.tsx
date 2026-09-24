@@ -322,6 +322,14 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   const afficheCategories = settings?.show_category_chart !== false;
   const afficheProchains = settings?.show_upcoming !== false;
 
+  // Les cartes de chiffres portent sur le compte filtré, ou sur tous les
+  // comptes visibles. Sans le dire, « Dépenses (ce mois) » est ambigu : on ne
+  // sait pas si le chiffre couvre un compte ou l'ensemble.
+  const nomDuCompteFiltre = selectedAccountId
+    ? (accounts ?? []).find((a) => a.id === selectedAccountId)?.name
+    : undefined;
+  const perimetre = nomDuCompteFiltre ?? "tous comptes";
+
   const comptes: CompteBrut[] = (accounts ?? []).map((a) => ({
     id: a.id,
     name: a.name,
@@ -437,12 +445,21 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 
       {afficheChiffres && (
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <StatTile label="Flux net (ce mois)" value={kpis.balanceOfMonth} ton="solde" />
-        <StatTile label="Dépenses (ce mois)" value={kpis.totalExpenses} ton="expense" />
         <StatTile
-          label="Abonnements (mensualisé)"
+          label={`Flux net du mois · ${perimetre}`}
+          value={kpis.balanceOfMonth}
+          ton="solde"
+        />
+        <StatTile
+          label={`Dépenses du mois · ${perimetre}`}
+          value={kpis.totalExpenses}
+          ton="expense"
+        />
+        <StatTile
+          label={`Abonnements · ${perimetre}`}
           value={kpis.totalSubscriptions}
           ton="neutral"
+          hint="Coût mensualisé, annuels ramenés au mois"
         />
       </div>
       )}
