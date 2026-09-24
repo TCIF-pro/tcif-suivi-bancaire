@@ -74,6 +74,22 @@ async function fluxDuMois(compte: CompteBrut, today: string): Promise<number> {
   return netPourCompte(data ?? [], compte.id);
 }
 
+// Flux net du mois d'UN compte courant : ses revenus moins ses dépenses, du 1er
+// du mois à aujourd'hui. Les virements d'épargne en sont exclus (voir
+// `fluxNet`) : mettre de l'argent sur son livret n'est pas une dépense.
+async function fluxNetDuCompte(compte: CompteBrut, today: string): Promise<number> {
+  const supabase = await createClient();
+
+  const { data } = await supabase
+    .from("transactions")
+    .select("type, amount")
+    .eq("account_id", compte.id)
+    .gte("occurred_on", startOfMonthDateString(today))
+    .lte("occurred_on", today);
+
+  return fluxNet(data ?? []);
+}
+
 // Trésorerie prévisionnelle d'UN compte courant : son solde actuel, ses
 // abonnements actifs, et ses transactions déjà saisies mais datées dans le
 // futur. Un calcul indépendant par compte, jamais de fusion entre comptes.
@@ -143,10 +159,6 @@ async function getMonthKpis(today: string, accountId?: string) {
     : monthQuery.or(filtreComptesVisibles(comptesVisibles));
   const { data: monthTransactions } = await monthQuery;
 
-  // Les virements d'épargne sont exclus : déplacer de l'argent d'un de ses
-  // comptes vers un autre n'est ni un revenu ni une dépense. C'est la carte
-  // Épargne qui rend compte de ces mouvements-là.
-  const balanceOfMonth = fluxNet(monthTransactions ?? []);
 
   const totalExpenses = (monthTransactions ?? [])
     .filter((t) => t.type === "expense")
@@ -166,7 +178,7 @@ async function getMonthKpis(today: string, accountId?: string) {
     0,
   );
 
-  return { balanceOfMonth, totalExpenses, totalSubscriptions };
+  return { totalExpenses, totalSubscriptions };
 }
 
 async function getCategoryComparison(
@@ -362,8 +374,13 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
             compte.kind === "checking"
               ? await getAccountRunway(compte, today)
               : null,
+          // Le mouvement du mois, sur chaque carte : revenus moins dépenses
+          // pour un compte courant, ce qui est entré moins ce qui est ressorti
+          // pour un livret.
           fluxMois:
-            compte.kind === "savings" ? await fluxDuMois(compte, today) : null,
+            compte.kind === "savings"
+              ? await fluxDuMois(compte, today)
+              : await fluxNetDuCompte(compte, today),
         })),
       ),
     ]);
@@ -411,22 +428,22 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
                 className="mt-2 block"
               />
 
-              {carte.kind === "savings" && (
-                <p className="mt-3 text-sm font-medium text-muted">
-                  {carte.fluxMois && carte.fluxMois !== 0 ? (
-                    <>
-                      <Montant
-                        value={carte.fluxMois}
-                        ton={carte.fluxMois > 0 ? "income" : "expense"}
-                        taille="sm"
-                      />{" "}
-                      ce mois-ci
-                    </>
-                  ) : (
-                    "Aucun mouvement ce mois-ci"
-                  )}
-                </p>
-              )}
+              <p className="mt-3 text-sm font-medium text-muted">
+                {carte.fluxMois !== 0 ? (
+                  <>
+                    <Montant
+                      value={carte.fluxMois}
+                      ton={carte.fluxMois > 0 ? "income" : "expense"}
+                      taille="sm"
+                    />{" "}
+                    {carte.kind === "savings"
+                      ? "ce mois-ci"
+                      : "ce mois-ci, revenus moins dépenses"}
+                  </>
+                ) : (
+                  "Aucun mouvement ce mois-ci"
+                )}
+              </p>
             </div>
 
             {carte.runway && (
@@ -444,12 +461,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
       ))}
 
       {afficheChiffres && (
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <StatTile
-          label={`Flux net du mois · ${perimetre}`}
-          value={kpis.balanceOfMonth}
-          ton="solde"
-        />
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <StatTile
           label={`Dépenses du mois · ${perimetre}`}
           value={kpis.totalExpenses}

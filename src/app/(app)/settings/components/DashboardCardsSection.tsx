@@ -10,7 +10,7 @@ const BLOCS = [
   {
     nom: "show_month_stats",
     titre: "Chiffres du mois",
-    detail: "Flux net, dépenses et abonnements mensualisés.",
+    detail: "Dépenses du mois et abonnements mensualisés.",
   },
   {
     nom: "show_category_chart",
