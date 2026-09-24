@@ -303,13 +303,24 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
       .select("id, name, kind, starting_balance, starting_balance_date")
       .eq("is_archived", false)
       .order("created_at", { ascending: true }),
-    supabase.from("user_settings").select("upcoming_horizon_days").single(),
+    supabase
+      .from("user_settings")
+      .select(
+        "upcoming_horizon_days, show_month_stats, show_category_chart, show_upcoming",
+      )
+      .single(),
   ]);
 
   // Horizon des prochains prélèvements, mémorisé en base (migration 0009).
   // Une valeur inattendue retombe sur 7 jours plutôt que de casser l'affichage.
   const horizonBrut = Number(settings?.upcoming_horizon_days);
   const horizonDays = [7, 14, 30].includes(horizonBrut) ? horizonBrut : 7;
+
+  // Blocs affichés (migration 0013). `!== false` : tant que la migration n'est
+  // pas appliquée, la colonne vaut `undefined` et le bloc reste visible.
+  const afficheChiffres = settings?.show_month_stats !== false;
+  const afficheCategories = settings?.show_category_chart !== false;
+  const afficheProchains = settings?.show_upcoming !== false;
 
   const comptes: CompteBrut[] = (accounts ?? []).map((a) => ({
     id: a.id,
@@ -424,6 +435,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         </section>
       ))}
 
+      {afficheChiffres && (
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <StatTile label="Flux net (ce mois)" value={kpis.balanceOfMonth} ton="solde" />
         <StatTile label="Dépenses (ce mois)" value={kpis.totalExpenses} ton="expense" />
@@ -433,8 +445,10 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
           ton="neutral"
         />
       </div>
+      )}
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
+        {afficheCategories && (
         <section className="rounded-2xl border border-border bg-surface p-5 shadow-card sm:p-6 lg:col-span-3">
           <h2 className="font-display text-base font-bold text-foreground">
             Dépenses par catégorie
@@ -446,7 +460,9 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
             <CategoryChart rows={categoryRows} />
           </div>
         </section>
+        )}
 
+        {afficheProchains && (
         <section className="rounded-2xl border border-border bg-surface p-5 shadow-card sm:p-6 lg:col-span-2">
           <h2 className="font-display text-base font-bold text-foreground">
             Prochains prélèvements
@@ -481,6 +497,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
             />
           </div>
         </section>
+        )}
       </div>
     </div>
   );

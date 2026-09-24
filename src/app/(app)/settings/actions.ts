@@ -307,3 +307,28 @@ export async function deleteCategory(id: string, formData: FormData) {
   revalidatePath("/", "layout");
   retourReglages();
 }
+
+// Blocs affichés sur le tableau de bord (migration 0013).
+//
+// Une case non cochée n'est pas envoyée par le navigateur : l'absence d'une
+// clé vaut donc « masqué ». C'est pour ça que les trois valeurs sont écrites
+// à chaque enregistrement plutôt que seulement celles reçues.
+export async function updateDashboardCards(formData: FormData) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return;
+
+  await supabase
+    .from("user_settings")
+    .update({
+      show_month_stats: formData.get("show_month_stats") === "on",
+      show_category_chart: formData.get("show_category_chart") === "on",
+      show_upcoming: formData.get("show_upcoming") === "on",
+    })
+    .eq("user_id", user.id);
+
+  revalidatePath("/settings");
+  revalidatePath("/dashboard");
+}

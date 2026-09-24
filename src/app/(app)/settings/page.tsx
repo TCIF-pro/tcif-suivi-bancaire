@@ -8,6 +8,7 @@ import {
 } from "./actions";
 import { QuickLabelsSection } from "./components/QuickLabelsSection";
 import { CategoriesSection } from "./components/CategoriesSection";
+import { DashboardCardsSection } from "./components/DashboardCardsSection";
 
 const MESSAGES_ERREUR: Record<string, string> = {
   "categorie-vide": "Le nom ne peut pas être vide.",
@@ -34,7 +35,12 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
     { data: categories },
     { data: quickLabels },
   ] = await Promise.all([
-    supabase.from("user_settings").select("theme, accent_color").single(),
+    supabase
+      .from("user_settings")
+      .select(
+        "theme, accent_color, show_month_stats, show_category_chart, show_upcoming",
+      )
+      .single(),
     // Contrairement aux autres pages, les réglages listent AUSSI les comptes
     // masqués : c'est le seul endroit d'où on peut les réafficher.
     supabase
@@ -204,6 +210,17 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
           )}
         </div>
       </section>
+
+      <DashboardCardsSection
+        valeurs={{
+          // `!== false` et non `=== true` : tant que la migration 0013 n'est
+          // pas appliquée, la colonne est absente et vaut `undefined`. Le bloc
+          // doit alors rester visible, pas disparaître.
+          showMonthStats: settings?.show_month_stats !== false,
+          showCategoryChart: settings?.show_category_chart !== false,
+          showUpcoming: settings?.show_upcoming !== false,
+        }}
+      />
 
       <CategoriesSection
         categories={(categories ?? []).map((c) => ({
