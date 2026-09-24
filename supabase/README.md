@@ -22,7 +22,7 @@ Puisque l'inscription publique est désactivée, il faut créer ton compte manue
 2. Renseigne ton email et un mot de passe.
 3. Coche **Auto Confirm User** pour ne pas avoir à valider par email.
 
-Ça déclenche automatiquement le trigger de la migration `0002_seed_categories.sql` (une fois appliquée) qui crée tes 5 catégories par défaut.
+Ça déclenche automatiquement le trigger de seed (migrations `0002` puis `0012`, une fois appliquées) qui crée les catégories par défaut — Pro, Perso, Abonnements — et deux libellés rapides, Loyer et Salaire.
 
 ## 4. Appliquer les migrations
 
@@ -36,12 +36,12 @@ Dans le dashboard Supabase : **SQL Editor > New query**. Colle et exécute, **da
 6. `migrations/0006_fix_subscription_billing_unique_index.sql`
 7. `migrations/0007_accounts.sql`
 
-Si tu as créé ton compte (étape 3) **avant** d'appliquer `0002`, le trigger ne se sera pas déclenché rétroactivement : dans ce cas, insère manuellement les 5 catégories via le **Table Editor** (table `categories`), ou repasse par SQL Editor avec une requête d'insertion équivalente. `0004` gère ce cas tout seul (il fait un backfill), pas d'action manuelle nécessaire pour ta ligne de réglages.
+Si tu as créé ton compte (étape 3) **avant** d'appliquer `0002`, le trigger ne se sera pas déclenché rétroactivement : dans ce cas, insère manuellement les catégories via le **Table Editor** (table `categories`), ou repasse par SQL Editor avec une requête d'insertion équivalente. `0004` gère ce cas tout seul (il fait un backfill), pas d'action manuelle nécessaire pour ta ligne de réglages.
 
 ## 5. Vérifier
 
 - **Table Editor** : les tables `categories`, `invoices`, `subscriptions`, `transactions`, `user_settings` existent, avec un bouclier "RLS enabled" affiché sur chacune.
-- Table `categories` : 5 lignes (Pro, Perso, Abonnements, Rénovation, Autre) associées à ton `user_id`.
+- Table `categories` : 3 lignes (Pro, Perso, Abonnements) associées à ton `user_id`.
 - Table `user_settings` : 1 ligne pour ton compte (solde 0, date du jour, thème "light").
 - **Storage** : un bucket `invoices` existe (non public).
 
