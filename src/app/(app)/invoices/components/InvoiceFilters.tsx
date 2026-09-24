@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 interface InvoiceFiltersProps {
   values: {
     doc_type?: string;
@@ -53,12 +55,12 @@ export function InvoiceFilters({ values }: InvoiceFiltersProps) {
       >
         Filtrer
       </button>
-      <a
-        href="/invoices"
-        className="text-sm text-muted hover:text-accent"
-      >
+      {/* <Link> et non <a> : une balise <a> vers une page interne provoque un
+          rechargement complet de l'application au lieu d'une navigation
+          côté client. */}
+      <Link href="/invoices" className="text-sm font-medium text-muted hover:text-foreground">
         Réinitialiser
-      </a>
+      </Link>
     </form>
   );
 }

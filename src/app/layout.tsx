@@ -60,8 +60,11 @@ async function getAppearance(): Promise<{
   } = await supabase.auth.getUser();
 
   if (!user) {
-    // page /login : pas encore de préférence rattachée à un compte
-    return { theme: "light", accentColorId: "brass" };
+    // Page /login : aucune préférence rattachée à un compte, puisqu'il n'y a
+    // pas encore de compte. On sert le thème sombre plutôt que le clair —
+    // c'est celui de l'app une fois connecté, l'enchaînement est donc sans
+    // à-coup, et un écran sombre est plus confortable de nuit sur téléphone.
+    return { theme: "dark", accentColorId: "brass" };
   }
 
   const { data: settings } = await supabase
