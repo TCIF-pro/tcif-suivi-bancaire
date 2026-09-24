@@ -1,9 +1,12 @@
 import { todayDateString } from "@/lib/dates";
+import { LibellesRapides, type LibelleRapide } from "./LibellesRapides";
 
 interface TransactionFormProps {
   action: (formData: FormData) => void;
   categories: { id: string; name: string }[];
   accounts: { id: string; name: string }[];
+  /** Boutons de pré-remplissage. Vide = la section n'apparaît pas. */
+  libellesRapides?: LibelleRapide[];
   submitLabel: string;
   defaultValues?: {
     type?: string;
@@ -22,6 +25,7 @@ export function TransactionForm({
   action,
   categories,
   accounts,
+  libellesRapides = [],
   submitLabel,
   defaultValues,
 }: TransactionFormProps) {
@@ -30,6 +34,8 @@ export function TransactionForm({
       action={action}
       className="mx-auto flex w-full max-w-xl flex-col gap-4 rounded-2xl border border-border bg-surface p-5 shadow-card sm:p-7"
     >
+      <LibellesRapides libelles={libellesRapides} />
+
       <div className="flex gap-6">
         <label className="flex items-center gap-2 text-sm text-foreground">
           <input

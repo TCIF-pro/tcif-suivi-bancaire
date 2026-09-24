@@ -60,3 +60,85 @@ export async function updateAccentColor(formData: FormData) {
   // même réglage.
   revalidatePath("/", "layout");
 }
+
+// ---------------------------------------------------------------------------
+// Libellés rapides (table quick_labels, migration 0008)
+//
+// `eq("user_id", user.id)` sur chaque écriture fait doublon avec la RLS, qui
+// bloque déjà tout accès aux lignes d'un autre compte. C'est volontaire : si
+// une policy était un jour modifiée par erreur, ces filtres restent une
+// deuxième barrière. Même approche que les actions ci-dessus.
+// ---------------------------------------------------------------------------
+
+export async function createQuickLabel(formData: FormData) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return;
+
+  const label = String(formData.get("label")).trim();
+  if (!label) return;
+
+  const type = formData.get("type") === "income" ? "income" : "expense";
+  const categoryId = formData.get("category_id")
+    ? String(formData.get("category_id"))
+    : null;
+
+  // Le nouveau libellé se place en fin de liste.
+  const { data: dernier } = await supabase
+    .from("quick_labels")
+    .select("position")
+    .order("position", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  await supabase.from("quick_labels").insert({
+    user_id: user.id,
+    label,
+    type,
+    category_id: categoryId,
+    position: (dernier?.position ?? 0) + 1,
+  });
+
+  revalidatePath("/settings");
+  revalidatePath("/transactions/new");
+}
+
+export async function updateQuickLabel(id: string, formData: FormData) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return;
+
+  const label = String(formData.get("label")).trim();
+  if (!label) return;
+
+  const type = formData.get("type") === "income" ? "income" : "expense";
+  const categoryId = formData.get("category_id")
+    ? String(formData.get("category_id"))
+    : null;
+
+  await supabase
+    .from("quick_labels")
+    .update({ label, type, category_id: categoryId, updated_at: new Date().toISOString() })
+    .eq("id", id)
+    .eq("user_id", user.id);
+
+  revalidatePath("/settings");
+  revalidatePath("/transactions/new");
+}
+
+export async function deleteQuickLabel(id: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return;
+
+  await supabase.from("quick_labels").delete().eq("id", id).eq("user_id", user.id);
+
+  revalidatePath("/settings");
+  revalidatePath("/transactions/new");
+}

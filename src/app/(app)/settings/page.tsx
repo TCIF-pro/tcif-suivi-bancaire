@@ -1,16 +1,31 @@
 import { createClient } from "@/lib/supabase/server";
 import { ACCENT_COLORS, isAccentColorId, type AccentColorId } from "@/lib/accent-colors";
 import { updateAccountBalance, updateTheme, updateAccentColor } from "./actions";
+import { QuickLabelsSection } from "./components/QuickLabelsSection";
 
 export default async function SettingsPage() {
   const supabase = await createClient();
-  const [{ data: settings }, { data: accounts }] = await Promise.all([
+  const [
+    { data: settings },
+    { data: accounts },
+    { data: categories },
+    { data: quickLabels },
+  ] = await Promise.all([
     supabase.from("user_settings").select("theme, accent_color").single(),
     supabase
       .from("accounts")
       .select("id, name, starting_balance, starting_balance_date")
       .eq("is_archived", false)
       .order("created_at", { ascending: true }),
+    supabase
+      .from("categories")
+      .select("id, name")
+      .eq("is_archived", false)
+      .order("created_at", { ascending: true }),
+    supabase
+      .from("quick_labels")
+      .select("id, label, type, category_id")
+      .order("position", { ascending: true }),
   ]);
 
   const rawAccentColor = settings?.accent_color;
@@ -88,6 +103,16 @@ export default async function SettingsPage() {
           ))}
         </div>
       </section>
+
+      <QuickLabelsSection
+        libelles={(quickLabels ?? []).map((q) => ({
+          id: q.id,
+          label: q.label,
+          type: q.type,
+          categoryId: q.category_id,
+        }))}
+        categories={categories ?? []}
+      />
 
       <section className="max-w-md rounded-2xl border border-border bg-surface p-5 shadow-card sm:p-6">
         <h2 className="font-display text-base font-bold text-foreground">

@@ -60,6 +60,18 @@ export default async function NewTransactionPage({
   const amount =
     Number.isFinite(parsedAmount) && parsedAmount > 0 ? parsedAmount : undefined;
 
+  const { data: quickLabels } = await supabase
+    .from("quick_labels")
+    .select("id, label, type, category_id")
+    .order("position", { ascending: true });
+
+  const libellesRapides = (quickLabels ?? []).map((q) => ({
+    id: q.id,
+    label: q.label,
+    type: q.type,
+    categoryId: q.category_id,
+  }));
+
   return (
     <div className="flex flex-col gap-6">
       <h1 className="font-display text-2xl font-bold tracking-tight text-foreground">
@@ -69,6 +81,7 @@ export default async function NewTransactionPage({
         action={createTransaction}
         categories={categories ?? []}
         accounts={accounts ?? []}
+        libellesRapides={libellesRapides}
         submitLabel="Ajouter"
         defaultValues={{
           type,

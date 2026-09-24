@@ -67,6 +67,10 @@ et ne mélange pas deux fichiers dans la même requête.
    - [ ] `0006_fix_subscription_billing_unique_index.sql`
    - [ ] `0007_accounts.sql`
 
+   Puis, au fil de la V2, chaque nouvelle migration dans l'ordre :
+
+   - [ ] `0008_quick_labels.sql`
+
 > ⚠️ Ordre important : `0002` installe un déclencheur qui crée automatiquement tes
 > catégories par défaut **au moment où un compte est créé**. Il faut donc l'appliquer
 > **avant** de créer ton compte de test (étape 4).
