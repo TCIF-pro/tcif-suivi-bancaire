@@ -1,6 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
 import { ACCENT_COLORS, isAccentColorId, type AccentColorId } from "@/lib/accent-colors";
-import { updateAccountBalance, updateTheme, updateAccentColor } from "./actions";
+import {
+  updateAccountBalance,
+  updateTheme,
+  updateAccentColor,
+  setAccountArchived,
+} from "./actions";
 import { QuickLabelsSection } from "./components/QuickLabelsSection";
 
 export default async function SettingsPage() {
@@ -12,10 +17,11 @@ export default async function SettingsPage() {
     { data: quickLabels },
   ] = await Promise.all([
     supabase.from("user_settings").select("theme, accent_color").single(),
+    // Contrairement aux autres pages, les réglages listent AUSSI les comptes
+    // masqués : c'est le seul endroit d'où on peut les réafficher.
     supabase
       .from("accounts")
-      .select("id, name, starting_balance, starting_balance_date")
-      .eq("is_archived", false)
+      .select("id, name, starting_balance, starting_balance_date, is_archived")
       .order("created_at", { ascending: true }),
     supabase
       .from("categories")
@@ -27,6 +33,9 @@ export default async function SettingsPage() {
       .select("id, label, type, category_id")
       .order("position", { ascending: true }),
   ]);
+
+  const comptesVisibles = (accounts ?? []).filter((a) => !a.is_archived);
+  const comptesMasques = (accounts ?? []).filter((a) => a.is_archived);
 
   const rawAccentColor = settings?.accent_color;
   const currentAccentColor: AccentColorId =
@@ -45,12 +54,12 @@ export default async function SettingsPage() {
           Comptes
         </h2>
         <p className="mt-1 text-sm text-muted">
-          Solde de départ par compte, pour la trésorerie et les KPIs du
-          dashboard.
+          Solde de départ par compte, pour la trésorerie et les totaux du
+          tableau de bord.
         </p>
 
         <div className="mt-4 flex flex-col gap-6">
-          {(accounts ?? []).map((account) => (
+          {comptesVisibles.map((account) => (
             <form
               key={account.id}
               action={updateAccountBalance.bind(null, account.id)}
@@ -101,6 +110,53 @@ export default async function SettingsPage() {
               </button>
             </form>
           ))}
+        </div>
+
+        {/* Formulaire distinct du précédent : masquer un compte ne doit pas
+            embarquer les champs de solde en cours de modification. */}
+        <div className="mt-6 flex flex-col gap-2 border-t border-border pt-5">
+          <p className="text-sm font-medium text-foreground">Masquer un compte</p>
+          <p className="text-sm text-muted">
+            Un compte masqué disparaît des sélecteurs, des listes et des totaux.
+            Rien n&apos;est supprimé : ses transactions et ses abonnements
+            reviennent intacts si tu le réaffiches.
+          </p>
+
+          <div className="mt-2 flex flex-wrap gap-2">
+            {comptesVisibles.map((account) => (
+              <form key={account.id} action={setAccountArchived.bind(null, account.id, true)}>
+                <button
+                  type="submit"
+                  className="inline-flex h-11 items-center rounded-xl border border-border px-3.5 text-sm font-semibold text-foreground transition-colors hover:border-accent"
+                >
+                  Masquer {account.name}
+                </button>
+              </form>
+            ))}
+          </div>
+
+          {comptesMasques.length > 0 && (
+            <div className="mt-4 flex flex-col gap-2">
+              <p className="text-sm font-medium text-muted">
+                Comptes masqués ({comptesMasques.length})
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {comptesMasques.map((account) => (
+                  <form
+                    key={account.id}
+                    action={setAccountArchived.bind(null, account.id, false)}
+                  >
+                    <button
+                      type="submit"
+                      className="inline-flex h-11 items-center rounded-xl bg-accent px-3.5 text-sm font-semibold text-on-accent transition-opacity hover:opacity-90"
+                    >
+                      Réafficher {account.name}
+                    </button>
+                  </form>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </section>
 

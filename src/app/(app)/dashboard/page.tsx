@@ -9,6 +9,10 @@ import {
   addDaysToDateString,
 } from "@/lib/dates";
 import {
+  idsDesComptesVisibles,
+  filtreComptesVisibles,
+} from "@/lib/accounts/visible";
+import {
   deltaPourCompte,
   fluxNet,
   netPourCompte,
@@ -119,6 +123,9 @@ async function getAccountRunway(compte: CompteBrut, today: string) {
 
 async function getMonthKpis(today: string, accountId?: string) {
   const supabase = await createClient();
+  // Sans compte sélectionné, on totalise les comptes VISIBLES uniquement :
+  // masquer le compte pro doit aussi sortir ses dépenses des totaux.
+  const comptesVisibles = await idsDesComptesVisibles(supabase);
   const startCurrent = startOfMonthDateString(today);
   const startNext = addMonthsToDateString(startCurrent, 1);
 
@@ -131,7 +138,9 @@ async function getMonthKpis(today: string, accountId?: string) {
     .gte("occurred_on", startCurrent)
     .lt("occurred_on", startNext)
     .lte("occurred_on", today);
-  if (accountId) monthQuery = monthQuery.eq("account_id", accountId);
+  monthQuery = accountId
+    ? monthQuery.eq("account_id", accountId)
+    : monthQuery.or(filtreComptesVisibles(comptesVisibles));
   const { data: monthTransactions } = await monthQuery;
 
   // Les virements d'épargne sont exclus : déplacer de l'argent d'un de ses
@@ -147,7 +156,9 @@ async function getMonthKpis(today: string, accountId?: string) {
     .from("subscriptions")
     .select("monthly_equivalent_amount")
     .eq("is_active", true);
-  if (accountId) subscriptionsQuery = subscriptionsQuery.eq("account_id", accountId);
+  subscriptionsQuery = accountId
+    ? subscriptionsQuery.eq("account_id", accountId)
+    : subscriptionsQuery.or(filtreComptesVisibles(comptesVisibles));
   const { data: activeSubscriptions } = await subscriptionsQuery;
 
   const totalSubscriptions = (activeSubscriptions ?? []).reduce(
@@ -163,6 +174,7 @@ async function getCategoryComparison(
   accountId?: string,
 ): Promise<CategoryComparisonRow[]> {
   const supabase = await createClient();
+  const comptesVisibles = await idsDesComptesVisibles(supabase);
   const startCurrent = startOfMonthDateString(today);
   const startNext = addMonthsToDateString(startCurrent, 1);
   const startPrevious = addMonthsToDateString(startCurrent, -1);
@@ -180,7 +192,9 @@ async function getCategoryComparison(
     .gte("occurred_on", startCurrent)
     .lt("occurred_on", startNext)
     .lte("occurred_on", today);
-  if (accountId) currentQuery = currentQuery.eq("account_id", accountId);
+  currentQuery = accountId
+    ? currentQuery.eq("account_id", accountId)
+    : currentQuery.or(filtreComptesVisibles(comptesVisibles));
   const { data: currentExpenses } = await currentQuery;
 
   let previousQuery = supabase
@@ -189,7 +203,9 @@ async function getCategoryComparison(
     .eq("type", "expense")
     .gte("occurred_on", startPrevious)
     .lt("occurred_on", startCurrent);
-  if (accountId) previousQuery = previousQuery.eq("account_id", accountId);
+  previousQuery = accountId
+    ? previousQuery.eq("account_id", accountId)
+    : previousQuery.or(filtreComptesVisibles(comptesVisibles));
   const { data: previousExpenses } = await previousQuery;
 
   const sumByCategory = (rows: { category_id: string | null; amount: number }[]) => {
@@ -220,6 +236,7 @@ async function getUpcomingSubscriptions(
   accountId?: string,
 ) {
   const supabase = await createClient();
+  const comptesVisibles = await idsDesComptesVisibles(supabase);
   const fin = addDaysToDateString(today, horizonDays);
 
   // `account_id` est désormais remonté : c'est ce qui permet de poser les
@@ -232,7 +249,9 @@ async function getUpcomingSubscriptions(
     .gte("next_billing_date", today)
     .lte("next_billing_date", fin)
     .order("next_billing_date", { ascending: true });
-  if (accountId) query = query.eq("account_id", accountId);
+  query = accountId
+    ? query.eq("account_id", accountId)
+    : query.or(filtreComptesVisibles(comptesVisibles));
 
   const { data } = await query;
 

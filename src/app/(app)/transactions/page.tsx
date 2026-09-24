@@ -1,6 +1,10 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { todayDateString } from "@/lib/dates";
+import {
+  idsDesComptesVisibles,
+  filtreComptesVisibles,
+} from "@/lib/accounts/visible";
 import { relationName } from "@/lib/supabase/relations";
 import { TransactionFilters } from "./components/TransactionFilters";
 import { TransactionList, type TransactionRow } from "./components/TransactionList";
@@ -48,9 +52,14 @@ export default async function TransactionsPage({
 
   const sort = SORTS[params.sort as keyof typeof SORTS] ?? SORTS.date_desc;
 
+  // Masquer un compte masque aussi ses transactions : elles sortent des
+  // listes et des totaux, sans jamais être supprimées.
+  const comptesVisibles = await idsDesComptesVisibles(supabase);
+
   let query = supabase
     .from("transactions")
     .select("id, type, amount, occurred_on, label, categories(name), accounts(name)")
+    .or(filtreComptesVisibles(comptesVisibles))
     .order(sort.column, { ascending: sort.ascending })
     .limit(MAX_ROWS);
 

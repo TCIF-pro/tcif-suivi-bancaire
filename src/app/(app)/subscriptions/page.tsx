@@ -1,6 +1,10 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { relationName } from "@/lib/supabase/relations";
+import {
+  idsDesComptesVisibles,
+  filtreComptesVisibles,
+} from "@/lib/accounts/visible";
 import { todayDateString } from "@/lib/dates";
 import { formatCurrency } from "@/lib/format";
 import { SubscriptionList, type SubscriptionRow } from "./components/SubscriptionList";
@@ -9,11 +13,14 @@ export default async function SubscriptionsPage() {
   const supabase = await createClient();
   const today = todayDateString();
 
+  const comptesVisibles = await idsDesComptesVisibles(supabase);
+
   const { data: subscriptions } = await supabase
     .from("subscriptions")
     .select(
       "id, name, amount, frequency, next_billing_date, is_active, monthly_equivalent_amount, categories(name), accounts(name)",
     )
+    .or(filtreComptesVisibles(comptesVisibles))
     .order("is_active", { ascending: false })
     .order("next_billing_date", { ascending: true });
 

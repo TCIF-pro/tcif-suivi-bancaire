@@ -166,3 +166,26 @@ export async function updateUpcomingHorizon(formData: FormData) {
 
   revalidatePath("/dashboard");
 }
+
+// Masquer / réafficher un compte.
+//
+// `is_archived` existe depuis la migration 0007 mais n'avait jamais eu
+// d'interface. Masquer n'efface RIEN : le compte, ses transactions et ses
+// abonnements restent en base et réapparaissent intacts au réaffichage.
+export async function setAccountArchived(accountId: string, archived: boolean) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return;
+
+  await supabase
+    .from("accounts")
+    .update({ is_archived: archived })
+    .eq("id", accountId)
+    .eq("user_id", user.id);
+
+  // Un compte masqué disparaît des sélecteurs, des listes et des totaux :
+  // toutes les pages sont concernées, pas seulement les réglages.
+  revalidatePath("/", "layout");
+}
