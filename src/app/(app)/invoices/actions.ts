@@ -88,6 +88,11 @@ export async function saveInvoice(id: string, formData: FormData) {
   const categoryId = formData.get("category_id")
     ? String(formData.get("category_id"))
     : null;
+  // Le compte sur lequel la facture est réglée. Il vit sur la facture, qui fait
+  // foi, et il est recopié sur la transaction liée à chaque enregistrement.
+  const accountId = formData.get("account_id")
+    ? String(formData.get("account_id"))
+    : null;
 
   const { data: current } = await supabase
     .from("invoices")
@@ -111,6 +116,7 @@ export async function saveInvoice(id: string, formData: FormData) {
       issued_date: issuedDate,
       party_name: partyName,
       category_id: categoryId,
+      account_id: accountId,
       status: nextStatus,
     })
     .eq("id", id)
@@ -125,6 +131,9 @@ export async function saveInvoice(id: string, formData: FormData) {
         occurred_on: issuedDate,
         label: partyName ?? current.file_name,
         category_id: categoryId,
+        // Sans compte, la transaction comptait dans « Tous » mais disparaissait
+        // du filtre Pro comme du filtre Perso.
+        account_id: accountId,
         source: "invoice",
         invoice_id: id,
       });
@@ -136,6 +145,7 @@ export async function saveInvoice(id: string, formData: FormData) {
           occurred_on: issuedDate,
           label: partyName ?? current.file_name,
           category_id: categoryId,
+          account_id: accountId,
         })
         .eq("invoice_id", id)
         .eq("user_id", user.id);
@@ -157,7 +167,9 @@ export async function convertDevisToFacture(id: string) {
 
   const { data: devis } = await supabase
     .from("invoices")
-    .select("direction, amount, issued_date, party_name, category_id, file_path, file_name")
+    .select(
+      "direction, amount, issued_date, party_name, category_id, account_id, file_path, file_name",
+    )
     .eq("id", id)
     .eq("user_id", user.id)
     .single();
@@ -178,6 +190,7 @@ export async function convertDevisToFacture(id: string) {
     issued_date: devis.issued_date,
     party_name: devis.party_name,
     category_id: devis.category_id,
+    account_id: devis.account_id,
     converted_from_devis_id: id,
   });
 

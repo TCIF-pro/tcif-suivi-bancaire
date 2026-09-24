@@ -37,7 +37,7 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
   const { data: invoice } = await supabase
     .from("invoices")
     .select(
-      "id, doc_type, direction, status, file_path, file_name, extraction_confidence, amount, issued_date, party_name, category_id, converted_from_devis_id",
+      "id, doc_type, direction, status, file_path, file_name, extraction_confidence, amount, issued_date, party_name, category_id, account_id, converted_from_devis_id",
     )
     .eq("id", id)
     .single();
@@ -46,8 +46,12 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
     notFound();
   }
 
-  const [{ data: categories }, { data: signedUrlData }, { data: convertedTo }] =
-    await Promise.all([
+  const [
+    { data: categories },
+    { data: signedUrlData },
+    { data: convertedTo },
+    { data: accounts },
+  ] = await Promise.all([
       supabase
         .from("categories")
         .select("id, name")
@@ -59,6 +63,14 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
         .select("id")
         .eq("converted_from_devis_id", id)
         .maybeSingle(),
+      // Comptes courants visibles uniquement : on règle une facture depuis un
+      // compte courant, pas depuis un livret d'épargne.
+      supabase
+        .from("accounts")
+        .select("id, name")
+        .eq("is_archived", false)
+        .eq("kind", "checking")
+        .order("created_at", { ascending: true }),
     ]);
 
   const canConvert =
@@ -129,6 +141,7 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
         <InvoiceReviewForm
           action={saveInvoice.bind(null, id)}
           categories={categories ?? []}
+          accounts={accounts ?? []}
           direction={invoice.direction}
           extractionConfidence={invoice.extraction_confidence}
           defaultValues={{
@@ -136,6 +149,7 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
             issued_date: invoice.issued_date,
             party_name: invoice.party_name,
             category_id: invoice.category_id,
+            account_id: invoice.account_id,
           }}
         />
 
