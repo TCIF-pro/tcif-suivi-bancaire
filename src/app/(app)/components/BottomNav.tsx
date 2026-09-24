@@ -36,22 +36,23 @@ export function BottomNav() {
     );
   }
 
-  // `pb-[max(1.75rem, env(safe-area-inset-bottom))]` : iOS ne déclare une zone
-  // de sécurité que dans certains modes d'affichage. Sans ce plancher de
-  // 1.75rem, la barre colle au bord de l'écran et les libellés deviennent
-  // difficiles à viser.
+  // `pb-[max(1.25rem, env(safe-area-inset-bottom))]` : iOS ne déclare une zone
+  // de sécurité que dans certains modes d'affichage. Sans ce plancher, la
+  // barre colle au bord de l'écran et les libellés deviennent difficiles à
+  // viser. Tous les éléments font 56 px de haut, « + » compris, pour que les
+  // icônes soient alignées sur une même ligne.
   return (
     <nav
       aria-label="Navigation principale"
-      className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-surface pb-[max(1.75rem,env(safe-area-inset-bottom))] md:hidden"
+      className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-surface pb-[max(1.25rem,env(safe-area-inset-bottom))] md:hidden"
     >
-      <div className="mx-auto flex max-w-md items-center gap-1 px-2 pt-2">
+      <div className="mx-auto flex max-w-md items-center gap-1 px-2 pt-1.5">
         {gauche.map(lien)}
 
         <Link
           href="/transactions/new"
           aria-label="Ajouter une transaction"
-          className="flex h-13 w-14 shrink-0 items-center justify-center rounded-2xl bg-accent text-on-accent"
+          className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-accent text-on-accent"
         >
           <PlusIcon />
         </Link>
