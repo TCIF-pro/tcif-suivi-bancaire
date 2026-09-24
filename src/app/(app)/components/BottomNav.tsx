@@ -36,17 +36,23 @@ export function BottomNav() {
     );
   }
 
-  // `pb-[max(1.25rem, env(safe-area-inset-bottom))]` : iOS ne déclare une zone
-  // de sécurité que dans certains modes d'affichage. Sans ce plancher, la
-  // barre colle au bord de l'écran et les libellés deviennent difficiles à
-  // viser. Tous les éléments font 56 px de haut, « + » compris, pour que les
-  // icônes soient alignées sur une même ligne.
+  // Marge HAUTE et BASSE identiques (`pt` et `pb` portent la même expression) :
+  // c'est ce qui place les icônes et le « + » au centre vertical exact de la
+  // bande grise. Avec une marge haute plus faible, tout le contenu était
+  // plaqué vers le haut de la barre.
+  //
+  // `max(1.25rem, env(safe-area-inset-bottom))` : iOS ne déclare une zone de
+  // sécurité que dans certains modes d'affichage, d'où le plancher — sans lui
+  // la barre collerait au bord de l'écran.
+  //
+  // Tous les éléments font 56 px de haut, « + » compris, pour que les icônes
+  // soient alignées sur une même ligne.
   return (
     <nav
       aria-label="Navigation principale"
-      className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-surface pb-[max(1.25rem,env(safe-area-inset-bottom))] md:hidden"
+      className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-surface pt-[max(1.25rem,env(safe-area-inset-bottom))] pb-[max(1.25rem,env(safe-area-inset-bottom))] md:hidden"
     >
-      <div className="mx-auto flex max-w-md items-center gap-1 px-2 pt-1.5">
+      <div className="mx-auto flex max-w-md items-center gap-1 px-2">
         {gauche.map(lien)}
 
         <Link
