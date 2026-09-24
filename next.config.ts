@@ -13,6 +13,11 @@ const nextConfig: NextConfig = {
   // N'a AUCUN effet en production : ce réglage ne concerne que `next dev`.
   // Le `*` couvre le cas où ta box attribue une autre IP au Mac.
   allowedDevOrigins: ["192.168.1.13", "192.168.1.*", "192.168.0.*"],
+
+  // Masque la pastille « N » de Next.js en bas à gauche pendant le
+  // développement : elle se superposait à la barre de navigation sur
+  // téléphone. Elle n'apparaît de toute façon jamais en production.
+  devIndicators: false,
 };
 
 export default nextConfig;

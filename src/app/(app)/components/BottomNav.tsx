@@ -36,14 +36,14 @@ export function BottomNav() {
     );
   }
 
-  // `pb-[max(1rem, env(safe-area-inset-bottom))]` : iOS ne déclare une zone
+  // `pb-[max(1.75rem, env(safe-area-inset-bottom))]` : iOS ne déclare une zone
   // de sécurité que dans certains modes d'affichage. Sans ce plancher de
-  // 1rem, la barre colle au bord de l'écran et les libellés deviennent
+  // 1.75rem, la barre colle au bord de l'écran et les libellés deviennent
   // difficiles à viser.
   return (
     <nav
       aria-label="Navigation principale"
-      className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-surface pb-[max(1rem,env(safe-area-inset-bottom))] md:hidden"
+      className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-surface pb-[max(1.75rem,env(safe-area-inset-bottom))] md:hidden"
     >
       <div className="mx-auto flex max-w-md items-center gap-1 px-2 pt-2">
         {gauche.map(lien)}
