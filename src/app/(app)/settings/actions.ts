@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { creerCompteEpargne } from "@/lib/accounts/create";
 
 export async function updateAccountBalance(accountId: string, formData: FormData) {
   const supabase = await createClient();
@@ -331,4 +332,28 @@ export async function updateDashboardCards(formData: FormData) {
 
   revalidatePath("/settings");
   revalidatePath("/dashboard");
+}
+
+// Créer un compte d'épargne. Aucun n'est créé d'office pour un nouvel
+// utilisateur : l'épargne reste facultative, on l'ajoute quand on en a besoin.
+export async function createSavingsAccount(formData: FormData) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return;
+
+  const resultat = await creerCompteEpargne(
+    supabase,
+    user.id,
+    String(formData.get("name") ?? ""),
+  );
+
+  if ("erreur" in resultat) {
+    retourReglages(resultat.erreur === "nom-pris" ? "compte-nom-pris" : "compte-echec");
+  }
+
+  // Le nouveau compte apparaît dans les sélecteurs de toutes les pages.
+  revalidatePath("/", "layout");
+  retourReglages();
 }

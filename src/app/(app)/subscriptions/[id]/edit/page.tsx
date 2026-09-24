@@ -5,12 +5,15 @@ import { updateSubscription } from "../../actions";
 
 interface EditSubscriptionPageProps {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ erreur?: string }>;
 }
 
 export default async function EditSubscriptionPage({
   params,
+  searchParams,
 }: EditSubscriptionPageProps) {
   const { id } = await params;
+  const { erreur } = await searchParams;
   const supabase = await createClient();
 
   const [{ data: subscription }, { data: categories }, { data: accounts }] =
@@ -29,7 +32,7 @@ export default async function EditSubscriptionPage({
         .order("created_at", { ascending: true }),
       supabase
         .from("accounts")
-        .select("id, name")
+        .select("id, name, kind")
         .eq("is_archived", false)
         .order("created_at", { ascending: true }),
     ]);
@@ -47,6 +50,7 @@ export default async function EditSubscriptionPage({
         action={updateSubscription.bind(null, id)}
         categories={categories ?? []}
         accounts={accounts ?? []}
+        erreur={erreur}
         submitLabel="Enregistrer"
         defaultValues={{
           name: subscription.name,

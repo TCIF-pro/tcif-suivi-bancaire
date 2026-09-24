@@ -2,7 +2,14 @@ import { createClient } from "@/lib/supabase/server";
 import { SubscriptionForm } from "../components/SubscriptionForm";
 import { createSubscription } from "../actions";
 
-export default async function NewSubscriptionPage() {
+interface NewSubscriptionPageProps {
+  searchParams: Promise<{ erreur?: string }>;
+}
+
+export default async function NewSubscriptionPage({
+  searchParams,
+}: NewSubscriptionPageProps) {
+  const { erreur } = await searchParams;
   const supabase = await createClient();
   const [{ data: categories }, { data: accounts }] = await Promise.all([
     supabase
@@ -12,7 +19,7 @@ export default async function NewSubscriptionPage() {
       .order("created_at", { ascending: true }),
     supabase
       .from("accounts")
-      .select("id, name")
+      .select("id, name, kind")
       .eq("is_archived", false)
       .order("created_at", { ascending: true }),
   ]);
@@ -26,6 +33,7 @@ export default async function NewSubscriptionPage() {
         action={createSubscription}
         categories={categories ?? []}
         accounts={accounts ?? []}
+        erreur={erreur}
         submitLabel="Ajouter"
       />
     </div>

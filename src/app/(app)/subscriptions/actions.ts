@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { creerCompteEpargne } from "@/lib/accounts/create";
 
 function parseSubscriptionFormData(formData: FormData) {
   const categoryId = formData.get("category_id");
@@ -29,6 +30,32 @@ function parseSubscriptionFormData(formData: FormData) {
   };
 }
 
+
+// Si l'abonnement est marqué « épargne » et que l'utilisateur a demandé à
+// créer son livret dans la foulée, on le crée et on l'utilise comme compte
+// d'arrivée. Renvoie `null` si la création échoue, pour que l'appelant renvoie
+// l'utilisateur sur le formulaire avec un message plutôt que d'enregistrer un
+// virement sans destination.
+async function avecCompteEpargneSiDemande(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  formData: FormData,
+) {
+  const donnees = parseSubscriptionFormData(formData);
+
+  if (donnees.is_savings && formData.get("creer_compte_epargne") === "on") {
+    const resultat = await creerCompteEpargne(
+      supabase,
+      userId,
+      String(formData.get("nom_compte_epargne") ?? ""),
+    );
+    if ("erreur" in resultat) return { donnees, erreur: resultat.erreur };
+    donnees.transfer_account_id = resultat.id;
+  }
+
+  return { donnees, erreur: null };
+}
+
 export async function createSubscription(formData: FormData) {
   const supabase = await createClient();
   const {
@@ -36,13 +63,17 @@ export async function createSubscription(formData: FormData) {
   } = await supabase.auth.getUser();
   if (!user) return;
 
+  const { donnees, erreur } = await avecCompteEpargneSiDemande(supabase, user.id, formData);
+  if (erreur) redirect(`/subscriptions/new?erreur=${erreur}`);
+
   await supabase.from("subscriptions").insert({
     user_id: user.id,
-    ...parseSubscriptionFormData(formData),
+    ...donnees,
   });
 
-  revalidatePath("/subscriptions");
-  revalidatePath("/dashboard");
+  // `layout` et non `/subscriptions` : un livret a peut-être été créé, il doit
+  // apparaître dans les sélecteurs de toutes les pages.
+  revalidatePath("/", "layout");
   redirect("/subscriptions");
 }
 
@@ -53,14 +84,16 @@ export async function updateSubscription(id: string, formData: FormData) {
   } = await supabase.auth.getUser();
   if (!user) return;
 
+  const { donnees, erreur } = await avecCompteEpargneSiDemande(supabase, user.id, formData);
+  if (erreur) redirect(`/subscriptions/${id}/edit?erreur=${erreur}`);
+
   await supabase
     .from("subscriptions")
-    .update(parseSubscriptionFormData(formData))
+    .update(donnees)
     .eq("id", id)
     .eq("user_id", user.id);
 
-  revalidatePath("/subscriptions");
-  revalidatePath("/dashboard");
+  revalidatePath("/", "layout");
   redirect("/subscriptions");
 }
 

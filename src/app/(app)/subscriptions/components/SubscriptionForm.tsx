@@ -3,8 +3,10 @@ import { todayDateString } from "@/lib/dates";
 interface SubscriptionFormProps {
   action: (formData: FormData) => void;
   categories: { id: string; name: string }[];
-  accounts: { id: string; name: string }[];
+  accounts: { id: string; name: string; kind?: string }[];
   submitLabel: string;
+  /** Code d'erreur renvoyé par l'action (création du livret refusée...). */
+  erreur?: string;
   defaultValues?: {
     name?: string;
     amount?: number;
@@ -25,12 +27,31 @@ export function SubscriptionForm({
   accounts,
   submitLabel,
   defaultValues,
+  erreur,
 }: SubscriptionFormProps) {
+  const aUnLivret = accounts.some((a) => a.kind === "savings");
+
+  const messageErreur =
+    erreur === "nom-pris"
+      ? "Un compte courant porte déjà ce nom. Choisis un autre nom pour ton compte d'épargne."
+      : erreur
+        ? "Le compte d'épargne n'a pas pu être créé, l'abonnement n'a pas été enregistré. Retente."
+        : null;
+
   return (
     <form
       action={action}
       className="mx-auto flex w-full max-w-xl flex-col gap-4 rounded-2xl border border-border bg-surface p-5 shadow-card sm:p-7"
     >
+      {messageErreur && (
+        <p
+          role="alert"
+          className="rounded-xl bg-danger-bg px-4 py-3 text-sm font-medium text-danger"
+        >
+          {messageErreur}
+        </p>
+      )}
+
       <div className="flex flex-col gap-1">
         <label htmlFor="name" className="text-sm font-medium text-foreground">
           Nom
@@ -180,6 +201,30 @@ export function SubscriptionForm({
       {/* Visible seulement si la case ci-dessus est cochée (règle CSS
           `.champ-virement-abo`, voir globals.css). */}
       <div className="champ-virement-abo flex flex-col gap-1">
+        {!aUnLivret && (
+          // Pas encore de livret : on propose de le créer ici même, plutôt
+          // que d'envoyer l'utilisateur dans les Réglages en plein milieu de
+          // sa saisie. Coché par défaut, c'est le cas le plus fréquent.
+          <div className="mb-3 flex flex-col gap-2 rounded-xl border border-border bg-background p-3">
+            <p className="text-sm text-foreground">
+              Tu n&apos;as pas encore de compte d&apos;épargne.
+            </p>
+            <label className="flex items-center gap-2 text-sm text-foreground">
+              <input type="checkbox" name="creer_compte_epargne" defaultChecked />
+              Le créer maintenant, sous le nom :
+            </label>
+            <input
+              name="nom_compte_epargne"
+              type="text"
+              defaultValue="Épargne"
+              aria-label="Nom du compte d'épargne à créer"
+              className="rounded-xl border border-border bg-surface px-3 py-2.5 text-sm text-foreground outline-none focus:border-accent focus:ring-2 focus:ring-accent/25"
+            />
+            <p className="text-xs text-muted">
+              Sinon, décoche et choisis un compte existant ci-dessous.
+            </p>
+          </div>
+        )}
         <label
           htmlFor="transfer_account_id"
           className="text-sm font-medium text-foreground"

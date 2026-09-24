@@ -5,6 +5,7 @@ import {
   updateTheme,
   updateAccentColor,
   setAccountArchived,
+  createSavingsAccount,
 } from "./actions";
 import { QuickLabelsSection } from "./components/QuickLabelsSection";
 import { CategoriesSection } from "./components/CategoriesSection";
@@ -20,6 +21,9 @@ const MESSAGES_ERREUR: Record<string, string> = {
     "La réaffectation a échoué, rien n'a été supprimé. Retente, et préviens-moi si ça se reproduit.",
   "categorie-suppression":
     "La suppression a échoué. Des éléments utilisent peut-être encore cette catégorie.",
+  "compte-nom-pris":
+    "Un compte courant porte déjà ce nom. Choisis un autre nom pour ton compte d'épargne.",
+  "compte-echec": "Le compte d'épargne n'a pas pu être créé. Retente dans un instant.",
 };
 
 interface SettingsPageProps {
@@ -45,7 +49,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
     // masqués : c'est le seul endroit d'où on peut les réafficher.
     supabase
       .from("accounts")
-      .select("id, name, starting_balance, starting_balance_date, is_archived")
+      .select("id, name, kind, starting_balance, starting_balance_date, is_archived")
       .order("created_at", { ascending: true }),
     supabase
       .from("categories")
@@ -78,6 +82,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
 
   const comptesVisibles = (accounts ?? []).filter((a) => !a.is_archived);
   const comptesMasques = (accounts ?? []).filter((a) => a.is_archived);
+  const aUnLivret = (accounts ?? []).some((a) => a.kind === "savings");
 
   const rawAccentColor = settings?.accent_color;
   const currentAccentColor: AccentColorId =
@@ -162,6 +167,39 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
             </form>
           ))}
         </div>
+
+        {/* Créer un compte d'épargne : aucun n'est créé d'office, l'épargne
+            reste facultative. Plusieurs sont possibles (Livret A, LDDS...). */}
+        <form
+          action={createSavingsAccount}
+          className="mt-6 flex flex-col gap-2 border-t border-border pt-5"
+        >
+          <p className="text-sm font-medium text-foreground">
+            {aUnLivret ? "Ajouter un autre compte d'épargne" : "Créer un compte d'épargne"}
+          </p>
+          <p className="text-sm text-muted">
+            Il apparaîtra à côté de tes autres comptes. Tu pourras ensuite y
+            saisir ce qui s&apos;y trouve déjà, avec le solde de départ ci-dessus.
+          </p>
+          <div className="mt-1 flex flex-wrap items-end gap-2">
+            <label className="flex min-w-40 flex-1 flex-col gap-1">
+              <span className="text-xs font-medium text-muted">Nom</span>
+              <input
+                name="name"
+                type="text"
+                defaultValue={aUnLivret ? "" : "Épargne"}
+                placeholder="Ex. : Livret A"
+                className="rounded-xl border border-border bg-surface px-3 py-2.5 text-sm text-foreground outline-none focus:border-accent focus:ring-2 focus:ring-accent/25"
+              />
+            </label>
+            <button
+              type="submit"
+              className="inline-flex h-11 items-center rounded-xl bg-accent px-4 text-sm font-semibold text-on-accent transition-opacity hover:opacity-90"
+            >
+              Créer
+            </button>
+          </div>
+        </form>
 
         {/* Formulaire distinct du précédent : masquer un compte ne doit pas
             embarquer les champs de solde en cours de modification. */}
