@@ -119,3 +119,24 @@ body {
 .tabular {
   font-variant-numeric: tabular-nums;
 }
+
+/* Filtres repliables (page Transactions, page Factures).
+   Sur téléphone, un <details> replié : six champs empilés occupaient tout le
+   premier écran, on arrivait sur la page sans voir une seule ligne.
+   À partir de `md`, la place ne manque plus : on force l'affichage du contenu
+   et on masque le bouton. `content-visibility` accompagne `display` parce que
+   les navigateurs récents masquent le contenu d'un <details> fermé par cette
+   propriété plutôt que par `display: none`. */
+details.filtres > summary {
+  list-style: none;
+}
+details.filtres > summary::-webkit-details-marker {
+  display: none;
+}
+
+@media (min-width: 48rem) {
+  details.filtres:not([open]) > .contenu {
+    display: block;
+    content-visibility: visible;
+  }
+}
