@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { signIn } from "../actions";
 
@@ -20,8 +21,10 @@ export default function LoginPage() {
       }
 
       // Navigation client pure (History API) : jamais de redirect() serveur
-      // sur cette transition, pour rester en mode standalone sur iOS.
-      router.push("/dashboard");
+      // sur cette transition, pour rester en mode standalone sur iOS. Un
+      // compte au mot de passe provisoire part directement vers le formulaire
+      // de changement, sans détour par le tableau de bord.
+      router.push(result.doitChangerMotDePasse ? "/changer-mot-de-passe" : "/dashboard");
     });
   }
 
@@ -61,8 +64,14 @@ export default function LoginPage() {
           />
         </div>
 
+        {/* Un seul message pour tous les échecs, compte désactivé compris :
+            un message différent révélerait quelles adresses ont un compte
+            (voir l'action signIn). */}
         {error && (
-          <p className="text-sm text-danger">Email ou mot de passe incorrect.</p>
+          <p role="alert" className="text-sm text-danger">
+            Email ou mot de passe incorrect. Si ton compte a été désactivé,
+            contacte l&apos;administrateur de l&apos;app.
+          </p>
         )}
 
         <button
@@ -73,6 +82,13 @@ export default function LoginPage() {
           {isPending ? "Connexion..." : "Se connecter"}
         </button>
       </form>
+
+      <Link
+        href="/mot-de-passe-oublie"
+        className="mt-4 inline-block text-sm font-medium text-muted hover:text-foreground"
+      >
+        Mot de passe oublié ?
+      </Link>
     </div>
   );
 }

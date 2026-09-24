@@ -162,3 +162,36 @@ grep NEXT_PUBLIC_SUPABASE_URL .env.local
 ```
 
 avec la **Project URL** du projet `tcif-finance-dev` dans Supabase.
+
+---
+
+## 7. Administration des comptes (étape 6.1)
+
+### Désigner le compte administrateur
+
+L'admin est repéré par un marqueur dans les `app_metadata` de Supabase Auth, une
+zone qu'un utilisateur ne peut pas modifier lui-même. Sur la base de test, c'est
+déjà fait pour ton compte. Pour le refaire, **SQL Editor** :
+
+```sql
+update auth.users
+set raw_app_meta_data = raw_app_meta_data || '{"role": "admin"}'::jsonb
+where email = 'ton-email@exemple.fr';
+```
+
+Déconnecte-toi puis reconnecte-toi : le lien « Administration » apparaît dans
+les Réglages.
+
+### Autoriser le lien de réinitialisation du mot de passe
+
+Supabase n'accepte de renvoyer vers l'app que des adresses qu'il connaît.
+**Authentication → URL Configuration → Redirect URLs**, ajouter :
+
+- `http://localhost:3000/auth/confirm`
+- `http://192.168.1.13:3000/auth/confirm` (pour tester depuis le téléphone)
+
+Sans ça, le lien de l'email renvoie sur la page d'accueil de Supabase.
+
+Tant que le service d'envoi d'emails n'est pas branché (étape 6.2), Supabase
+n'envoie qu'aux adresses des membres de ton équipe Supabase, quelques fois par
+heure : teste avec ta propre adresse.

@@ -1,4 +1,6 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { estAdmin } from "@/lib/auth/roles";
 import { ACCENT_COLORS, isAccentColorId, type AccentColorId } from "@/lib/accent-colors";
 import {
   updateAccountBalance,
@@ -33,6 +35,11 @@ interface SettingsPageProps {
 export default async function SettingsPage({ searchParams }: SettingsPageProps) {
   const { erreur } = await searchParams;
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const administrateur = estAdmin(user);
+
   const [
     { data: settings },
     { data: accounts },
@@ -95,6 +102,19 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
       <h1 className="font-display text-2xl font-bold tracking-tight text-foreground">
         Réglages
       </h1>
+
+      {/* Visible pour le seul compte administrateur. Ce n'est qu'un raccourci :
+          la page /admin revérifie elle-même le rôle, masquer ce lien ne
+          protégerait rien. */}
+      {administrateur && (
+        <Link
+          href="/admin"
+          className="flex max-w-md items-center justify-between rounded-2xl border border-accent/40 bg-accent/10 px-5 py-4 text-sm font-semibold text-foreground transition-colors hover:border-accent"
+        >
+          Administration — gérer les comptes
+          <span aria-hidden="true">→</span>
+        </Link>
+      )}
 
       {erreur && (
         <p

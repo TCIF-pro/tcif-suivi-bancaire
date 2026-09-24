@@ -47,7 +47,28 @@ avec les environnements où elle existe (Production, Preview, Development).
       prod — sinon chaque branche déployée pour essai écrirait dans tes vraies
       données. Les faire pointer vers la base de test.
 
-## 4. Après les migrations — à faire dans l'app, connecté à la prod
+## 4. Réglages Supabase de la prod (étape 6.1)
+
+- [ ] **Désigner ton compte administrateur**, SQL Editor de la prod :
+
+      ```sql
+      update auth.users
+      set raw_app_meta_data = raw_app_meta_data || '{"role": "admin"}'::jsonb
+      where email = 'ton-email-de-prod@exemple.fr';
+      ```
+
+      Puis vérifier que la requête a bien touché **1 ligne**.
+- [ ] Authentication → URL Configuration : **Site URL** = l'adresse de l'app en
+      ligne, et dans **Redirect URLs** ajouter `https://<ton-domaine>/auth/confirm`.
+      Sans ça, le lien « mot de passe oublié » ne ramène pas dans l'app.
+- [ ] Authentication → Sign In / Providers : l'inscription publique est
+      **toujours désactivée**. Les comptes se créent depuis `/admin`.
+- [ ] **Service d'envoi d'emails (SMTP)** : branché à l'étape 6.2. Sans lui,
+      Supabase n'envoie les emails de réinitialisation qu'aux membres de ton
+      équipe Supabase — tes utilisateurs ne recevraient rien. **Ne pas ouvrir
+      l'app à quelqu'un d'autre avant que ce point soit fait.**
+
+## 5. Après les migrations — à faire dans l'app, connecté à la prod
 
 - [ ] **Réglages → Comptes** : un compte « Épargne » a été créé par `0010`. Saisir
       son solde de départ (ce qu'il y a réellement sur le livret) — ou le masquer
@@ -66,7 +87,7 @@ avec les environnements où elle existe (Production, Preview, Development).
       where source = 'invoice' and account_id is null;
       ```
 
-## 5. Mise en ligne du code
+## 6. Mise en ligne du code
 
 - [ ] Fusionner la branche `v2` dans `main` et pousser.
 - [ ] Suivre le déploiement sur Vercel jusqu'au statut **Ready**.
