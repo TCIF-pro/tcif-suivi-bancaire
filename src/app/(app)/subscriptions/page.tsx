@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { relationName } from "@/lib/supabase/relations";
 import { todayDateString } from "@/lib/dates";
 import { formatCurrency } from "@/lib/format";
 import { SubscriptionList, type SubscriptionRow } from "./components/SubscriptionList";
@@ -22,8 +23,8 @@ export default async function SubscriptionsPage() {
     amount: Number(s.amount),
     frequency: s.frequency,
     nextBillingDate: s.next_billing_date,
-    categoryName: s.categories?.[0]?.name ?? null,
-    accountName: s.accounts?.[0]?.name ?? null,
+    categoryName: relationName(s.categories),
+    accountName: relationName(s.accounts),
     isActive: s.is_active,
   }));
 

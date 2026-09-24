@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { relationName } from "@/lib/supabase/relations";
 import { TransactionFilters } from "./components/TransactionFilters";
 import { TransactionList, type TransactionRow } from "./components/TransactionList";
 
@@ -66,8 +67,8 @@ export default async function TransactionsPage({
     amount: Number(t.amount),
     occurred_on: t.occurred_on,
     label: t.label,
-    categoryName: t.categories?.[0]?.name ?? null,
-    accountName: t.accounts?.[0]?.name ?? null,
+    categoryName: relationName(t.categories),
+    accountName: relationName(t.accounts),
   }));
 
   return (

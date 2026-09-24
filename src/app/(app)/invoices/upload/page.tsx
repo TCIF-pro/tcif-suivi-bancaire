@@ -1,11 +1,39 @@
 import { uploadInvoice } from "../actions";
 
-export default function UploadInvoicePage() {
+// Messages associés aux codes d'erreur posés par `uploadInvoice`. Ils disent
+// ce qui s'est passé ET quoi faire, jamais juste « une erreur est survenue ».
+const MESSAGES_ERREUR: Record<string, string> = {
+  session:
+    "Ta session a expiré pendant l'envoi. Reconnecte-toi, puis retente l'import.",
+  "fichier-vide": "Aucun fichier reçu. Choisis un PDF avant de valider.",
+  storage:
+    "Le PDF n'a pas pu être enregistré. Vérifie qu'il fait moins de 10 Mo, puis retente.",
+};
+
+interface UploadInvoicePageProps {
+  searchParams: Promise<{ erreur?: string }>;
+}
+
+export default async function UploadInvoicePage({
+  searchParams,
+}: UploadInvoicePageProps) {
+  const { erreur } = await searchParams;
+  const message = erreur ? MESSAGES_ERREUR[erreur] : undefined;
+
   return (
     <div className="flex flex-col gap-6">
       <h1 className="font-display text-2xl font-bold tracking-tight text-foreground">
         Importer un PDF
       </h1>
+
+      {erreur && (
+        <p
+          role="alert"
+          className="mx-auto w-full max-w-xl rounded-xl bg-danger-bg px-4 py-3 text-sm font-medium text-danger"
+        >
+          {message ?? "L'import a échoué. Retente, et préviens-moi si ça se reproduit."}
+        </p>
+      )}
 
       <form
         action={uploadInvoice}
