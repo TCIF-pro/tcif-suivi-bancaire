@@ -76,6 +76,9 @@ et ne mélange pas deux fichiers dans la même requête.
    - [ ] `0012_default_seed.sql`
    - [ ] `0013_dashboard_cards.sql`
    - [ ] `0014_invoice_account.sql`
+   - [ ] `0015_ownership_checks.sql`
+
+   Le jour de la mise en ligne, c'est `MISE-EN-PROD.md` qu'il faut suivre.
 
 > ⚠️ Ordre important : `0002` installe un déclencheur qui crée automatiquement tes
 > catégories par défaut **au moment où un compte est créé**. Il faut donc l'appliquer
