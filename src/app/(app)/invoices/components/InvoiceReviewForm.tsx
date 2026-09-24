@@ -21,9 +21,9 @@ export function InvoiceReviewForm({
   const partyLabel = direction === "sent" ? "Client" : "Fournisseur";
 
   return (
-    <div className="mx-auto flex w-full max-w-xl flex-col gap-4 rounded-xl border border-border bg-surface p-6 shadow-card sm:p-8">
+    <div className="mx-auto flex w-full max-w-xl flex-col gap-4 rounded-2xl border border-border bg-surface p-5 shadow-card sm:p-7">
       {extractionConfidence === "failed" ? (
-        <p className="rounded-lg border border-accent/60 bg-accent/5 px-3 py-2 text-sm text-muted">
+        <p className="rounded-xl border border-accent/60 bg-accent/5 px-3 py-2 text-sm text-muted">
           Extraction impossible sur ce PDF (probablement scanné) — remplis les
           champs ci-dessous à la main.
         </p>
@@ -45,7 +45,7 @@ export function InvoiceReviewForm({
             step="0.01"
             min="0.01"
             defaultValue={defaultValues.amount ?? ""}
-            className="rounded-lg border border-border bg-surface px-3 py-2 text-foreground outline-none focus:border-accent"
+            className="rounded-xl border border-border bg-surface px-3.5 py-3 text-foreground outline-none focus:border-accent focus:ring-2 focus:ring-accent/25"
           />
         </div>
 
@@ -61,7 +61,7 @@ export function InvoiceReviewForm({
             name="issued_date"
             type="date"
             defaultValue={defaultValues.issued_date ?? ""}
-            className="rounded-lg border border-border bg-surface px-3 py-2 text-foreground outline-none focus:border-accent"
+            className="rounded-xl border border-border bg-surface px-3.5 py-3 text-foreground outline-none focus:border-accent focus:ring-2 focus:ring-accent/25"
           />
         </div>
 
@@ -77,7 +77,7 @@ export function InvoiceReviewForm({
             name="party_name"
             type="text"
             defaultValue={defaultValues.party_name ?? ""}
-            className="rounded-lg border border-border bg-surface px-3 py-2 text-foreground outline-none focus:border-accent"
+            className="rounded-xl border border-border bg-surface px-3.5 py-3 text-foreground outline-none focus:border-accent focus:ring-2 focus:ring-accent/25"
           />
         </div>
 
@@ -92,7 +92,7 @@ export function InvoiceReviewForm({
             id="category_id"
             name="category_id"
             defaultValue={defaultValues.category_id ?? ""}
-            className="rounded-lg border border-border bg-surface px-3 py-2 text-foreground outline-none focus:border-accent"
+            className="rounded-xl border border-border bg-surface px-3.5 py-3 text-foreground outline-none focus:border-accent focus:ring-2 focus:ring-accent/25"
           >
             <option value="">Aucune</option>
             {categories.map((c) => (
@@ -105,7 +105,7 @@ export function InvoiceReviewForm({
 
         <button
           type="submit"
-          className="mt-2 self-start rounded-lg bg-foreground px-4 py-2 font-medium text-background transition-colors hover:bg-accent"
+          className="mt-2 self-start inline-flex h-12 items-center justify-center rounded-xl bg-accent px-5 font-bold text-on-accent transition-opacity hover:opacity-90"
         >
           Enregistrer
         </button>

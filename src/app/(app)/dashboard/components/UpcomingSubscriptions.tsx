@@ -1,5 +1,6 @@
-import { formatCurrency, formatDateLong } from "@/lib/format";
+import { formatDateLong } from "@/lib/format";
 import { daysBetween } from "@/lib/dates";
+import { Montant } from "../../components/Montant";
 
 export interface UpcomingSubscriptionRow {
   id: string;
@@ -23,31 +24,30 @@ export function UpcomingSubscriptions({ today, rows }: UpcomingSubscriptionsProp
   }
 
   return (
-    <ul className="flex flex-col gap-3">
+    <ul className="flex flex-col divide-y divide-border">
       {rows.map((row) => {
         const daysLeft = daysBetween(today, row.nextBillingDate);
         const isSoon = daysLeft < 3;
 
         return (
-          <li
-            key={row.id}
-            className={`flex items-center justify-between gap-4 text-sm ${
-              isSoon
-                ? "rounded-lg border border-accent/60 bg-accent/5 px-3 py-2"
-                : ""
-            }`}
-          >
-            <div>
-              <p className="font-medium text-foreground">{row.name}</p>
-              <p className="text-muted">
+          <li key={row.id} className="flex items-center justify-between gap-4 py-3">
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold text-foreground">
+                {row.name}
+              </p>
+              <p className="mt-0.5 text-xs font-medium text-muted">
                 {formatDateLong(row.nextBillingDate)}
               </p>
             </div>
-            <div className="text-right">
-              <p className="font-medium text-foreground">
-                {formatCurrency(row.amount)}
-              </p>
-              <p className={isSoon ? "font-medium text-accent" : "text-muted"}>
+
+            <div className="shrink-0 text-right">
+              {/* Un prélèvement sort du compte : rouge, préfixé « − ». */}
+              <Montant value={row.amount} ton="expense" taille="sm" className="block" />
+              <p
+                className={`mt-0.5 text-xs ${
+                  isSoon ? "font-semibold text-expense" : "font-medium text-muted"
+                }`}
+              >
                 {daysLeft === 0
                   ? "aujourd'hui"
                   : `dans ${daysLeft} jour${daysLeft !== 1 ? "s" : ""}`}

@@ -19,7 +19,7 @@ export default async function NewSubscriptionPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="font-display text-2xl font-semibold text-foreground">
+      <h1 className="font-display text-2xl font-bold tracking-tight text-foreground">
         Nouvel abonnement
       </h1>
       <SubscriptionForm

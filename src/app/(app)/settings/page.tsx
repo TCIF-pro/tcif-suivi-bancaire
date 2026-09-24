@@ -21,12 +21,12 @@ export default async function SettingsPage() {
 
   return (
     <div className="flex flex-col gap-8">
-      <h1 className="font-display text-2xl font-semibold text-foreground">
+      <h1 className="font-display text-2xl font-bold tracking-tight text-foreground">
         Réglages
       </h1>
 
-      <section className="max-w-md rounded-xl border border-border bg-surface p-6 shadow-card">
-        <h2 className="font-display text-lg font-semibold text-foreground">
+      <section className="max-w-md rounded-2xl border border-border bg-surface p-5 shadow-card sm:p-6">
+        <h2 className="font-display text-base font-bold text-foreground">
           Comptes
         </h2>
         <p className="mt-1 text-sm text-muted">
@@ -57,7 +57,7 @@ export default async function SettingsPage() {
                   step="0.01"
                   required
                   defaultValue={account.starting_balance}
-                  className="rounded-lg border border-border bg-surface px-3 py-2 text-foreground outline-none focus:border-accent"
+                  className="rounded-xl border border-border bg-surface px-3.5 py-3 text-foreground outline-none focus:border-accent focus:ring-2 focus:ring-accent/25"
                 />
               </div>
 
@@ -74,13 +74,13 @@ export default async function SettingsPage() {
                   type="date"
                   required
                   defaultValue={account.starting_balance_date}
-                  className="rounded-lg border border-border bg-surface px-3 py-2 text-foreground outline-none focus:border-accent"
+                  className="rounded-xl border border-border bg-surface px-3.5 py-3 text-foreground outline-none focus:border-accent focus:ring-2 focus:ring-accent/25"
                 />
               </div>
 
               <button
                 type="submit"
-                className="mt-1 self-start rounded-lg bg-foreground px-4 py-2 font-medium text-background transition-colors hover:bg-accent"
+                className="mt-1 self-start inline-flex h-12 items-center justify-center rounded-xl bg-accent px-5 font-bold text-on-accent transition-opacity hover:opacity-90"
               >
                 Enregistrer
               </button>
@@ -89,8 +89,8 @@ export default async function SettingsPage() {
         </div>
       </section>
 
-      <section className="max-w-md rounded-xl border border-border bg-surface p-6 shadow-card">
-        <h2 className="font-display text-lg font-semibold text-foreground">
+      <section className="max-w-md rounded-2xl border border-border bg-surface p-5 shadow-card sm:p-6">
+        <h2 className="font-display text-base font-bold text-foreground">
           Apparence
         </h2>
 
@@ -116,7 +116,7 @@ export default async function SettingsPage() {
 
           <button
             type="submit"
-            className="rounded-lg bg-foreground px-4 py-2 font-medium text-background transition-colors hover:bg-accent"
+            className="inline-flex h-12 items-center justify-center rounded-xl bg-accent px-5 font-bold text-on-accent transition-opacity hover:opacity-90"
           >
             Appliquer
           </button>
@@ -147,7 +147,7 @@ export default async function SettingsPage() {
 
           <button
             type="submit"
-            className="rounded-lg bg-foreground px-4 py-2 font-medium text-background transition-colors hover:bg-accent"
+            className="inline-flex h-12 items-center justify-center rounded-xl bg-accent px-5 font-bold text-on-accent transition-opacity hover:opacity-90"
           >
             Appliquer
           </button>

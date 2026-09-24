@@ -26,8 +26,8 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="w-full max-w-sm rounded-xl border border-border bg-surface p-8 shadow-card">
-      <h1 className="font-display text-2xl font-semibold text-foreground">
+    <div className="w-full max-w-sm rounded-2xl border border-border bg-surface p-7 shadow-card sm:p-8">
+      <h1 className="font-display text-2xl font-bold tracking-tight text-foreground">
         TCIF
       </h1>
       <p className="mt-1 text-sm text-muted">Suivi financier perso</p>
@@ -43,7 +43,7 @@ export default function LoginPage() {
             type="email"
             required
             autoComplete="email"
-            className="rounded-lg border border-border bg-surface px-3 py-2 text-foreground outline-none focus:border-accent focus:outline-2 focus:outline-accent focus:outline-offset-1"
+            className="rounded-xl border border-border bg-surface px-3.5 py-3 text-foreground outline-none focus:border-accent focus:ring-2 focus:ring-accent/25"
           />
         </div>
 
@@ -57,7 +57,7 @@ export default function LoginPage() {
             type="password"
             required
             autoComplete="current-password"
-            className="rounded-lg border border-border bg-surface px-3 py-2 text-foreground outline-none focus:border-accent focus:outline-2 focus:outline-accent focus:outline-offset-1"
+            className="rounded-xl border border-border bg-surface px-3.5 py-3 text-foreground outline-none focus:border-accent focus:ring-2 focus:ring-accent/25"
           />
         </div>
 
@@ -68,7 +68,7 @@ export default function LoginPage() {
         <button
           type="submit"
           disabled={isPending}
-          className="mt-2 rounded-lg bg-foreground px-4 py-2 font-medium text-background transition-colors hover:bg-accent disabled:opacity-50"
+          className="mt-2 inline-flex h-12 items-center justify-center rounded-xl bg-accent px-5 font-bold text-on-accent transition-opacity hover:opacity-90 disabled:opacity-50"
         >
           {isPending ? "Connexion..." : "Se connecter"}
         </button>

@@ -1,5 +1,7 @@
 import Link from "next/link";
-import { formatCurrency, formatDateShort } from "@/lib/format";
+import { formatDateShort } from "@/lib/format";
+import { Montant } from "../../components/Montant";
+import { BOUTON_ICONE, PencilIcon } from "../../components/icons";
 import { DeleteTransactionButton } from "./DeleteTransactionButton";
 
 export interface TransactionRow {
@@ -15,61 +17,59 @@ export interface TransactionRow {
 export function TransactionList({ rows }: { rows: TransactionRow[] }) {
   if (rows.length === 0) {
     return (
-      <p className="text-sm text-muted">
-        Aucune transaction pour ces filtres.
-      </p>
+      <div className="rounded-2xl border border-dashed border-border px-5 py-10 text-center">
+        <p className="text-sm text-muted">Aucune transaction pour ces filtres.</p>
+      </div>
     );
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b border-border text-left text-muted">
-            <th className="py-2 pr-4 font-medium">Date</th>
-            <th className="py-2 pr-4 font-medium">Libellé</th>
-            <th className="hidden py-2 pr-4 font-medium sm:table-cell">
-              Catégorie
-            </th>
-            <th className="hidden py-2 pr-4 font-medium sm:table-cell">
-              Compte
-            </th>
-            <th className="py-2 pr-4 text-right font-medium">Montant</th>
-            <th className="py-2 pr-4 font-medium" aria-hidden="true" />
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => (
-            <tr key={row.id} className="border-b border-border">
-              <td className="py-2 pr-4 whitespace-nowrap text-muted">
-                {formatDateShort(row.occurred_on)}
-              </td>
-              <td className="py-2 pr-4 text-foreground">{row.label}</td>
-              <td className="hidden py-2 pr-4 text-muted sm:table-cell">
-                {row.categoryName ?? "—"}
-              </td>
-              <td className="hidden py-2 pr-4 text-muted sm:table-cell">
-                {row.accountName ?? "Non assigné"}
-              </td>
-              <td className="py-2 pr-4 text-right font-medium tabular-nums text-foreground">
-                {row.type === "income" ? "+" : "−"}
-                {formatCurrency(row.amount)}
-              </td>
-              <td className="py-2 pr-4">
-                <div className="flex items-center justify-end gap-3">
-                  <Link
-                    href={`/transactions/${row.id}/edit`}
-                    className="text-muted hover:text-accent"
-                  >
-                    Modifier
-                  </Link>
-                  <DeleteTransactionButton id={row.id} />
-                </div>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    // Une liste de lignes plutôt qu'un tableau : un tableau oblige à faire
+    // défiler horizontalement sur téléphone, et l'app est d'abord utilisée au
+    // téléphone. Les informations secondaires passent sous le libellé.
+    <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-surface shadow-card">
+      {rows.map((row) => {
+        const details = [
+          formatDateShort(row.occurred_on),
+          row.categoryName,
+          row.accountName,
+        ].filter(Boolean);
+
+        return (
+          <li key={row.id} className="flex items-center gap-2 px-3 py-2 sm:px-4">
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-semibold text-foreground">
+                {row.label}
+              </p>
+              <p className="mt-0.5 truncate text-xs font-medium text-muted">
+                {details.join(" · ")}
+              </p>
+            </div>
+
+            {/* Le montant est le seul élément aligné à droite, toujours à la
+                même distance du bord : la colonne des montants se lit d'un
+                trait, d'une ligne à l'autre. */}
+            <Montant
+              value={row.amount}
+              ton={row.type === "income" ? "income" : "expense"}
+              taille="sm"
+              className="shrink-0"
+            />
+
+            <div className="flex shrink-0 items-center">
+              <Link
+                href={`/transactions/${row.id}/edit`}
+                aria-label={`Modifier ${row.label}`}
+                title="Modifier"
+                className={`${BOUTON_ICONE} hover:bg-background hover:text-foreground`}
+              >
+                <PencilIcon />
+              </Link>
+              <DeleteTransactionButton id={row.id} />
+            </div>
+          </li>
+        );
+      })}
+    </ul>
   );
 }

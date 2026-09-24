@@ -16,7 +16,7 @@ interface TransactionFiltersProps {
 // filtres au-dessus de la liste qu'elle filtre.
 export function TransactionFilters({ categories, accounts, values }: TransactionFiltersProps) {
   const inputClass =
-    "w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none focus:border-accent";
+    "w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none focus:border-accent";
   const labelClass = "text-xs text-muted";
   const fieldClass = "flex w-full flex-col gap-1 sm:w-auto";
 
@@ -121,7 +121,7 @@ export function TransactionFilters({ categories, accounts, values }: Transaction
 
       <button
         type="submit"
-        className="rounded-lg bg-foreground px-4 py-2 text-sm font-medium text-background transition-colors hover:bg-accent"
+        className="inline-flex h-11 items-center rounded-xl bg-accent px-4 text-sm font-semibold text-on-accent transition-opacity hover:opacity-90"
       >
         Filtrer
       </button>

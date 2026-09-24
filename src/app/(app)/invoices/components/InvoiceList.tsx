@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { formatCurrency, formatDateShort } from "@/lib/format";
+import { formatDateShort } from "@/lib/format";
+import { Montant } from "../../components/Montant";
 
 export interface InvoiceRow {
   id: string;
@@ -35,56 +36,59 @@ const DOC_TYPE_LABELS: Record<string, string> = {
 export function InvoiceList({ rows }: { rows: InvoiceRow[] }) {
   if (rows.length === 0) {
     return (
-      <p className="text-sm text-muted">
-        Aucune facture ni devis pour ces filtres.
-      </p>
+      <div className="rounded-2xl border border-dashed border-border px-5 py-10 text-center">
+        <p className="text-sm text-muted">Aucune facture ni devis pour ces filtres.</p>
+      </div>
     );
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b border-border text-left text-muted">
-            <th className="py-2 pr-4 font-medium">Type</th>
-            <th className="py-2 pr-4 font-medium">
-              Fournisseur / Client
-            </th>
-            <th className="hidden py-2 pr-4 font-medium sm:table-cell">
-              Date
-            </th>
-            <th className="py-2 pr-4 text-right font-medium">Montant</th>
-            <th className="py-2 pr-4 font-medium">Statut</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => (
-            <tr key={row.id} className="border-b border-border">
-              <td className="py-2 pr-4 text-foreground">
-                {DOC_TYPE_LABELS[row.docType] ?? row.docType}
-              </td>
-              <td className="py-2 pr-4 text-foreground">
-                <Link href={`/invoices/${row.id}`} className="hover:text-accent">
-                  {row.partyName ?? "—"}
-                </Link>
-              </td>
-              <td className="hidden py-2 pr-4 text-muted sm:table-cell">
-                {row.issuedDate ? formatDateShort(row.issuedDate) : "—"}
-              </td>
-              <td className="py-2 pr-4 text-right font-medium tabular-nums text-foreground">
-                {row.amount !== null ? formatCurrency(row.amount) : "—"}
-              </td>
-              <td className="py-2 pr-4">
-                <span
-                  className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap ${STATUS_BADGE_CLASSES[row.status] ?? "bg-border text-muted"}`}
-                >
-                  {STATUS_LABELS[row.status] ?? row.status}
-                </span>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-surface shadow-card">
+      {rows.map((row) => {
+        const details = [
+          DOC_TYPE_LABELS[row.docType] ?? row.docType,
+          row.issuedDate ? formatDateShort(row.issuedDate) : null,
+        ].filter(Boolean);
+
+        return (
+          <li key={row.id}>
+            {/* Toute la ligne est cliquable : sur téléphone, viser un lien de
+                la largeur d'un mot est pénible. */}
+            <Link
+              href={`/invoices/${row.id}`}
+              className="flex items-center gap-3 px-3 py-3 hover:bg-background sm:px-4"
+            >
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-semibold text-foreground">
+                  {row.partyName ?? "Sans nom"}
+                </p>
+                <p className="mt-0.5 truncate text-xs font-medium text-muted">
+                  {details.join(" · ")}
+                </p>
+              </div>
+
+              <span
+                className={`shrink-0 rounded-full px-2.5 py-1 text-[0.6875rem] font-semibold whitespace-nowrap ${
+                  STATUS_BADGE_CLASSES[row.status] ?? "bg-border text-muted"
+                }`}
+              >
+                {STATUS_LABELS[row.status] ?? row.status}
+              </span>
+
+              {/* Largeur fixe : les montants s'alignent en colonne d'une ligne
+                  à l'autre, même quand ils n'ont pas le même nombre de
+                  chiffres. */}
+              <div className="w-24 shrink-0 text-right">
+                {row.amount !== null ? (
+                  <Montant value={row.amount} ton="neutral" taille="sm" />
+                ) : (
+                  <span className="text-sm text-muted">—</span>
+                )}
+              </div>
+            </Link>
+          </li>
+        );
+      })}
+    </ul>
   );
 }

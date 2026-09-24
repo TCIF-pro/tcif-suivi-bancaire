@@ -7,8 +7,9 @@ import {
   addMonthsToDateString,
   addDaysToDateString,
 } from "@/lib/dates";
-import { formatCurrency, formatDateLong } from "@/lib/format";
+import { Montant } from "../components/Montant";
 import { StatTile } from "./components/BalanceCard";
+import { BarreHorizon } from "./components/BarreHorizon";
 import { CategoryChart, type CategoryComparisonRow } from "./components/CategoryChart";
 import { UpcomingSubscriptions } from "./components/UpcomingSubscriptions";
 
@@ -218,10 +219,10 @@ function AccountFilterLink({
   return (
     <Link
       href={href}
-      className={`rounded-full px-3 py-1 text-sm font-medium transition-colors ${
+      className={`rounded-full px-4 py-2 text-sm transition-colors ${
         active
-          ? "bg-foreground text-background"
-          : "border border-border text-muted hover:border-accent hover:text-accent"
+          ? "bg-accent font-semibold text-on-accent"
+          : "border border-border font-medium text-muted hover:text-foreground"
       }`}
     >
       {label}
@@ -266,13 +267,35 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
       ),
     ]);
 
+  // Un solde et une barre d'horizon par compte affiché. Les valeurs sont
+  // exactement celles calculées plus haut : `accountBalances` en vue « Tous »,
+  // le solde du runway quand un seul compte est filtré — rien n'a changé côté
+  // calcul, on ne fait que les rassembler dans une même carte.
+  const cartes = runways.map((r) => ({
+    id: r.id,
+    name: r.name,
+    balance:
+      accountBalances?.find((a) => a.id === r.id)?.balance ??
+      r.runway.currentBalance,
+    runway: r.runway,
+  }));
+
+  // Les prélèvements à venir ne sont rattachés à aucun compte dans la requête
+  // actuelle : on ne pose donc des repères sur la barre que lorsqu'un seul
+  // compte est affiché, sinon on afficherait les échéances d'un compte sur la
+  // barre d'un autre. L'étape 3.2 réglera ça avec le sélecteur d'horizon.
+  const reperes =
+    cartes.length === 1
+      ? upcomingSubscriptions.map((s) => ({ id: s.id, date: s.nextBillingDate }))
+      : [];
+
   return (
-    <div className="flex flex-col gap-8">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="font-display text-2xl font-semibold text-foreground">
+    <div className="flex flex-col gap-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="font-display text-2xl font-bold tracking-tight text-foreground">
           Tableau de bord
         </h1>
-        <nav className="flex items-center gap-2">
+        <nav aria-label="Filtrer par compte" className="flex items-center gap-2">
           <AccountFilterLink
             href="/dashboard"
             label="Tous"
@@ -289,88 +312,72 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         </nav>
       </div>
 
-      {accountBalances ? (
-        <div className="flex flex-wrap gap-8">
-          {accountBalances.map((a) => (
-            <div key={a.id}>
-              <p className="text-sm text-muted">{a.name}</p>
-              <p className="mt-1 font-display text-5xl font-semibold text-foreground">
-                {formatCurrency(a.balance)}
+      {cartes.map((carte) => (
+        <section
+          key={carte.id}
+          className="rounded-2xl border border-border bg-surface p-5 shadow-card sm:p-6"
+        >
+          {/* Sur grand écran, la barre passe à côté du solde plutôt qu'en
+              dessous : c'est là qu'elle est la plus lisible. */}
+          <div className="flex flex-col gap-7 lg:flex-row lg:items-center lg:gap-14">
+            <div className="lg:shrink-0">
+              <p className="text-sm font-medium text-muted">
+                Solde disponible{cartes.length > 1 ? ` · ${carte.name}` : ""}
               </p>
+              <Montant
+                value={carte.balance}
+                ton="solde"
+                taille="hero"
+                className="mt-2 block"
+              />
             </div>
-          ))}
-        </div>
-      ) : (
-        <div>
-          <p className="text-sm text-muted">Solde actuel</p>
-          <p className="mt-1 font-display text-5xl font-semibold text-foreground">
-            {formatCurrency(runways[0].runway.currentBalance)}
-          </p>
-        </div>
-      )}
 
-      <div className="flex flex-wrap gap-6">
-        {runways.map((r) => (
-          <section
-            key={r.id}
-            className="max-w-md flex-1 rounded-xl border-2 border-accent bg-surface p-6 shadow-card"
-          >
-            <h2 className="font-display text-lg font-semibold text-foreground">
-              Trésorerie prévisionnelle
-              {runways.length > 1 ? ` — ${r.name}` : ""}
-            </h2>
-
-            {r.runway.horizonExceeded ? (
-              <p className="mt-4 text-muted">
-                Pas d&apos;échéance connue dans les 24 prochains mois.
-              </p>
-            ) : (
-              <>
-                <p className="mt-4 font-display text-5xl font-semibold text-accent">
-                  {r.runway.daysRemaining} j
-                </p>
-                <p className="mt-1 text-sm text-muted">
-                  avant rupture de trésorerie estimée
-                </p>
-                <p className="mt-2 text-muted">
-                  le {formatDateLong(r.runway.zeroDate!)}
-                </p>
-              </>
-            )}
-          </section>
-        ))}
-      </div>
+            <div className="lg:min-w-0 lg:flex-1">
+              <BarreHorizon
+                today={today}
+                daysRemaining={carte.runway.daysRemaining}
+                zeroDate={carte.runway.zeroDate}
+                horizonExceeded={carte.runway.horizonExceeded}
+                reperes={reperes}
+              />
+            </div>
+          </div>
+        </section>
+      ))}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <StatTile label="Flux net (ce mois)" value={formatCurrency(kpis.balanceOfMonth)} />
-        <StatTile label="Total dépenses (mois)" value={formatCurrency(kpis.totalExpenses)} />
+        <StatTile label="Flux net (ce mois)" value={kpis.balanceOfMonth} ton="solde" />
+        <StatTile label="Dépenses (ce mois)" value={kpis.totalExpenses} ton="expense" />
         <StatTile
-          label="Abonnements actifs (mensualisé)"
-          value={formatCurrency(kpis.totalSubscriptions)}
+          label="Abonnements (mensualisé)"
+          value={kpis.totalSubscriptions}
+          ton="neutral"
         />
       </div>
 
-      <section className="rounded-xl border border-border bg-surface p-6 shadow-card">
-        <h2 className="font-display text-lg font-semibold text-foreground">
-          Dépenses par catégorie
-        </h2>
-        <p className="mt-1 text-sm text-muted">
-          Mois en cours comparé au mois précédent.
-        </p>
-        <div className="mt-4">
-          <CategoryChart rows={categoryRows} />
-        </div>
-      </section>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
+        <section className="rounded-2xl border border-border bg-surface p-5 shadow-card sm:p-6 lg:col-span-3">
+          <h2 className="font-display text-base font-bold text-foreground">
+            Dépenses par catégorie
+          </h2>
+          <p className="mt-1 text-sm text-muted">
+            Mois en cours comparé au mois précédent.
+          </p>
+          <div className="mt-5">
+            <CategoryChart rows={categoryRows} />
+          </div>
+        </section>
 
-      <section className="max-w-md rounded-xl border border-border bg-surface p-6 shadow-card">
-        <h2 className="font-display text-lg font-semibold text-foreground">
-          Prochains prélèvements
-        </h2>
-        <p className="mt-1 text-sm text-muted">7 prochains jours</p>
-        <div className="mt-4">
-          <UpcomingSubscriptions today={today} rows={upcomingSubscriptions} />
-        </div>
-      </section>
+        <section className="rounded-2xl border border-border bg-surface p-5 shadow-card sm:p-6 lg:col-span-2">
+          <h2 className="font-display text-base font-bold text-foreground">
+            Prochains prélèvements
+          </h2>
+          <p className="mt-1 text-sm text-muted">7 prochains jours</p>
+          <div className="mt-4">
+            <UpcomingSubscriptions today={today} rows={upcomingSubscriptions} />
+          </div>
+        </section>
+      </div>
     </div>
   );
 }

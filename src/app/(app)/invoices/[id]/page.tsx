@@ -70,7 +70,7 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="font-display text-2xl font-semibold text-foreground">
+        <h1 className="font-display text-2xl font-bold tracking-tight text-foreground">
           {DOC_TYPE_LABELS[invoice.doc_type] ?? invoice.doc_type} —{" "}
           {invoice.party_name ?? invoice.file_name}
         </h1>
@@ -106,7 +106,7 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
           <form action={convertDevisToFacture.bind(null, id)}>
             <button
               type="submit"
-              className="rounded-lg border border-accent px-4 py-2 text-sm font-medium text-accent transition-colors hover:bg-accent/10"
+              className="rounded-xl border border-accent px-4 py-2 text-sm font-medium text-accent transition-colors hover:bg-accent/10"
             >
               Transformer en facture
             </button>
@@ -116,7 +116,7 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
           <form action={archiveInvoice.bind(null, id)}>
             <button
               type="submit"
-              className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-muted hover:border-accent hover:text-accent"
+              className="rounded-xl border border-border px-4 py-2 text-sm font-medium text-muted hover:border-accent hover:text-accent"
             >
               Archiver
             </button>

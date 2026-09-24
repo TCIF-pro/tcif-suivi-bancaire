@@ -27,7 +27,7 @@ export function SubscriptionForm({
   return (
     <form
       action={action}
-      className="mx-auto flex w-full max-w-xl flex-col gap-4 rounded-xl border border-border bg-surface p-6 shadow-card sm:p-8"
+      className="mx-auto flex w-full max-w-xl flex-col gap-4 rounded-2xl border border-border bg-surface p-5 shadow-card sm:p-7"
     >
       <div className="flex flex-col gap-1">
         <label htmlFor="name" className="text-sm font-medium text-foreground">
@@ -39,7 +39,7 @@ export function SubscriptionForm({
           type="text"
           required
           defaultValue={defaultValues?.name}
-          className="rounded-lg border border-border bg-surface px-3 py-2 text-foreground outline-none focus:border-accent"
+          className="rounded-xl border border-border bg-surface px-3.5 py-3 text-foreground outline-none focus:border-accent focus:ring-2 focus:ring-accent/25"
         />
       </div>
 
@@ -55,7 +55,7 @@ export function SubscriptionForm({
           min="0.01"
           required
           defaultValue={defaultValues?.amount}
-          className="rounded-lg border border-border bg-surface px-3 py-2 text-foreground outline-none focus:border-accent"
+          className="rounded-xl border border-border bg-surface px-3.5 py-3 text-foreground outline-none focus:border-accent focus:ring-2 focus:ring-accent/25"
         />
       </div>
 
@@ -93,7 +93,7 @@ export function SubscriptionForm({
           type="date"
           required
           defaultValue={defaultValues?.next_billing_date ?? todayDateString()}
-          className="rounded-lg border border-border bg-surface px-3 py-2 text-foreground outline-none focus:border-accent"
+          className="rounded-xl border border-border bg-surface px-3.5 py-3 text-foreground outline-none focus:border-accent focus:ring-2 focus:ring-accent/25"
         />
       </div>
 
@@ -106,7 +106,7 @@ export function SubscriptionForm({
           name="account_id"
           required
           defaultValue={defaultValues?.account_id ?? ""}
-          className="rounded-lg border border-border bg-surface px-3 py-2 text-foreground outline-none focus:border-accent"
+          className="rounded-xl border border-border bg-surface px-3.5 py-3 text-foreground outline-none focus:border-accent focus:ring-2 focus:ring-accent/25"
         >
           <option value="" disabled>
             Choisir un compte
@@ -127,7 +127,7 @@ export function SubscriptionForm({
           id="category_id"
           name="category_id"
           defaultValue={defaultValues?.category_id ?? ""}
-          className="rounded-lg border border-border bg-surface px-3 py-2 text-foreground outline-none focus:border-accent"
+          className="rounded-xl border border-border bg-surface px-3.5 py-3 text-foreground outline-none focus:border-accent focus:ring-2 focus:ring-accent/25"
         >
           <option value="">Aucune</option>
           {categories.map((c) => (
@@ -147,7 +147,7 @@ export function SubscriptionForm({
           name="notes"
           rows={3}
           defaultValue={defaultValues?.notes ?? ""}
-          className="rounded-lg border border-border bg-surface px-3 py-2 text-foreground outline-none focus:border-accent"
+          className="rounded-xl border border-border bg-surface px-3.5 py-3 text-foreground outline-none focus:border-accent focus:ring-2 focus:ring-accent/25"
         />
       </div>
 
@@ -162,7 +162,7 @@ export function SubscriptionForm({
 
       <button
         type="submit"
-        className="mt-2 self-start rounded-lg bg-foreground px-4 py-2 font-medium text-background transition-colors hover:bg-accent"
+        className="mt-2 self-start inline-flex h-12 items-center justify-center rounded-xl bg-accent px-5 font-bold text-on-accent transition-opacity hover:opacity-90"
       >
         {submitLabel}
       </button>
