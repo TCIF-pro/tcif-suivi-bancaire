@@ -1,5 +1,11 @@
 import type { NextConfig } from "next";
 
+const FICHIERS_EXTRACTION_PDF = [
+  "./node_modules/pdf-parse/dist/pdf-parse/esm/pdf.worker.mjs",
+  "./node_modules/@napi-rs/canvas/**/*",
+  "./node_modules/@napi-rs/canvas-linux-x64-gnu/**/*",
+];
+
 const nextConfig: NextConfig = {
   // `pdf-parse` repose sur pdf.js, qui réclame des API de navigateur
   // (`DOMMatrix`, `Path2D`...). Quand Turbopack l'intègre au bundle serveur,
@@ -12,15 +18,25 @@ const nextConfig: NextConfig = {
   // n'utilise pas ces API.
   serverExternalPackages: ["pdf-parse"],
 
-  // Le fichier worker de pdf-parse est lu par un chemin construit à
-  // l'exécution (voir src/lib/pdf/extract.ts). L'analyseur de dépendances de
-  // Next ne peut pas deviner ce chemin, donc il n'embarquerait pas le fichier
-  // dans la fonction serveur déployée sur Vercel : l'import marcherait en
-  // local et échouerait en ligne. On le liste explicitement.
+  // Fichiers que l'analyseur de dépendances de Next ne sait pas trouver seul,
+  // et qu'il faut donc lister pour qu'ils soient embarqués dans la fonction
+  // déployée sur Vercel. Sans eux, tout marche en local — où node_modules est
+  // complet — et casse en ligne.
+  //
+  // - Le worker de pdf-parse : lu par un chemin construit à l'exécution (voir
+  //   src/lib/pdf/extract.ts).
+  // - @napi-rs/canvas et son binaire Linux : pdfjs-dist les charge par un
+  //   `require` fabriqué à l'exécution, pour fournir `DOMMatrix`, qui n'existe
+  //   pas sous Node. Sans eux, pdfjs exécute `new DOMMatrix()` au chargement
+  //   et plante : « ReferenceError: DOMMatrix is not defined ». C'est ce qui
+  //   faisait tomber les pages d'import et de détail des factures en prod.
+  //   Le binaire est celui de Vercel (Linux x64, glibc) ; il n'existe pas sur
+  //   un Mac, le motif ne trouve alors rien et c'est sans conséquence.
+  //
+  // Seule la page d'import en a besoin : c'est la seule dont une action extrait
+  // du texte, et pdf-parse n'est chargé qu'à ce moment-là (src/lib/pdf/extract.ts).
   outputFileTracingIncludes: {
-    "/invoices/upload": [
-      "./node_modules/pdf-parse/dist/pdf-parse/esm/pdf.worker.mjs",
-    ],
+    "/invoices/upload": FICHIERS_EXTRACTION_PDF,
   },
 
   experimental: {

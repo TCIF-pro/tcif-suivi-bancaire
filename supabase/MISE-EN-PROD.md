@@ -138,6 +138,18 @@ avec les environnements où elle existe (Production, Preview, Development).
 - [ ] Suivre le déploiement sur Vercel jusqu'au statut **Ready**.
 - [ ] Se connecter sur l'app en ligne, vérifier le tableau de bord et une page de
       chaque type (Transactions, Abonnements, Factures, Réglages).
+- [ ] **Import d'un PDF, depuis le téléphone** : Factures → Importer un PDF. La
+      page doit s'ouvrir, et un PDF texte doit arriver avec montant, date et
+      fournisseur pré-remplis. Puis **ouvrir une facture existante**.
+
+      Ce test ne peut se faire QU'EN LIGNE : l'extraction dépend de fichiers
+      (@napi-rs/canvas, worker de pdf-parse) que Vercel n'embarque que s'ils
+      sont listés dans `next.config.ts`. En local, `node_modules` est complet et
+      ne révèle rien. C'est ce qui a fait tomber ces deux pages lors de la mise
+      en ligne de la V2 (« DOMMatrix is not defined »).
+- [ ] **Règle générale** : tout changement de `next.config.ts` ou d'une
+      dépendance qui touche aux PDF se vérifie sur un déploiement **Preview**
+      (branche poussée, pas `main`) avant d'arriver en prod.
 - [ ] Vercel → Settings → **Cron Jobs** : deux tâches doivent apparaître,
       `generate-subscription-transactions` (6 h UTC) et `reset-demo` (3 h UTC).
       L'offre gratuite en autorise deux, une fois par jour chacune : il n'y a

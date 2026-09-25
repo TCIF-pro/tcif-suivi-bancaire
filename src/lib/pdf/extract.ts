@@ -1,4 +1,4 @@
-import { PDFParse } from "pdf-parse";
+import type { PDFParse as PDFParseClass } from "pdf-parse";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 
@@ -10,17 +10,16 @@ import path from "node:path";
 // la racine du projet et on construit nous-mêmes la data: URL.
 //
 // Deux réglages de next.config.ts sont indispensables au fonctionnement de ce
-// module — les retirer le casse silencieusement :
+// module — les retirer le casse, en ligne seulement :
 //   - `serverExternalPackages: ["pdf-parse"]`, sinon pdf.js est bundlé dans sa
-//     version navigateur et plante au chargement sur « DOMMatrix is not
-//     defined » ;
-//   - `outputFileTracingIncludes`, sinon le fichier worker n'est pas embarqué
-//     dans la fonction déployée et `readFileSync` échoue en ligne seulement.
+//     version navigateur et plante au chargement ;
+//   - `outputFileTracingIncludes`, sinon le fichier worker et @napi-rs/canvas
+//     (qui fournit `DOMMatrix` à pdf.js) ne sont pas déployés.
 //
 // Si une mise à jour de pdf-parse déplace ce fichier, ce chemin devra suivre.
 let workerConfigured = false;
 
-function ensureWorkerConfigured() {
+function ensureWorkerConfigured(PDFParse: typeof PDFParseClass) {
   if (workerConfigured) return;
 
   const workerPath = path.join(
@@ -32,17 +31,26 @@ function ensureWorkerConfigured() {
   workerConfigured = true;
 }
 
-// Best-effort : un PDF scanné, une image, un fichier corrompu — ou un worker
-// introuvable — ne doivent JAMAIS faire échouer l'import. On renvoie une
-// chaîne vide, que parse-fields.ts traduira en confiance "failed", c'est-à-dire
-// en correction manuelle.
+// Best-effort : un PDF scanné, une image, un fichier corrompu — ou un module
+// qui ne se charge pas — ne doivent JAMAIS faire échouer l'import. On renvoie
+// une chaîne vide, que parse-fields.ts traduira en confiance "failed",
+// c'est-à-dire en correction manuelle.
 export async function extractPdfText(buffer: Buffer): Promise<string> {
   try {
-    // Dans le try, et non avant : la lecture du fichier worker peut échouer
-    // (fichier absent du déploiement, droits, mise à jour du paquet). Hors du
-    // try, cette erreur faisait planter tout l'import au lieu de basculer en
-    // correction manuelle.
-    ensureWorkerConfigured();
+    // Chargé ICI, au moment d'extraire, et non en tête de fichier.
+    //
+    // En tête de fichier, pdf-parse était chargé dès qu'une page importait les
+    // actions des factures — c'est-à-dire à l'ouverture de la page d'import et
+    // de chaque page de détail. En prod, pdf.js y plantait au chargement
+    // (« DOMMatrix is not defined »), et ces pages entières tombaient avant
+    // même qu'on ait choisi un fichier. Chargé ici, dans le try, un tel échec
+    // se traduit par une correction manuelle, jamais par une page cassée — et
+    // les pages qui n'extraient rien ne le chargent plus du tout.
+    const { PDFParse } = await import("pdf-parse");
+
+    // Dans le try aussi : la lecture du fichier worker peut échouer (fichier
+    // absent du déploiement, droits, mise à jour du paquet).
+    ensureWorkerConfigured(PDFParse);
 
     const parser = new PDFParse({ data: buffer });
     const result = await parser.getText();
