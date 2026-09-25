@@ -1,5 +1,11 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { todayDateString } from "@/lib/dates";
+import {
+  idsDesComptesVisibles,
+  filtreComptesVisibles,
+} from "@/lib/accounts/visible";
+import { relationName } from "@/lib/supabase/relations";
 import { TransactionFilters } from "./components/TransactionFilters";
 import { TransactionList, type TransactionRow } from "./components/TransactionList";
 
@@ -46,9 +52,14 @@ export default async function TransactionsPage({
 
   const sort = SORTS[params.sort as keyof typeof SORTS] ?? SORTS.date_desc;
 
+  // Masquer un compte masque aussi ses transactions : elles sortent des
+  // listes et des totaux, sans jamais être supprimées.
+  const comptesVisibles = await idsDesComptesVisibles(supabase);
+
   let query = supabase
     .from("transactions")
     .select("id, type, amount, occurred_on, label, categories(name), accounts(name)")
+    .or(filtreComptesVisibles(comptesVisibles))
     .order(sort.column, { ascending: sort.ascending })
     .limit(MAX_ROWS);
 
@@ -66,19 +77,27 @@ export default async function TransactionsPage({
     amount: Number(t.amount),
     occurred_on: t.occurred_on,
     label: t.label,
-    categoryName: t.categories?.[0]?.name ?? null,
-    accountName: t.accounts?.[0]?.name ?? null,
+    categoryName: relationName(t.categories),
+    accountName: relationName(t.accounts),
   }));
+
+  // Une transaction datée dans le futur n'est pas encore comptée dans le
+  // solde : on la sort de la liste principale pour qu'on ne la confonde pas
+  // avec de l'argent déjà parti. Elle rejoindra la liste toute seule le jour
+  // de sa date, sans intervention.
+  const today = todayDateString();
+  const aVenir = rows.filter((r) => r.occurred_on > today);
+  const passees = rows.filter((r) => r.occurred_on <= today);
 
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
-        <h1 className="font-display text-2xl font-semibold text-foreground">
+        <h1 className="font-display text-2xl font-bold tracking-tight text-foreground">
           Transactions
         </h1>
         <Link
           href="/transactions/new"
-          className="rounded-lg bg-foreground px-4 py-2 text-sm font-medium text-background transition-colors hover:bg-accent"
+          className="inline-flex h-11 items-center rounded-xl bg-accent px-4 text-sm font-semibold text-on-accent transition-opacity hover:opacity-90"
         >
           Ajouter
         </Link>
@@ -90,7 +109,22 @@ export default async function TransactionsPage({
         values={params}
       />
 
-      <TransactionList rows={rows} />
+      {aVenir.length > 0 && (
+        <section className="flex flex-col gap-3">
+          <div className="flex items-baseline gap-2">
+            <h2 className="font-display text-base font-bold text-foreground">
+              À venir
+            </h2>
+            <span className="text-sm font-medium text-muted">
+              {aVenir.length} transaction{aVenir.length > 1 ? "s" : ""} pas encore
+              comptée{aVenir.length > 1 ? "s" : ""} dans le solde
+            </span>
+          </div>
+          <TransactionList rows={aVenir} aVenir />
+        </section>
+      )}
+
+      <TransactionList rows={passees} />
     </div>
   );
 }

@@ -1,17 +1,29 @@
 import type { Metadata, Viewport } from "next";
-import { Space_Grotesk, Archivo } from "next/font/google";
+import { Bricolage_Grotesque, Figtree, IBM_Plex_Mono } from "next/font/google";
 import { createClient } from "@/lib/supabase/server";
 import { ACCENT_COLORS, isAccentColorId, type AccentColorId } from "@/lib/accent-colors";
 import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
 import "./globals.css";
 
-const spaceGrotesk = Space_Grotesk({
-  variable: "--font-space-grotesk",
+// Trois rôles, trois polices (cf. globals.css) :
+// - Bricolage Grotesque : les gros chiffres et les titres, c'est elle qui
+//   porte le caractère de l'app ;
+// - Figtree : tout le texte courant ;
+// - IBM Plex Mono : tous les montants — chiffres de largeur fixe, donc
+//   alignés d'une ligne à l'autre comme sur un relevé bancaire.
+const bricolage = Bricolage_Grotesque({
+  variable: "--font-bricolage",
   subsets: ["latin"],
 });
 
-const archivo = Archivo({
-  variable: "--font-archivo",
+const figtree = Figtree({
+  variable: "--font-figtree",
+  subsets: ["latin"],
+});
+
+const plexMono = IBM_Plex_Mono({
+  variable: "--font-plex-mono",
+  weight: ["400", "500", "600"],
   subsets: ["latin"],
 });
 
@@ -28,8 +40,8 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#F5F6F8" },
-    { media: "(prefers-color-scheme: dark)", color: "#101216" },
+    { media: "(prefers-color-scheme: light)", color: "#F4F6FA" },
+    { media: "(prefers-color-scheme: dark)", color: "#10141C" },
   ],
 };
 
@@ -48,8 +60,11 @@ async function getAppearance(): Promise<{
   } = await supabase.auth.getUser();
 
   if (!user) {
-    // page /login : pas encore de préférence rattachée à un compte
-    return { theme: "light", accentColorId: "brass" };
+    // Page /login : aucune préférence rattachée à un compte, puisqu'il n'y a
+    // pas encore de compte. On sert le thème sombre plutôt que le clair —
+    // c'est celui de l'app une fois connecté, l'enchaînement est donc sans
+    // à-coup, et un écran sombre est plus confortable de nuit sur téléphone.
+    return { theme: "dark", accentColorId: "brass" };
   }
 
   const { data: settings } = await supabase
@@ -78,7 +93,7 @@ export default async function RootLayout({
   return (
     <html
       lang="fr"
-      className={`${spaceGrotesk.variable} ${archivo.variable} h-full antialiased ${theme === "dark" ? "dark" : ""}`}
+      className={`${bricolage.variable} ${figtree.variable} ${plexMono.variable} h-full antialiased ${theme === "dark" ? "dark" : ""}`}
       style={
         {
           "--accent-light": accent.light,

@@ -1,3 +1,7 @@
+// Fait ÉCHOUER LA COMPILATION si ce fichier est importé un jour depuis un
+// composant client. Sans cette ligne, une erreur d'import enverrait la clé
+// service_role dans le JavaScript du navigateur, sans le moindre avertissement.
+import "server-only";
 import { createClient } from "@supabase/supabase-js";
 
 // Client service-role : bypasse la RLS. Réservé au strict nécessaire côté

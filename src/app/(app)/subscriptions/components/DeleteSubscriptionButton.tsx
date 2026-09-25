@@ -1,6 +1,7 @@
 "use client";
 
 import { deleteSubscription } from "../actions";
+import { BOUTON_ICONE, TrashIcon } from "../../components/icons";
 
 export function DeleteSubscriptionButton({ id }: { id: string }) {
   return (
@@ -12,8 +13,13 @@ export function DeleteSubscriptionButton({ id }: { id: string }) {
         }
       }}
     >
-      <button type="submit" className="text-muted hover:text-danger">
-        Supprimer
+      <button
+        type="submit"
+        aria-label="Supprimer cet abonnement"
+        title="Supprimer"
+        className={`${BOUTON_ICONE} hover:bg-danger-bg hover:text-danger`}
+      >
+        <TrashIcon />
       </button>
     </form>
   );

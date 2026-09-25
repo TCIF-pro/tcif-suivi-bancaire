@@ -1,9 +1,17 @@
 import { todayDateString } from "@/lib/dates";
+import {
+  TRANSACTION_TYPES,
+  TRANSACTION_TYPE_LABELS,
+  parseTransactionType,
+} from "@/lib/transactions/types";
+import { LibellesRapides, type LibelleRapide } from "./LibellesRapides";
 
 interface TransactionFormProps {
   action: (formData: FormData) => void;
   categories: { id: string; name: string }[];
-  accounts: { id: string; name: string }[];
+  accounts: { id: string; name: string; kind?: string }[];
+  /** Boutons de pré-remplissage. Vide = la section n'apparaît pas. */
+  libellesRapides?: LibelleRapide[];
   submitLabel: string;
   defaultValues?: {
     type?: string;
@@ -13,6 +21,7 @@ interface TransactionFormProps {
     category_id?: string | null;
     account_id?: string | null;
     notes?: string | null;
+    transfer_account_id?: string | null;
   };
 }
 
@@ -22,33 +31,38 @@ export function TransactionForm({
   action,
   categories,
   accounts,
+  libellesRapides = [],
   submitLabel,
   defaultValues,
 }: TransactionFormProps) {
+  // Proposé par défaut comme destination : le premier livret.
+  const comptesEpargne = accounts.filter((a) => a.kind === "savings");
+
   return (
     <form
       action={action}
-      className="mx-auto flex w-full max-w-xl flex-col gap-4 rounded-xl border border-border bg-surface p-6 shadow-card sm:p-8"
+      className="mx-auto flex w-full max-w-xl flex-col gap-4 rounded-2xl border border-border bg-surface p-5 shadow-card sm:p-7"
     >
-      <div className="flex gap-6">
-        <label className="flex items-center gap-2 text-sm text-foreground">
-          <input
-            type="radio"
-            name="type"
-            value="expense"
-            defaultChecked={defaultValues?.type !== "income"}
-          />
-          Dépense
-        </label>
-        <label className="flex items-center gap-2 text-sm text-foreground">
-          <input
-            type="radio"
-            name="type"
-            value="income"
-            defaultChecked={defaultValues?.type === "income"}
-          />
-          Revenu
-        </label>
+      <LibellesRapides libelles={libellesRapides} />
+
+      {/* « Épargne » sort bien du compte courant, mais n'est pas comptée
+          comme une dépense : ni dans les totaux du mois, ni dans le graphique
+          par catégorie. Voir lib/transactions/types.ts. */}
+      <div className="flex flex-wrap gap-5">
+        {TRANSACTION_TYPES.map((type) => (
+          <label
+            key={type}
+            className="flex items-center gap-2 text-sm text-foreground"
+          >
+            <input
+              type="radio"
+              name="type"
+              value={type}
+              defaultChecked={parseTransactionType(defaultValues?.type) === type}
+            />
+            {TRANSACTION_TYPE_LABELS[type]}
+          </label>
+        ))}
       </div>
 
       <div className="flex flex-col gap-1">
@@ -63,7 +77,7 @@ export function TransactionForm({
           min="0.01"
           required
           defaultValue={defaultValues?.amount}
-          className="rounded-lg border border-border bg-surface px-3 py-2 text-foreground outline-none focus:border-accent"
+          className="rounded-xl border border-border bg-surface px-3.5 py-3 text-foreground outline-none focus:border-accent focus:ring-2 focus:ring-accent/25"
         />
       </div>
 
@@ -77,7 +91,7 @@ export function TransactionForm({
           type="date"
           required
           defaultValue={defaultValues?.occurred_on ?? todayDateString()}
-          className="rounded-lg border border-border bg-surface px-3 py-2 text-foreground outline-none focus:border-accent"
+          className="rounded-xl border border-border bg-surface px-3.5 py-3 text-foreground outline-none focus:border-accent focus:ring-2 focus:ring-accent/25"
         />
       </div>
 
@@ -91,7 +105,7 @@ export function TransactionForm({
           type="text"
           required
           defaultValue={defaultValues?.label}
-          className="rounded-lg border border-border bg-surface px-3 py-2 text-foreground outline-none focus:border-accent"
+          className="rounded-xl border border-border bg-surface px-3.5 py-3 text-foreground outline-none focus:border-accent focus:ring-2 focus:ring-accent/25"
         />
       </div>
 
@@ -104,7 +118,7 @@ export function TransactionForm({
           name="account_id"
           required
           defaultValue={defaultValues?.account_id ?? ""}
-          className="rounded-lg border border-border bg-surface px-3 py-2 text-foreground outline-none focus:border-accent"
+          className="rounded-xl border border-border bg-surface px-3.5 py-3 text-foreground outline-none focus:border-accent focus:ring-2 focus:ring-accent/25"
         >
           <option value="" disabled>
             Choisir un compte
@@ -117,6 +131,37 @@ export function TransactionForm({
         </select>
       </div>
 
+      {/* Compte d'arrivée d'un virement d'épargne. Il ne s'affiche que
+          lorsque « Épargne » est coché — par une règle CSS (`.champ-virement`
+          dans globals.css) qui regarde le bouton radio, sans JavaScript et
+          sans transformer les champs en champs contrôlés : le pré-remplissage
+          par URL et les libellés rapides continuent donc de fonctionner. */}
+      <div className="champ-virement flex flex-col gap-1">
+        <label
+          htmlFor="transfer_account_id"
+          className="text-sm font-medium text-foreground"
+        >
+          Vers quel compte
+        </label>
+        <select
+          id="transfer_account_id"
+          name="transfer_account_id"
+          defaultValue={defaultValues?.transfer_account_id ?? comptesEpargne[0]?.id ?? ""}
+          className="rounded-xl border border-border bg-surface px-3.5 py-3 text-foreground outline-none focus:border-accent focus:ring-2 focus:ring-accent/25"
+        >
+          <option value="">Choisir un compte</option>
+          {accounts.map((a) => (
+            <option key={a.id} value={a.id}>
+              {a.name}
+            </option>
+          ))}
+        </select>
+        <p className="text-xs text-muted">
+          L&apos;argent quitte le compte du dessus et arrive sur celui-ci. Pour
+          reprendre de l&apos;argent sur un livret, inverse simplement les deux.
+        </p>
+      </div>
+
       <div className="flex flex-col gap-1">
         <label htmlFor="category_id" className="text-sm font-medium text-foreground">
           Catégorie
@@ -125,7 +170,7 @@ export function TransactionForm({
           id="category_id"
           name="category_id"
           defaultValue={defaultValues?.category_id ?? ""}
-          className="rounded-lg border border-border bg-surface px-3 py-2 text-foreground outline-none focus:border-accent"
+          className="rounded-xl border border-border bg-surface px-3.5 py-3 text-foreground outline-none focus:border-accent focus:ring-2 focus:ring-accent/25"
         >
           <option value="">Aucune</option>
           {categories.map((c) => (
@@ -145,13 +190,13 @@ export function TransactionForm({
           name="notes"
           rows={3}
           defaultValue={defaultValues?.notes ?? ""}
-          className="rounded-lg border border-border bg-surface px-3 py-2 text-foreground outline-none focus:border-accent"
+          className="rounded-xl border border-border bg-surface px-3.5 py-3 text-foreground outline-none focus:border-accent focus:ring-2 focus:ring-accent/25"
         />
       </div>
 
       <button
         type="submit"
-        className="mt-2 self-start rounded-lg bg-foreground px-4 py-2 font-medium text-background transition-colors hover:bg-accent"
+        className="mt-2 self-start inline-flex h-12 items-center justify-center rounded-xl bg-accent px-5 font-bold text-on-accent transition-opacity hover:opacity-90"
       >
         {submitLabel}
       </button>

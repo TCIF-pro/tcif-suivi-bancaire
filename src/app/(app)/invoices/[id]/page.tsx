@@ -37,7 +37,7 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
   const { data: invoice } = await supabase
     .from("invoices")
     .select(
-      "id, doc_type, direction, status, file_path, file_name, extraction_confidence, amount, issued_date, party_name, category_id, converted_from_devis_id",
+      "id, doc_type, direction, status, file_path, file_name, extraction_confidence, amount, issued_date, party_name, category_id, account_id, converted_from_devis_id",
     )
     .eq("id", id)
     .single();
@@ -46,8 +46,12 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
     notFound();
   }
 
-  const [{ data: categories }, { data: signedUrlData }, { data: convertedTo }] =
-    await Promise.all([
+  const [
+    { data: categories },
+    { data: signedUrlData },
+    { data: convertedTo },
+    { data: accounts },
+  ] = await Promise.all([
       supabase
         .from("categories")
         .select("id, name")
@@ -59,6 +63,14 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
         .select("id")
         .eq("converted_from_devis_id", id)
         .maybeSingle(),
+      // Comptes courants visibles uniquement : on règle une facture depuis un
+      // compte courant, pas depuis un livret d'épargne.
+      supabase
+        .from("accounts")
+        .select("id, name")
+        .eq("is_archived", false)
+        .eq("kind", "checking")
+        .order("created_at", { ascending: true }),
     ]);
 
   const canConvert =
@@ -70,7 +82,7 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="font-display text-2xl font-semibold text-foreground">
+        <h1 className="font-display text-2xl font-bold tracking-tight text-foreground">
           {DOC_TYPE_LABELS[invoice.doc_type] ?? invoice.doc_type} —{" "}
           {invoice.party_name ?? invoice.file_name}
         </h1>
@@ -106,7 +118,7 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
           <form action={convertDevisToFacture.bind(null, id)}>
             <button
               type="submit"
-              className="rounded-lg border border-accent px-4 py-2 text-sm font-medium text-accent transition-colors hover:bg-accent/10"
+              className="rounded-xl border border-accent px-4 py-2 text-sm font-medium text-accent transition-colors hover:bg-accent/10"
             >
               Transformer en facture
             </button>
@@ -116,7 +128,7 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
           <form action={archiveInvoice.bind(null, id)}>
             <button
               type="submit"
-              className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-muted hover:border-accent hover:text-accent"
+              className="rounded-xl border border-border px-4 py-2 text-sm font-medium text-muted hover:border-accent hover:text-accent"
             >
               Archiver
             </button>
@@ -129,6 +141,7 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
         <InvoiceReviewForm
           action={saveInvoice.bind(null, id)}
           categories={categories ?? []}
+          accounts={accounts ?? []}
           direction={invoice.direction}
           extractionConfidence={invoice.extraction_confidence}
           defaultValues={{
@@ -136,6 +149,7 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
             issued_date: invoice.issued_date,
             party_name: invoice.party_name,
             category_id: invoice.category_id,
+            account_id: invoice.account_id,
           }}
         />
 

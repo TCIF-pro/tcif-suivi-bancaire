@@ -1,13 +1,15 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { signIn } from "../actions";
+import { entrerDansLaDemo, signIn } from "../actions";
 
 export default function LoginPage() {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState(false);
+  const [erreurDemo, setErreurDemo] = useState(false);
 
   function handleSubmit(formData: FormData) {
     setError(false);
@@ -20,14 +22,30 @@ export default function LoginPage() {
       }
 
       // Navigation client pure (History API) : jamais de redirect() serveur
-      // sur cette transition, pour rester en mode standalone sur iOS.
+      // sur cette transition, pour rester en mode standalone sur iOS. Un
+      // compte au mot de passe provisoire part directement vers le formulaire
+      // de changement, sans détour par le tableau de bord.
+      router.push(result.doitChangerMotDePasse ? "/changer-mot-de-passe" : "/dashboard");
+    });
+  }
+
+  function essayerLaDemo() {
+    setErreurDemo(false);
+    startTransition(async () => {
+      const result = await entrerDansLaDemo();
+      if (!result.ok) {
+        setErreurDemo(true);
+        return;
+      }
+      // Même règle que la connexion : navigation côté navigateur, pour rester
+      // en mode plein écran dans la PWA sur iOS.
       router.push("/dashboard");
     });
   }
 
   return (
-    <div className="w-full max-w-sm rounded-xl border border-border bg-surface p-8 shadow-card">
-      <h1 className="font-display text-2xl font-semibold text-foreground">
+    <div className="w-full max-w-sm rounded-2xl border border-border bg-surface p-7 shadow-card sm:p-8">
+      <h1 className="font-display text-2xl font-bold tracking-tight text-foreground">
         TCIF
       </h1>
       <p className="mt-1 text-sm text-muted">Suivi financier perso</p>
@@ -43,7 +61,7 @@ export default function LoginPage() {
             type="email"
             required
             autoComplete="email"
-            className="rounded-lg border border-border bg-surface px-3 py-2 text-foreground outline-none focus:border-accent focus:outline-2 focus:outline-accent focus:outline-offset-1"
+            className="rounded-xl border border-border bg-surface px-3.5 py-3 text-foreground outline-none focus:border-accent focus:ring-2 focus:ring-accent/25"
           />
         </div>
 
@@ -57,22 +75,54 @@ export default function LoginPage() {
             type="password"
             required
             autoComplete="current-password"
-            className="rounded-lg border border-border bg-surface px-3 py-2 text-foreground outline-none focus:border-accent focus:outline-2 focus:outline-accent focus:outline-offset-1"
+            className="rounded-xl border border-border bg-surface px-3.5 py-3 text-foreground outline-none focus:border-accent focus:ring-2 focus:ring-accent/25"
           />
         </div>
 
+        {/* Un seul message pour tous les échecs, compte désactivé compris :
+            un message différent révélerait quelles adresses ont un compte
+            (voir l'action signIn). */}
         {error && (
-          <p className="text-sm text-danger">Email ou mot de passe incorrect.</p>
+          <p role="alert" className="text-sm text-danger">
+            Email ou mot de passe incorrect. Si ton compte a été désactivé,
+            contacte l&apos;administrateur de l&apos;app.
+          </p>
         )}
 
         <button
           type="submit"
           disabled={isPending}
-          className="mt-2 rounded-lg bg-foreground px-4 py-2 font-medium text-background transition-colors hover:bg-accent disabled:opacity-50"
+          className="mt-2 inline-flex h-12 items-center justify-center rounded-xl bg-accent px-5 font-bold text-on-accent transition-opacity hover:opacity-90 disabled:opacity-50"
         >
           {isPending ? "Connexion..." : "Se connecter"}
         </button>
       </form>
+
+      <div className="mt-6 border-t border-border pt-6">
+        <button
+          type="button"
+          onClick={essayerLaDemo}
+          disabled={isPending}
+          className="inline-flex h-12 w-full items-center justify-center rounded-xl border border-border px-5 font-semibold text-foreground transition-colors hover:border-accent disabled:opacity-50"
+        >
+          Essayer la démo
+        </button>
+        <p className="mt-2 text-center text-xs text-muted">
+          Un compte rempli de données fictives, sans inscription.
+        </p>
+        {erreurDemo && (
+          <p role="alert" className="mt-2 text-center text-sm text-danger">
+            La démo n&apos;est pas disponible pour le moment. Réessaie dans un instant.
+          </p>
+        )}
+      </div>
+
+      <Link
+        href="/mot-de-passe-oublie"
+        className="mt-4 inline-block text-sm font-medium text-muted hover:text-foreground"
+      >
+        Mot de passe oublié ?
+      </Link>
     </div>
   );
 }

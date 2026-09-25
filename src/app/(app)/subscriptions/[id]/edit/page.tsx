@@ -5,12 +5,15 @@ import { updateSubscription } from "../../actions";
 
 interface EditSubscriptionPageProps {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ erreur?: string }>;
 }
 
 export default async function EditSubscriptionPage({
   params,
+  searchParams,
 }: EditSubscriptionPageProps) {
   const { id } = await params;
+  const { erreur } = await searchParams;
   const supabase = await createClient();
 
   const [{ data: subscription }, { data: categories }, { data: accounts }] =
@@ -18,7 +21,7 @@ export default async function EditSubscriptionPage({
       supabase
         .from("subscriptions")
         .select(
-          "id, name, amount, frequency, next_billing_date, category_id, account_id, notes, is_active",
+          "id, name, amount, frequency, next_billing_date, category_id, account_id, notes, is_active, is_savings, transfer_account_id",
         )
         .eq("id", id)
         .single(),
@@ -29,7 +32,7 @@ export default async function EditSubscriptionPage({
         .order("created_at", { ascending: true }),
       supabase
         .from("accounts")
-        .select("id, name")
+        .select("id, name, kind")
         .eq("is_archived", false)
         .order("created_at", { ascending: true }),
     ]);
@@ -40,13 +43,14 @@ export default async function EditSubscriptionPage({
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="font-display text-2xl font-semibold text-foreground">
+      <h1 className="font-display text-2xl font-bold tracking-tight text-foreground">
         Modifier l&apos;abonnement
       </h1>
       <SubscriptionForm
         action={updateSubscription.bind(null, id)}
         categories={categories ?? []}
         accounts={accounts ?? []}
+        erreur={erreur}
         submitLabel="Enregistrer"
         defaultValues={{
           name: subscription.name,
@@ -57,6 +61,8 @@ export default async function EditSubscriptionPage({
           account_id: subscription.account_id,
           notes: subscription.notes,
           is_active: subscription.is_active,
+          is_savings: subscription.is_savings,
+          transfer_account_id: subscription.transfer_account_id,
         }}
       />
     </div>

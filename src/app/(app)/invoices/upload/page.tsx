@@ -1,15 +1,63 @@
 import { uploadInvoice } from "../actions";
+import { createClient } from "@/lib/supabase/server";
+import { estDemo } from "@/lib/auth/roles";
+import { IndisponibleEnDemo } from "../../components/IndisponibleEnDemo";
 
-export default function UploadInvoicePage() {
+// Messages associés aux codes d'erreur posés par `uploadInvoice`. Ils disent
+// ce qui s'est passé ET quoi faire, jamais juste « une erreur est survenue ».
+const MESSAGES_ERREUR: Record<string, string> = {
+  session:
+    "Ta session a expiré pendant l'envoi. Reconnecte-toi, puis retente l'import.",
+  "fichier-vide": "Aucun fichier reçu. Choisis un PDF avant de valider.",
+  demo: "L'envoi de fichiers est indisponible dans le compte de démonstration.",
+  storage:
+    "Le PDF n'a pas pu être enregistré. Vérifie qu'il fait moins de 10 Mo, puis retente.",
+};
+
+interface UploadInvoicePageProps {
+  searchParams: Promise<{ erreur?: string }>;
+}
+
+export default async function UploadInvoicePage({
+  searchParams,
+}: UploadInvoicePageProps) {
+  const { erreur } = await searchParams;
+  const message = erreur ? MESSAGES_ERREUR[erreur] : undefined;
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (estDemo(user)) {
+    return (
+      <div className="flex flex-col gap-6">
+        <h1 className="font-display text-2xl font-bold tracking-tight text-foreground">
+          Importer un PDF
+        </h1>
+        <IndisponibleEnDemo raison="Le compte de démonstration est ouvert à tous : on ne peut pas y déposer de fichiers. Une facture d'exemple est déjà dans la liste." />
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="font-display text-2xl font-semibold text-foreground">
+      <h1 className="font-display text-2xl font-bold tracking-tight text-foreground">
         Importer un PDF
       </h1>
 
+      {erreur && (
+        <p
+          role="alert"
+          className="mx-auto w-full max-w-xl rounded-xl bg-danger-bg px-4 py-3 text-sm font-medium text-danger"
+        >
+          {message ?? "L'import a échoué. Retente, et préviens-moi si ça se reproduit."}
+        </p>
+      )}
+
       <form
         action={uploadInvoice}
-        className="mx-auto flex w-full max-w-xl flex-col gap-4 rounded-xl border border-border bg-surface p-6 shadow-card sm:p-8"
+        className="mx-auto flex w-full max-w-xl flex-col gap-4 rounded-2xl border border-border bg-surface p-5 shadow-card sm:p-7"
       >
         <div className="flex flex-col gap-1">
           <label htmlFor="file" className="text-sm font-medium text-foreground">
@@ -21,7 +69,7 @@ export default function UploadInvoicePage() {
             type="file"
             accept="application/pdf"
             required
-            className="text-sm text-foreground file:mr-3 file:rounded-lg file:border-0 file:bg-foreground file:px-3 file:py-2 file:text-sm file:font-medium file:text-background"
+            className="text-sm text-foreground file:mr-3 file:rounded-xl file:border-0 file:bg-foreground file:px-3 file:py-2 file:text-sm file:font-medium file:text-background"
           />
         </div>
 
@@ -50,7 +98,7 @@ export default function UploadInvoicePage() {
 
         <button
           type="submit"
-          className="mt-2 self-start rounded-lg bg-foreground px-4 py-2 font-medium text-background transition-colors hover:bg-accent"
+          className="mt-2 self-start inline-flex h-12 items-center justify-center rounded-xl bg-accent px-5 font-bold text-on-accent transition-opacity hover:opacity-90"
         >
           Importer
         </button>

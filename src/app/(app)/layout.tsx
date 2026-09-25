@@ -1,10 +1,13 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { signOut } from "./actions";
-import { NAV_LINKS } from "./nav-links";
-import { MobileNav } from "./components/MobileNav";
+import { BottomNav } from "./components/BottomNav";
+import { SideNav } from "./components/SideNav";
+import { SignOutButton } from "./components/SignOutButton";
 import { ThemeToggle } from "./components/ThemeToggle";
+import { NavIcon } from "./components/NavIcon";
+import { estDemo } from "@/lib/auth/roles";
+import { signOut } from "./actions";
 
 // Deuxième vérification de session, en plus du middleware : même si le
 // middleware laissait passer une requête par erreur, aucune page sous ce
@@ -34,39 +37,60 @@ export default async function AppLayout({
   const theme: "light" | "dark" = settings?.theme === "dark" ? "dark" : "light";
 
   return (
-    <div className="flex min-h-full flex-1 flex-col bg-background">
-      <header className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-background px-4 py-3 sm:px-6 sm:py-4">
-        <span className="font-display text-lg font-semibold text-foreground">
-          TCIF
-        </span>
+    // Une seule mise en page pour tous les écrans, deux bascules seulement :
+    // - sous 768 px (`md`) : en-tête léger en haut, barre de navigation en bas
+    // - à partir de 768 px : menu latéral à gauche, plus de barre du bas
+    <div className="flex min-h-full flex-1 bg-background">
+      <SideNav
+        themeToggle={<ThemeToggle theme={theme} />}
+        signOutButton={<SignOutButton />}
+      />
 
-        <div className="flex items-center gap-3 sm:gap-6">
-          <nav className="hidden items-center gap-6 sm:flex">
-            {NAV_LINKS.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="text-sm font-medium text-muted hover:text-accent"
-              >
-                {link.label}
-              </Link>
-            ))}
+      <div className="flex min-w-0 flex-1 flex-col">
+        <header className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-background px-4 py-2 md:hidden">
+          <span className="font-display text-lg font-bold tracking-tight text-foreground">
+            TCIF
+          </span>
+
+          {/* Réglages n'est pas dans la barre du bas (la place y est prise par
+              le « + ») : on l'atteint d'ici. */}
+          <div className="flex items-center gap-1">
+            <Link
+              href="/settings"
+              aria-label="Réglages"
+              title="Réglages"
+              className="flex h-11 w-11 items-center justify-center rounded-xl text-muted"
+            >
+              <NavIcon name="settings" />
+            </Link>
+            <ThemeToggle theme={theme} />
+            <SignOutButton compact />
+          </div>
+        </header>
+
+        {/* Bandeau permanent du compte démo : le visiteur sait que ce qu'il
+            voit est fictif et partagé, et qu'il peut en sortir. */}
+        {estDemo(user) && (
+          <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 border-b border-accent/30 bg-accent/10 px-4 py-2 text-center text-xs font-medium text-foreground">
+            <span>
+              Compte de démonstration — données fictives, remises à zéro chaque nuit.
+            </span>
             <form action={signOut}>
-              <button
-                type="submit"
-                className="text-sm font-medium text-muted hover:text-accent"
-              >
-                Déconnexion
+              <button type="submit" className="font-semibold text-accent underline underline-offset-2">
+                Quitter la démo
               </button>
             </form>
-          </nav>
+          </div>
+        )}
 
-          <ThemeToggle theme={theme} />
+        {/* `pb-36` sur téléphone : la barre du bas est en `fixed`, sans cette
+            marge le dernier élément de chaque page passerait dessous. */}
+        <main className="flex-1 px-4 pb-36 pt-5 md:px-8 md:pb-10 md:pt-8">
+          <div className="mx-auto w-full max-w-5xl">{children}</div>
+        </main>
 
-          <MobileNav />
-        </div>
-      </header>
-      <main className="flex-1 px-4 py-6 sm:px-6 sm:py-8">{children}</main>
+        <BottomNav />
+      </div>
     </div>
   );
 }

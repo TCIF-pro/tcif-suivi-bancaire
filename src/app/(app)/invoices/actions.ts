@@ -5,15 +5,28 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { extractPdfText } from "@/lib/pdf/extract";
 import { parseInvoiceFields } from "@/lib/pdf/parse-fields";
+import { estDemo } from "@/lib/auth/roles";
+
+// Chaque échec possible renvoie l'utilisateur sur le formulaire avec un code
+// d'erreur dans l'URL, que la page traduit en message lisible. Avant, ces cas
+// faisaient un `return` muet : le bouton semblait ne rien faire et il était
+// impossible de savoir ce qui avait échoué.
+function echecUpload(raison: string): never {
+  redirect(`/invoices/upload?erreur=${raison}`);
+}
 
 export async function uploadInvoice(formData: FormData) {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return;
+  if (!user) echecUpload("session");
+  // Refusé aussi par le stockage lui-même (migration 0017).
+  if (estDemo(user)) echecUpload("demo");
 
-  const file = formData.get("file") as File;
+  const file = formData.get("file") as File | null;
+  if (!file || file.size === 0) echecUpload("fichier-vide");
+
   const docType = String(formData.get("doc_type"));
   const direction = String(formData.get("direction"));
 
@@ -24,8 +37,14 @@ export async function uploadInvoice(formData: FormData) {
   const { error: uploadError } = await supabase.storage
     .from("invoices")
     .upload(filePath, buffer, { contentType: "application/pdf" });
-  if (uploadError) return;
+  if (uploadError) {
+    console.error("[invoices] envoi vers le Storage refusé", uploadError);
+    echecUpload("storage");
+  }
 
+  // Volontairement hors de tout garde-fou d'erreur : `extractPdfText` ne lève
+  // jamais. Un PDF illisible renvoie une chaîne vide et la facture est créée
+  // quand même, en attente de correction manuelle.
   const text = await extractPdfText(buffer);
   const parsed = parseInvoiceFields(text);
   const hasUsableExtraction = parsed.confidence !== "failed";
@@ -72,6 +91,11 @@ export async function saveInvoice(id: string, formData: FormData) {
   const categoryId = formData.get("category_id")
     ? String(formData.get("category_id"))
     : null;
+  // Le compte sur lequel la facture est réglée. Il vit sur la facture, qui fait
+  // foi, et il est recopié sur la transaction liée à chaque enregistrement.
+  const accountId = formData.get("account_id")
+    ? String(formData.get("account_id"))
+    : null;
 
   const { data: current } = await supabase
     .from("invoices")
@@ -95,6 +119,7 @@ export async function saveInvoice(id: string, formData: FormData) {
       issued_date: issuedDate,
       party_name: partyName,
       category_id: categoryId,
+      account_id: accountId,
       status: nextStatus,
     })
     .eq("id", id)
@@ -109,6 +134,9 @@ export async function saveInvoice(id: string, formData: FormData) {
         occurred_on: issuedDate,
         label: partyName ?? current.file_name,
         category_id: categoryId,
+        // Sans compte, la transaction comptait dans « Tous » mais disparaissait
+        // du filtre Pro comme du filtre Perso.
+        account_id: accountId,
         source: "invoice",
         invoice_id: id,
       });
@@ -120,6 +148,7 @@ export async function saveInvoice(id: string, formData: FormData) {
           occurred_on: issuedDate,
           label: partyName ?? current.file_name,
           category_id: categoryId,
+          account_id: accountId,
         })
         .eq("invoice_id", id)
         .eq("user_id", user.id);
@@ -141,7 +170,9 @@ export async function convertDevisToFacture(id: string) {
 
   const { data: devis } = await supabase
     .from("invoices")
-    .select("direction, amount, issued_date, party_name, category_id, file_path, file_name")
+    .select(
+      "direction, amount, issued_date, party_name, category_id, account_id, file_path, file_name",
+    )
     .eq("id", id)
     .eq("user_id", user.id)
     .single();
@@ -162,6 +193,7 @@ export async function convertDevisToFacture(id: string) {
     issued_date: devis.issued_date,
     party_name: devis.party_name,
     category_id: devis.category_id,
+    account_id: devis.account_id,
     converted_from_devis_id: id,
   });
 

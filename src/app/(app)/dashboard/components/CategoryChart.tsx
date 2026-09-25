@@ -30,9 +30,9 @@ export function CategoryChart({ rows }: CategoryChartProps) {
 
   return (
     <div>
-      <div className="flex items-center gap-4 text-xs text-muted">
+      <div className="flex items-center gap-4 text-xs font-medium text-muted">
         <span className="flex items-center gap-1.5">
-          <span className="h-2.5 w-2.5 rounded-full bg-accent/40" />
+          <span className="h-2.5 w-2.5 rounded-full bg-accent/35" />
           Mois précédent
         </span>
         <span className="flex items-center gap-1.5">
@@ -51,31 +51,31 @@ export function CategoryChart({ rows }: CategoryChartProps) {
               key={row.categoryId}
               className="flex items-center gap-2 sm:gap-4"
             >
-              <span className="w-16 shrink-0 truncate text-xs text-muted sm:w-24 sm:text-sm">
+              <span className="w-16 shrink-0 truncate text-xs font-medium text-foreground sm:w-28 sm:text-sm">
                 {row.name}
               </span>
 
-              <div className="relative h-2 flex-1 rounded-full bg-border">
+              <div className="relative h-2 flex-1 rounded-full bg-track">
                 <div
-                  className="absolute top-1/2 h-0.5 -translate-y-1/2 rounded-full bg-muted/50"
+                  className="absolute top-1/2 h-0.5 -translate-y-1/2 rounded-full bg-muted/45"
                   style={{
                     left: `${Math.min(prevPct, currPct)}%`,
                     width: `${Math.abs(currPct - prevPct)}%`,
                   }}
                 />
                 <div
-                  className="absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent/40 ring-2 ring-background"
+                  className="absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent/35 ring-2 ring-surface"
                   style={{ left: `${prevPct}%` }}
                   title={`Mois précédent : ${formatCurrency(row.previous)}`}
                 />
                 <div
-                  className="absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent ring-2 ring-background"
+                  className="absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent ring-2 ring-surface"
                   style={{ left: `${currPct}%` }}
                   title={`Mois en cours : ${formatCurrency(row.current)}`}
                 />
               </div>
 
-              <span className="w-24 shrink-0 text-right text-xs text-muted sm:w-36 sm:text-sm">
+              <span className="tabular w-24 shrink-0 text-right font-mono text-[0.6875rem] text-muted sm:w-36 sm:text-xs">
                 {formatCurrency(row.previous)} → {formatCurrency(row.current)}
               </span>
             </div>

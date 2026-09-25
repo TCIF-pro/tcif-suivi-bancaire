@@ -17,7 +17,9 @@ export default async function EditTransactionPage({
     await Promise.all([
       supabase
         .from("transactions")
-        .select("id, type, amount, occurred_on, label, category_id, account_id, notes")
+        .select(
+          "id, type, amount, occurred_on, label, category_id, account_id, notes, transfer_account_id",
+        )
         .eq("id", id)
         .single(),
       supabase
@@ -27,7 +29,7 @@ export default async function EditTransactionPage({
         .order("created_at", { ascending: true }),
       supabase
         .from("accounts")
-        .select("id, name")
+        .select("id, name, kind")
         .eq("is_archived", false)
         .order("created_at", { ascending: true }),
     ]);
@@ -36,15 +38,28 @@ export default async function EditTransactionPage({
     notFound();
   }
 
+  const { data: quickLabels } = await supabase
+    .from("quick_labels")
+    .select("id, label, type, category_id")
+    .order("position", { ascending: true });
+
+  const libellesRapides = (quickLabels ?? []).map((q) => ({
+    id: q.id,
+    label: q.label,
+    type: q.type,
+    categoryId: q.category_id,
+  }));
+
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="font-display text-2xl font-semibold text-foreground">
+      <h1 className="font-display text-2xl font-bold tracking-tight text-foreground">
         Modifier la transaction
       </h1>
       <TransactionForm
         action={updateTransaction.bind(null, id)}
         categories={categories ?? []}
         accounts={accounts ?? []}
+        libellesRapides={libellesRapides}
         submitLabel="Enregistrer"
         defaultValues={{
           type: transaction.type,
@@ -54,6 +69,7 @@ export default async function EditTransactionPage({
           category_id: transaction.category_id,
           account_id: transaction.account_id,
           notes: transaction.notes,
+          transfer_account_id: transaction.transfer_account_id,
         }}
       />
     </div>

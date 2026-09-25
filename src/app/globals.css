@@ -1,52 +1,93 @@
 @import "tailwindcss";
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* =========================================================
+   Palette « Horizon » (V2)
+
+   Trois couleurs, un sens chacune :
+   - accent  : ce sur quoi on clique (choisi par l'utilisateur, cf.
+               lib/accent-colors.ts — injecté en inline style sur <html>)
+   - expense : ce qui sort du compte
+   - income  : ce qui entre sur le compte
+
+   `expense` / `income` ne sont JAMAIS seules à porter l'information : le
+   signe − / + accompagne toujours le montant (cf. components/Montant.tsx).
+   Environ 8 % des hommes distinguent mal le rouge du vert, et l'app doit
+   s'ouvrir à d'autres utilisateurs.
+   ========================================================= */
+
 :root {
-  --background: #f5f6f8; /* fond de page */
-  --surface: #ffffff; /* cartes, inputs, popovers */
-  --foreground: #1c1e21; /* texte principal */
-  --muted: #6b7280; /* texte secondaire */
-  --border: #e5e7eb;
-  --danger: #dc2626;
-  --danger-bg: #fee2e2;
-  --positive: #166534;
-  --positive-bg: #dcfce7;
-  --pending: #1e40af;
-  --pending-bg: #dbeafe;
-  --warning: #92400e;
-  --warning-bg: #fef3c7;
-  --shadow-card-value: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --background: #f4f6fa; /* fond de page */
+  --surface: #ffffff; /* cartes, champs, barre de navigation */
+  --sidebar: #ffffff; /* menu latéral (ordinateur) */
+  --foreground: #131823; /* texte principal */
+  --muted: #5d6880; /* texte secondaire — 4.8:1 sur --background */
+  --border: #e2e7f0;
+  --track: #e2e7f0; /* fond des jauges et des barres */
+
+  /* sorties / entrées d'argent : assombries en mode clair pour rester
+     lisibles (4.5:1 minimum), éclaircies en mode sombre. */
+  --expense: #b23a2e;
+  --income: #17694a;
+
+  /* états (badges de statut des factures, abonnements...) */
+  --danger: #b23a2e;
+  --danger-bg: #fbe9e7;
+  --positive: #17694a;
+  --positive-bg: #e3f3ec;
+  --pending: #2c45b0;
+  --pending-bg: #e7ebfb;
+  --warning: #7a4e0c;
+  --warning-bg: #fbf0dd;
+
+  --shadow-card-value: 0 1px 2px rgba(19, 24, 35, 0.04);
+
   /* --accent-light / --accent-dark sont injectées en inline style sur <html>
      (voir src/app/layout.tsx) : leur valeur dépend du choix de l'utilisateur
      (lib/accent-colors.ts), donc pas de valeur en dur ici. */
   --accent: var(--accent-light);
+  --on-accent: #ffffff; /* texte posé SUR l'accent */
 }
 
 .dark {
-  --background: #101216;
-  --surface: #1a1d23;
-  --foreground: #e8e9ec;
-  --muted: #9aa0ac;
-  --border: #2c303a;
-  --danger: #f87171;
-  --danger-bg: #451a1a;
-  --positive: #86efac;
-  --positive-bg: #14532d;
-  --pending: #93c5fd;
-  --pending-bg: #1e3a8a;
-  --warning: #fcd34d;
-  --warning-bg: #78350f;
-  --shadow-card-value: 0 1px 3px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.3);
+  --background: #10141c;
+  --surface: #171d28;
+  --sidebar: #0c1018;
+  --foreground: #e7ebf2;
+  --muted: #8d98ac; /* 5.4:1 sur --background */
+  --border: #232b3a;
+  --track: #212938;
+
+  --expense: #f3968f;
+  --income: #7fd9a6;
+
+  --danger: #f3968f;
+  --danger-bg: #3a1f1d;
+  --positive: #7fd9a6;
+  --positive-bg: #14332a;
+  --pending: #93aaff;
+  --pending-bg: #1c2547;
+  --warning: #d79b36;
+  --warning-bg: #3a2c15;
+
+  --shadow-card-value: none;
+
   --accent: var(--accent-dark);
+  --on-accent: #0b1020; /* les accents sombres sont clairs : texte foncé dessus */
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-surface: var(--surface);
+  --color-sidebar: var(--sidebar);
   --color-foreground: var(--foreground);
   --color-muted: var(--muted);
   --color-border: var(--border);
+  --color-track: var(--track);
   --color-accent: var(--accent);
+  --color-on-accent: var(--on-accent);
+  --color-expense: var(--expense);
+  --color-income: var(--income);
   --color-danger: var(--danger);
   --color-danger-bg: var(--danger-bg);
   --color-positive: var(--positive);
@@ -56,8 +97,9 @@
   --color-warning: var(--warning);
   --color-warning-bg: var(--warning-bg);
   --shadow-card: var(--shadow-card-value);
-  --font-display: var(--font-space-grotesk);
-  --font-sans: var(--font-archivo);
+  --font-display: var(--font-bricolage);
+  --font-sans: var(--font-figtree);
+  --font-mono: var(--font-plex-mono);
 }
 
 html {
@@ -70,4 +112,46 @@ body {
   transition:
     background-color 0.15s ease,
     color 0.15s ease;
+}
+
+/* Tous les montants de l'app passent par .tabular : chiffres de largeur
+   fixe, donc alignés colonne par colonne d'une ligne à l'autre. */
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Filtres repliables (page Transactions, page Factures).
+   Sur téléphone, un <details> replié : six champs empilés occupaient tout le
+   premier écran, on arrivait sur la page sans voir une seule ligne.
+   À partir de `md`, la place ne manque plus : on force l'affichage du contenu
+   et on masque le bouton. `content-visibility` accompagne `display` parce que
+   les navigateurs récents masquent le contenu d'un <details> fermé par cette
+   propriété plutôt que par `display: none`. */
+details.filtres > summary {
+  list-style: none;
+}
+details.filtres > summary::-webkit-details-marker {
+  display: none;
+}
+
+@media (min-width: 48rem) {
+  details.filtres:not([open]) > .contenu {
+    display: block;
+    content-visibility: visible;
+  }
+}
+
+/* Champ « vers quel compte » du formulaire de transaction : visible seulement
+   quand « Épargne » est coché. Sans JavaScript, et surtout sans transformer
+   les champs en champs contrôlés — c'est ce qui permet au pré-remplissage par
+   URL (raccourci iOS) et aux libellés rapides de continuer à écrire
+   directement dans le formulaire. */
+form:not(:has(input[name="type"][value="savings"]:checked)) .champ-virement {
+  display: none;
+}
+
+/* Même principe pour l'abonnement : le compte d'arrivée ne s'affiche que si
+   la case « C'est de l'épargne » est cochée. */
+form:not(:has(input[name="is_savings"]:checked)) .champ-virement-abo {
+  display: none;
 }
