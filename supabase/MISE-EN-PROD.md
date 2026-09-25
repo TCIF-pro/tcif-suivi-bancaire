@@ -8,6 +8,18 @@ La base de production a déjà les migrations `0001` à `0007` : on ne les rejou
 
 ---
 
+## 0. Déjà fait — rien à refaire le jour J
+
+Ces réglages ne dépendent pas de la base : ils sont en place depuis le 25/09.
+
+- [x] Domaine d'envoi `notif.tcif-pro.fr` vérifié chez Resend (DKIM + adresse de
+      retour). Les MX et le SPF de `tcif-pro.fr` n'ont pas bougé.
+- [x] `app.tcif-pro.fr` rattaché au projet Vercel, HTTPS actif. Il sert déjà la
+      production actuelle, et servira la V2 dès la fusion dans `main`.
+- [x] Compte Resend créé, notifications du support testées en local.
+
+Détail et état des enregistrements DNS : `docs/domaine-et-emails.md`.
+
 ## 1. Avant de toucher à quoi que ce soit
 
 - [ ] **Sauvegarde de la base de prod** : Supabase (projet **prod**) → Database →
@@ -44,16 +56,20 @@ avec les environnements où elle existe (Production, Preview, Development).
 - [ ] `SUPABASE_SERVICE_ROLE_KEY` est défini en Production, et **n'a pas** de
       préfixe `NEXT_PUBLIC_`.
 - [ ] **`RESEND_API_KEY`, `EMAIL_FROM` et `SUPPORT_EMAIL_TO`** sont définis en
-      Production ET en Preview (voir `.env.local.example`). En Production,
-      `EMAIL_FROM="TCIF <no-reply@notif.tcif-pro.fr>"` — l'adresse de test de
-      Resend n'écrirait qu'à toi. Sans ces variables, les messages du support
-      sont enregistrés mais tu n'es pas prévenu.
+      Production ET en Preview (voir `.env.local.example`) :
+      - `RESEND_API_KEY` : une clé **`app-tcif-prod`** créée pour l'occasion
+        (Sending access), pas celle de ton `.env.local`
+      - `EMAIL_FROM="TCIF <no-reply@notif.tcif-pro.fr>"`
+      - `SUPPORT_EMAIL_TO=contact@tcif-pro.fr`
+
+      Sans elles, les messages du support sont enregistrés, mais tu n'es pas
+      prévenu : ils n'apparaissent que dans `/admin`.
 - [ ] En **Production**, `NEXT_PUBLIC_SUPABASE_URL` pointe vers la base de **prod**.
 - [ ] En **Preview**, les variables Supabase **ne pointent pas** vers la base de
       prod — sinon chaque branche déployée pour essai écrirait dans tes vraies
       données. Les faire pointer vers la base de test.
 
-## 4. Réglages Supabase de la prod (étape 6.1)
+## 4. Réglages Supabase de la prod (étapes 6.1 et 6.2)
 
 - [ ] **Désigner ton compte administrateur**, SQL Editor de la prod :
 
@@ -65,7 +81,8 @@ avec les environnements où elle existe (Production, Preview, Development).
 
       Puis vérifier que la requête a bien touché **1 ligne**.
 - [ ] Authentication → URL Configuration :
-      - **Site URL** : `https://app.tcif-pro.fr`
+      - **Site URL** : `https://app.tcif-pro.fr` — le lien de l'email « mot de
+        passe oublié » est construit à partir d'elle
       - **Redirect URLs**, ajouter les deux adresses de l'app :
         - `https://app.tcif-pro.fr/auth/confirm`
         - `https://tcif-suivi-bancaire.vercel.app/auth/confirm`
@@ -77,16 +94,22 @@ avec les environnements où elle existe (Production, Preview, Development).
       **toujours désactivée**. Les comptes se créent depuis `/admin`.
 - [ ] **Envoi des emails de Supabase par Resend (SMTP)** : Project Settings →
       Authentication → SMTP Settings → Enable Custom SMTP.
-      - Host `smtp.resend.com`, port `465`, username `resend`
-      - Password : **une clé Resend dédiée**, distincte de celle de l'app — on
-        peut ainsi en révoquer une sans couper l'autre
       - Sender email `no-reply@notif.tcif-pro.fr`, sender name `TCIF`
+      - Host `smtp.resend.com`, port `465`, username `resend`
+      - Password : une clé Resend **`supabase-smtp-prod`**, distincte de celle
+        de l'app — on peut en révoquer une sans couper l'autre
 
       Sans ce réglage, Supabase n'envoie les emails de réinitialisation qu'aux
       membres de ton équipe Supabase : tes utilisateurs ne recevraient rien.
-      **Ne pas ouvrir l'app à quelqu'un d'autre avant que ce point soit fait**,
-      et que le domaine `notif.tcif-pro.fr` soit vérifié chez Resend (voir
-      `docs/domaine-et-emails.md`).
+      **Ne pas ouvrir l'app à quelqu'un d'autre avant que ce point soit fait.**
+- [ ] **Modèle d'email en français** : Authentication → Emails → Templates →
+      Reset Password.
+      - Subject : `Choisis un nouveau mot de passe TCIF`
+      - Body : tout le contenu de `supabase/templates/reset-password.html`
+
+      Même texte que sur la base de test, à l'identique. Le modèle par défaut de
+      Supabase fonctionnerait, mais son lien échoue quand l'email est ouvert
+      sur un autre appareil que celui qui a fait la demande.
 
 ## 5. Après les migrations — à faire dans l'app, connecté à la prod
 
@@ -124,5 +147,10 @@ avec les environnements où elle existe (Production, Preview, Development).
       `contact@tcif-pro.fr`, et apparaître dans `/admin` **sans** la mention
       « notification non envoyée ».
 - [ ] « Mot de passe oublié » avec une adresse qui n'est PAS celle de ton compte
-      Supabase : l'email doit arriver, et son lien ramener sur
+      Supabase : l'email doit arriver de `TCIF <no-reply@notif.tcif-pro.fr>`,
+      en français. Fais la demande sur ton téléphone et **ouvre l'email sur ton
+      ordinateur** : le bouton doit quand même mener à
       `app.tcif-pro.fr/changer-mot-de-passe`.
+- [ ] Réinstaller la PWA depuis `app.tcif-pro.fr` sur ton téléphone (voir
+      `docs/domaine-et-emails.md`) : l'icône actuelle reste attachée à
+      l'adresse `.vercel.app`.

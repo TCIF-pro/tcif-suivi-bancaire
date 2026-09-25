@@ -193,6 +193,9 @@ Supabase n'accepte de renvoyer vers l'app que des adresses qu'il connaît.
 
 Sans ça, le lien de l'email renvoie sur la page d'accueil de Supabase.
 
-Tant que le service d'envoi d'emails n'est pas branché (étape 6.2), Supabase
-n'envoie qu'aux adresses des membres de ton équipe Supabase, quelques fois par
-heure : teste avec ta propre adresse.
+### Emails de Supabase (étape 6.2)
+
+Pour que « mot de passe oublié » fonctionne avec n'importe quelle adresse, il
+faut brancher Resend dans Supabase et y mettre le modèle d'email en français :
+voir `docs/domaine-et-emails.md`, partie D. Sans ça, Supabase n'envoie qu'aux
+membres de ton équipe Supabase, quelques fois par heure.

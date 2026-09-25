@@ -1,152 +1,162 @@
-# Domaine et emails — guide pas à pas
+# Domaine et emails
 
-Trois chantiers indépendants, à faire dans l'ordre :
+État au 25/09/2026, et marche à suivre pour ce qu'il reste.
 
-- **A.** Créer le compte Resend et tester le support — **aucun changement DNS**
-- **B.** Vérifier `notif.tcif-pro.fr` chez Resend — **DNS, à valider ensemble d'abord**
-- **C.** Passer l'app sur `app.tcif-pro.fr` — **DNS, à valider ensemble d'abord**
+| Chantier | État |
+|---|---|
+| **A.** Compte Resend, notifications du support | ✅ fait — testé, les messages arrivent sur `contact@tcif-pro.fr` |
+| **B.** Domaine d'envoi `notif.tcif-pro.fr` vérifié chez Resend | ✅ fait |
+| **C.** Adresse `app.tcif-pro.fr` rattachée au projet Vercel | ✅ fait — HTTPS actif |
+| **D.** Emails de Supabase envoyés par Resend + modèle en français | ⏳ à faire, voir plus bas |
+| DMARC sur `notif.tcif-pro.fr` | facultatif, recommandé — voir plus bas |
 
 ---
 
-## Ce qui existe déjà sur `tcif-pro.fr` — et qu'on ne touche pas
+## Ce qui n'a pas bougé : la messagerie de `tcif-pro.fr`
 
-Relevé le 24/09/2026 dans les DNS publics :
+Contrôlé le 25/09 dans les DNS publics, **après** les ajouts : strictement
+identique au relevé du 24/09.
 
 | Nom | Type | Valeur | Rôle |
 |---|---|---|---|
 | `tcif-pro.fr` | MX | `mx1`, `mx2`, `mx3.mail.ovh.net` | réception de `contact@tcif-pro.fr` |
-| `tcif-pro.fr` | TXT | `v=spf1 include:mx.ovh.com -all` | SPF : seul OVH peut envoyer en `@tcif-pro.fr` |
+| `tcif-pro.fr` | TXT | `v=spf1 include:mx.ovh.com -all` | SPF : seul OVH envoie en `@tcif-pro.fr` |
 | `mail.tcif-pro.fr` | CNAME | `ssl0.ovh.net` | webmail OVH |
-| `www.tcif-pro.fr` | A | `146.59.209.152` | site vitrine |
 
-**Rien de ce guide ne modifie ces enregistrements.** Tout ce qu'on ajoute vit sous
-deux noms aujourd'hui inutilisés : `notif.tcif-pro.fr` et `app.tcif-pro.fr`.
+Pourquoi Resend est sur un sous-domaine : le SPF de la racine finit par `-all`,
+« tout serveur non listé doit être rejeté ». Envoyer depuis `@tcif-pro.fr` par
+Resend aurait obligé à le modifier, avec le risque de faire rejeter les emails
+de `contact@` à la moindre erreur. `notif.tcif-pro.fr` a ses propres
+enregistrements, indépendants de ceux de la racine.
 
-Pourquoi un sous-domaine pour Resend : ton SPF se termine par `-all`, qui veut
-dire « tout serveur non listé doit être rejeté ». Envoyer depuis `@tcif-pro.fr`
-par Resend obligerait à modifier ce SPF — et une erreur de syntaxe à cet endroit
-ferait rejeter tes propres emails `contact@`. Un sous-domaine a son propre SPF,
-indépendant de celui de la racine.
+**À ne jamais modifier sans raison précise** : les MX et le SPF ci-dessus.
 
 ---
 
-## A. Compte Resend et premier test (aucun DNS)
+## Ce qui a été ajouté chez OVH
 
-1. Crée un compte sur [resend.com](https://resend.com) **avec l'adresse
-   `contact@tcif-pro.fr`**. C'est important : tant que le domaine n'est pas
-   vérifié, Resend n'accepte d'écrire qu'à l'adresse du compte.
-2. **API Keys → Create API Key**
-   - Name : `app-tcif-dev`
-   - Permission : **Sending access** (pas Full access : si la clé fuite, elle ne
-     permet que d'envoyer, pas de lire ou supprimer ton compte)
-   - Copie la clé tout de suite, elle ne sera plus affichée.
-3. Dans ton `.env.local` :
+Relevé le 25/09 dans les DNS publics :
 
-   ```
-   RESEND_API_KEY=re_...
-   EMAIL_FROM="TCIF <onboarding@resend.dev>"
-   SUPPORT_EMAIL_TO=contact@tcif-pro.fr
-   ```
-
-4. Redémarre `npm run dev`, puis **Réglages → Contacter le support** → envoie un
-   message. Il doit arriver sur `contact@tcif-pro.fr`, et répondre à cet email
-   doit écrire à l'utilisateur.
-
----
-
-## B. Vérifier `notif.tcif-pro.fr` chez Resend
-
-### B1. Obtenir les enregistrements — sans rien ajouter
-
-1. Resend → **Domains → Add Domain** → `notif.tcif-pro.fr`
-2. Region : **Ireland (eu-west-1)** — tes utilisateurs sont en Europe, leurs
-   données restent en Europe (RGPD).
-3. Resend affiche 3 ou 4 enregistrements. Ils ressembleront à ceci :
-
-| Type | Nom (champ « Sous-domaine » chez OVH) | Valeur | À quoi il sert |
+| Nom | Type | Valeur | À quoi il sert |
 |---|---|---|---|
-| TXT | `resend._domainkey.notif` | `p=MIGfMA0...` (longue) | **DKIM** : signature qui prouve que l'email vient bien de toi |
-| MX | `send.notif` | `feedback-smtp.eu-west-1.amazonses.com.` priorité `10` | reçoit les **rebonds** (adresses invalides) — pas tes emails |
-| TXT | `send.notif` | `v=spf1 include:amazonses.com ~all` | **SPF du sous-domaine** : autorise Resend à envoyer |
-| TXT | `_dmarc.notif` | `v=DMARC1; p=none;` | recommandé : politique DMARC du sous-domaine |
+| `resend._domainkey.notif` | TXT | `p=MIGfMA0GCSq…` | **DKIM** : signature qui prouve que les emails viennent bien de toi |
+| `send.notif` | CNAME | `send.forge.rmta.net.` | **adresse de retour** gérée par Resend : SPF et rebonds (adresses invalides) |
+| `app` | CNAME | `df030f02eee04ed0.vercel-dns-017.com.` | l'app sur `app.tcif-pro.fr` |
 
-### ⏸ B2. Point d'arrêt : on valide ensemble
-
-**Envoie-moi une capture de ce que Resend affiche avant d'ajouter quoi que ce
-soit.** Je vérifierai que chaque nom est bien sous `notif`, et qu'aucun ne touche
-la racine `tcif-pro.fr`.
-
-Sur l'enregistrement **MX** en particulier, qui peut inquiéter : un MX ne
-s'applique qu'au nom exact qui le porte. Celui-ci est sur
-`send.notif.tcif-pro.fr` ; la réception de `contact@tcif-pro.fr` dépend
-uniquement des MX de `tcif-pro.fr`, qui ne bougent pas.
-
-### B3. Ajout chez OVH (après validation)
-
-OVH → **Web Cloud → Noms de domaine → tcif-pro.fr → Zone DNS → Ajouter une
-entrée**, puis pour chaque ligne :
-
-- choisir le type (TXT ou MX) ;
-- **Sous-domaine** : seulement la partie gauche (`resend._domainkey.notif`,
-  `send.notif`...) — OVH ajoute `.tcif-pro.fr` tout seul ;
-- **Cible** : la valeur copiée depuis Resend.
-
-⚠️ **Piège OVH sur le MX** : la cible doit se terminer par un **point**
-(`feedback-smtp.eu-west-1.amazonses.com.`). Sans ce point, OVH la considère
-comme relative et fabrique `feedback-smtp...amazonses.com.tcif-pro.fr` — la
-vérification échoue sans message clair.
-
-### B4. Vérification
-
-La propagation prend de quelques minutes à quelques heures. Resend → Domains →
-**Verify**. Quand tout est vert, change `EMAIL_FROM` :
-
-```
-EMAIL_FROM="TCIF <no-reply@notif.tcif-pro.fr>"
-```
-
-**Pourquoi `no-reply@` et pas `support@`** : aucune boîte ne reçoit d'emails sur
-`notif.tcif-pro.fr` (le MX `send.notif` ne sert qu'aux rebonds). Une réponse
-envoyée à `support@notif...` serait perdue. `no-reply@` le dit honnêtement, et :
-- pour le support, l'app règle déjà la réponse sur l'adresse de l'utilisateur ;
-- pour les emails de mot de passe, ajoute dans le modèle Supabase une ligne
-  « Une question ? contact@tcif-pro.fr ».
+Resend fait pointer `send.notif` vers sa propre infrastructure (`rmta.net`)
+plutôt que de demander un MX et un SPF séparés : s'il change un jour de
+serveurs, il met à jour son côté, rien à retoucher chez OVH.
 
 ---
 
-## C. Passer l'app sur `app.tcif-pro.fr`
+## Expéditeur : `no-reply@notif.tcif-pro.fr`
 
-### C1. Côté Vercel — sans rien ajouter chez OVH
+Aucune boîte ne reçoit d'emails sur `notif.tcif-pro.fr` : une réponse envoyée à
+une adresse de ce sous-domaine serait perdue. `no-reply@` le dit honnêtement.
 
-Vercel → ton projet → **Settings → Domains → Add** → `app.tcif-pro.fr`.
-Vercel affiche l'enregistrement à créer, du type :
+- **Support** : l'app règle « Répondre » sur l'adresse de l'utilisateur, tu lui
+  réponds directement.
+- **Emails de Supabase** (mot de passe oublié) : le modèle indique
+  `contact@tcif-pro.fr` pour toute question.
 
-| Type | Nom | Valeur |
+---
+
+## D. Emails de Supabase par Resend
+
+Tant que ce n'est pas fait, Supabase envoie ses emails lui-même, **uniquement aux
+membres de ton équipe Supabase**, quelques fois par heure. Un utilisateur qui a
+oublié son mot de passe ne recevrait rien.
+
+À faire sur la base de **test** maintenant, et sur la **prod** le jour de la mise
+en ligne (voir `supabase/MISE-EN-PROD.md`).
+
+### D1. Une clé Resend dédiée à Supabase
+
+Resend → **API Keys → Create API Key** :
+- Name : `supabase-smtp-dev` (puis `supabase-smtp-prod` pour la prod)
+- Permission : **Sending access**
+- Domain : `notif.tcif-pro.fr` si Resend le propose — la clé ne pourra envoyer
+  que depuis ce domaine.
+
+Une clé distincte de celle de l'app : si l'une fuit, tu la révoques sans couper
+l'autre.
+
+### D2. Brancher Resend dans Supabase
+
+Supabase (projet **dev**) → **Project Settings → Authentication → SMTP Settings**
+→ **Enable Custom SMTP** :
+
+| Champ | Valeur |
+|---|---|
+| Sender email | `no-reply@notif.tcif-pro.fr` |
+| Sender name | `TCIF` |
+| Host | `smtp.resend.com` |
+| Port | `465` |
+| Username | `resend` |
+| Password | la clé de l'étape D1 |
+
+### D3. Le modèle d'email en français
+
+Supabase → **Authentication → Emails → Templates → Reset Password** :
+
+- **Subject** : `Choisis un nouveau mot de passe TCIF`
+- **Body** : tout le contenu de `supabase/templates/reset-password.html`
+
+Le lien de ce modèle marche **depuis n'importe quel appareil**. Celui de Supabase
+par défaut échoue si l'email est ouvert sur un autre appareil que celui qui a
+fait la demande.
+
+Les autres modèles (Confirm signup, Invite user, Magic link, Change email) ne
+servent pas : les comptes sont créés depuis `/admin`, déjà confirmés, et
+personne ne se connecte par lien magique. Inutile de les traduire.
+
+### D4. La Site URL
+
+Le lien du modèle est construit à partir de la **Site URL** : Authentication →
+URL Configuration.
+- Base de test : `http://localhost:3000` (ouvre le lien sur ton Mac, pas sur le
+  téléphone, où `localhost` désigne le téléphone lui-même)
+- Prod : `https://app.tcif-pro.fr`
+
+### D5. Tester
+
+Depuis la page de connexion → « Mot de passe oublié ? » → **une adresse qui n'est
+pas celle de ton compte Supabase** (c'est justement ce que l'ancien envoi
+bloquait). L'expéditeur doit être `TCIF <no-reply@notif.tcif-pro.fr>`, et le
+bouton doit mener à « Nouveau mot de passe ».
+
+---
+
+## DMARC sur `notif.tcif-pro.fr` (recommandé)
+
+DMARC dit aux messageries quoi faire d'un email qui prétend venir de ton domaine
+sans passer les contrôles DKIM et SPF. Il n'est pas obligatoire à ton volume,
+mais Gmail et Outlook font davantage confiance à un domaine qui en publie un.
+
+Enregistrement à ajouter chez OVH (Zone DNS → Ajouter une entrée → TXT) :
+
+| Sous-domaine | Type | Valeur |
 |---|---|---|
-| CNAME | `app` | `cname.vercel-dns.com.` (ou une valeur propre à ton projet) |
+| `_dmarc.notif` | TXT | `v=DMARC1; p=none; rua=mailto:contact@tcif-pro.fr` |
 
-### ⏸ C2. Point d'arrêt : on valide ensemble
+- `p=none` : **observer seulement**, aucun email n'est bloqué. On pourra durcir
+  plus tard, une fois qu'on aura vu dans les rapports que tout passe.
+- `rua=` : les messageries t'envoient un rapport de synthèse, en général une
+  fois par jour.
+- Il est sous `notif` : **aucun effet sur les emails de `contact@tcif-pro.fr`.**
 
-**Envoie-moi ce que Vercel affiche.** `app.tcif-pro.fr` est libre aujourd'hui, ce
-CNAME ne touche à rien d'existant — mais je préfère vérifier la valeur exacte.
+---
 
-### C3. Ajout chez OVH (après validation)
+## Après la bascule sur `app.tcif-pro.fr`
 
-Zone DNS → Ajouter une entrée → **CNAME** → Sous-domaine `app` → Cible : la
-valeur de Vercel, **avec le point final** (même piège que pour le MX).
+`app.tcif-pro.fr` sert **dès aujourd'hui la version en ligne actuelle** (la V1) :
+Vercel sert la même production sur ses deux adresses.
 
-Vercel obtient le certificat HTTPS tout seul dès que le DNS répond, en quelques
-minutes.
-
-### C4. Après la bascule
-
-- **Supabase** (projet prod) → Authentication → URL Configuration : Site URL
-  `https://app.tcif-pro.fr`, et les deux Redirect URLs (voir
-  `supabase/MISE-EN-PROD.md`).
 - **La PWA installée sur ton téléphone reste attachée à l'ancienne adresse** :
-  une app web est liée à son domaine. Supprime l'icône, ouvre
-  `app.tcif-pro.fr` dans Safari, puis Partager → Sur l'écran d'accueil. Tu
-  devras te reconnecter : la session ne suit pas d'un domaine à l'autre.
-- Optionnel : Vercel → Domains → sur `tcif-suivi-bancaire.vercel.app` → **Redirect to**
-  `app.tcif-pro.fr`. Les anciens liens continueront de marcher et mèneront tous
-  au même endroit.
+  une app web est liée à son domaine. Pour passer sur la nouvelle : supprime
+  l'icône, ouvre `app.tcif-pro.fr` dans Safari, puis Partager → Sur l'écran
+  d'accueil. Tu devras te reconnecter : la session ne suit pas d'un domaine à
+  l'autre.
+- Optionnel : Vercel → Settings → Domains → sur `tcif-suivi-bancaire.vercel.app`
+  → **Redirect to** `app.tcif-pro.fr`. Les anciens liens continueront de marcher
+  et mèneront tous au même endroit.
