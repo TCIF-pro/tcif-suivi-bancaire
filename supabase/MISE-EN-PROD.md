@@ -42,6 +42,8 @@ Si une erreur rouge apparaît : **s'arrêter**, ne pas passer à la suivante.
 - [ ] `0015_ownership_checks.sql` — **sécurité** : une ligne ne peut référencer que
       des lignes de son propriétaire ; règle de déplacement du stockage renforcée
 - [ ] `0016_support_messages.sql` — messages du support
+- [ ] `0017_demo_restrictions.sql` — **sécurité** : ce que la base refuse au compte
+      démo (stockage, support, plafonds de lignes)
 
 ## 3. Variables d'environnement Vercel
 
@@ -136,10 +138,20 @@ avec les environnements où elle existe (Production, Preview, Development).
 - [ ] Suivre le déploiement sur Vercel jusqu'au statut **Ready**.
 - [ ] Se connecter sur l'app en ligne, vérifier le tableau de bord et une page de
       chaque type (Transactions, Abonnements, Factures, Réglages).
-- [ ] Vérifier que la tâche planifiée répond `401` sans secret :
+- [ ] Vercel → Settings → **Cron Jobs** : deux tâches doivent apparaître,
+      `generate-subscription-transactions` (6 h UTC) et `reset-demo` (3 h UTC).
+      L'offre gratuite en autorise deux, une fois par jour chacune : il n'y a
+      plus de place pour une troisième.
+- [ ] **Compte démo** : sur la page de connexion, « Essayer la démo ». Le premier
+      clic crée le compte et son jeu de données (quelques secondes). Vérifier le
+      bandeau, la facture d'exemple et son PDF, puis « Quitter la démo ».
+      Dans Cron Jobs, **Run** sur `reset-demo` pour vérifier qu'elle répond
+      `ok: true`.
+- [ ] Vérifier que les tâches planifiées répondent `401` sans secret :
 
       ```bash
       curl -i https://app.tcif-pro.fr/api/cron/generate-subscription-transactions
+      curl -i https://app.tcif-pro.fr/api/cron/reset-demo
       ```
 
       Un `500` voudrait dire que `CRON_SECRET` manque (retour au point 3).

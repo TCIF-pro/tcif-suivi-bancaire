@@ -78,6 +78,7 @@ et ne mélange pas deux fichiers dans la même requête.
    - [ ] `0014_invoice_account.sql`
    - [ ] `0015_ownership_checks.sql`
    - [ ] `0016_support_messages.sql`
+   - [ ] `0017_demo_restrictions.sql`
 
    Le jour de la mise en ligne, c'est `MISE-EN-PROD.md` qu'il faut suivre.
 
@@ -199,3 +200,20 @@ Pour que « mot de passe oublié » fonctionne avec n'importe quelle adresse, il
 faut brancher Resend dans Supabase et y mettre le modèle d'email en français :
 voir `docs/domaine-et-emails.md`, partie D. Sans ça, Supabase n'envoie qu'aux
 membres de ton équipe Supabase, quelques fois par heure.
+
+---
+
+## 8. Compte de démonstration (étape 6.3)
+
+Rien à créer à la main : le compte démo (`demo@notif.tcif-pro.fr`) est créé au
+premier clic sur « Essayer la démo », ou à la première remise à zéro.
+
+Pour le remettre à zéro tout de suite en local, avec le serveur lancé :
+
+```bash
+curl -H "Authorization: Bearer $(grep '^CRON_SECRET=' .env.local | cut -d= -f2)" \
+  http://localhost:3000/api/cron/reset-demo
+```
+
+Il apparaît dans `/admin` avec le badge « démo ». « Désactiver » le ferme au
+public ; il n'a pas de mot de passe à régénérer, on y entre sans.

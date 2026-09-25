@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { envoyerEmail } from "@/lib/email/envoyer";
+import { estDemo } from "@/lib/auth/roles";
 import { LONGUEUR_MAX_MESSAGE, LONGUEUR_MAX_SUJET } from "./limites";
 
 export interface EtatSupport {
@@ -20,6 +21,9 @@ export async function envoyerMessageSupport(
     data: { user },
   } = await supabase.auth.getUser();
   if (!user?.email) return { erreur: "Ta session a expiré. Reconnecte-toi." };
+  // Refusé aussi par la base (migration 0017) : ce test ne sert qu'à afficher
+  // un message clair au lieu d'une erreur d'enregistrement.
+  if (estDemo(user)) return { erreur: "Indisponible dans le compte de démonstration." };
 
   const sujet = String(formData.get("subject") ?? "").trim();
   const message = String(formData.get("message") ?? "").trim();

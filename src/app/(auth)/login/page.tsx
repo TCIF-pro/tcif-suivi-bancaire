@@ -3,12 +3,13 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { signIn } from "../actions";
+import { entrerDansLaDemo, signIn } from "../actions";
 
 export default function LoginPage() {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState(false);
+  const [erreurDemo, setErreurDemo] = useState(false);
 
   function handleSubmit(formData: FormData) {
     setError(false);
@@ -25,6 +26,20 @@ export default function LoginPage() {
       // compte au mot de passe provisoire part directement vers le formulaire
       // de changement, sans détour par le tableau de bord.
       router.push(result.doitChangerMotDePasse ? "/changer-mot-de-passe" : "/dashboard");
+    });
+  }
+
+  function essayerLaDemo() {
+    setErreurDemo(false);
+    startTransition(async () => {
+      const result = await entrerDansLaDemo();
+      if (!result.ok) {
+        setErreurDemo(true);
+        return;
+      }
+      // Même règle que la connexion : navigation côté navigateur, pour rester
+      // en mode plein écran dans la PWA sur iOS.
+      router.push("/dashboard");
     });
   }
 
@@ -82,6 +97,25 @@ export default function LoginPage() {
           {isPending ? "Connexion..." : "Se connecter"}
         </button>
       </form>
+
+      <div className="mt-6 border-t border-border pt-6">
+        <button
+          type="button"
+          onClick={essayerLaDemo}
+          disabled={isPending}
+          className="inline-flex h-12 w-full items-center justify-center rounded-xl border border-border px-5 font-semibold text-foreground transition-colors hover:border-accent disabled:opacity-50"
+        >
+          Essayer la démo
+        </button>
+        <p className="mt-2 text-center text-xs text-muted">
+          Un compte rempli de données fictives, sans inscription.
+        </p>
+        {erreurDemo && (
+          <p role="alert" className="mt-2 text-center text-sm text-danger">
+            La démo n&apos;est pas disponible pour le moment. Réessaie dans un instant.
+          </p>
+        )}
+      </div>
 
       <Link
         href="/mot-de-passe-oublie"

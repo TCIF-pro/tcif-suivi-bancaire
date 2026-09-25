@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { exigerAdmin } from "@/lib/auth/admin-guard";
-import { doitChangerMotDePasse, estAdmin, estDesactive } from "@/lib/auth/roles";
+import { doitChangerMotDePasse, estAdmin, estDemo, estDesactive } from "@/lib/auth/roles";
 import { formatDateLong } from "@/lib/format";
 import { changerTraitementMessage } from "./actions";
 import { CreerCompteForm } from "./components/CreerCompteForm";
@@ -133,6 +133,11 @@ export default async function AdminPage() {
                       admin{cestMoi ? " · toi" : ""}
                     </span>
                   )}
+                  {estDemo(compte) && (
+                    <span className="rounded-full bg-pending-bg px-2 py-0.5 text-[0.625rem] font-semibold text-pending">
+                      démo · remis à zéro chaque nuit
+                    </span>
+                  )}
                   {desactive && (
                     <span className="rounded-full bg-danger-bg px-2 py-0.5 text-[0.625rem] font-semibold text-danger">
                       désactivé
@@ -157,7 +162,15 @@ export default async function AdminPage() {
                     redonner un mot de passe provisoire fermerait l'unique
                     accès à cette page. */}
                 {!cestMoi && (
-                  <ActionsCompte userId={compte.id} email={compte.email ?? ""} actif={!desactive} />
+                  <ActionsCompte
+                    userId={compte.id}
+                    email={compte.email ?? ""}
+                    actif={!desactive}
+                    // Désactiver la démo reste possible : c'est la façon de la
+                    // fermer au public. Un mot de passe, en revanche, ne lui
+                    // sert à rien.
+                    motDePasse={!estDemo(compte)}
+                  />
                 )}
               </li>
             );

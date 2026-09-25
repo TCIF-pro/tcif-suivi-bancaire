@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { extractPdfText } from "@/lib/pdf/extract";
 import { parseInvoiceFields } from "@/lib/pdf/parse-fields";
+import { estDemo } from "@/lib/auth/roles";
 
 // Chaque échec possible renvoie l'utilisateur sur le formulaire avec un code
 // d'erreur dans l'URL, que la page traduit en message lisible. Avant, ces cas
@@ -20,6 +21,8 @@ export async function uploadInvoice(formData: FormData) {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) echecUpload("session");
+  // Refusé aussi par le stockage lui-même (migration 0017).
+  if (estDemo(user)) echecUpload("demo");
 
   const file = formData.get("file") as File | null;
   if (!file || file.size === 0) echecUpload("fichier-vide");

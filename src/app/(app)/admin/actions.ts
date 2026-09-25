@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { exigerAdmin } from "@/lib/auth/admin-guard";
 import { genererMotDePasseProvisoire } from "@/lib/auth/mot-de-passe";
+import { estDemo } from "@/lib/auth/roles";
 
 // Toutes ces actions tournent avec la clé service_role (création de compte,
 // bannissement...) : chacune commence par `exigerAdmin()`, sans exception.
@@ -70,6 +71,10 @@ export async function regenererMotDePasse(userId: string): Promise<EtatMotDePass
   const client = createAdminClient();
   const { data: cible, error: erreurLecture } = await client.auth.admin.getUserById(userId);
   if (erreurLecture || !cible.user) return { erreur: "Compte introuvable." };
+
+  // Le compte démo n'a pas de mot de passe utile : on y entre sans. Lui poser
+  // le marqueur « doit changer » le ferait tourner en boucle dans le proxy.
+  if (estDemo(cible.user)) return { erreur: "Le compte démo n'utilise pas de mot de passe." };
 
   const motDePasse = genererMotDePasseProvisoire();
 

@@ -30,3 +30,13 @@ export function estDesactive(user: Pick<User, "banned_until"> | null): boolean {
   const jusqua = user?.banned_until;
   return Boolean(jusqua) && new Date(jusqua as string).getTime() > Date.now();
 }
+
+/**
+ * Le compte de démonstration, partagé par tous les visiteurs du bouton
+ * « Essayer la démo ». Ses données sont remises à zéro chaque nuit ; certaines
+ * actions lui sont refusées PAR LA BASE (migration 0017), l'app se contente
+ * d'afficher « indisponible en démo » à la place des formulaires concernés.
+ */
+export function estDemo(user: Pick<User, "app_metadata"> | null): boolean {
+  return user?.app_metadata?.role === "demo";
+}

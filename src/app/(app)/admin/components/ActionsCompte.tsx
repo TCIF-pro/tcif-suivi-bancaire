@@ -14,10 +14,13 @@ export function ActionsCompte({
   userId,
   email,
   actif,
+  motDePasse = true,
 }: {
   userId: string;
   email: string;
   actif: boolean;
+  /** Afficher « Nouveau mot de passe provisoire » (pas pour le compte démo). */
+  motDePasse?: boolean;
 }) {
   const [etat, regenerer, enCours] = useActionState<EtatMotDePasse, FormData>(
     regenererMotDePasse.bind(null, userId),
@@ -27,6 +30,7 @@ export function ActionsCompte({
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap gap-2">
+        {motDePasse && (
         <form
           action={regenerer}
           onSubmit={(e) => {
@@ -39,6 +43,7 @@ export function ActionsCompte({
             {enCours ? "Génération..." : "Nouveau mot de passe provisoire"}
           </button>
         </form>
+        )}
 
         <form
           action={changerActivation.bind(null, userId, !actif)}

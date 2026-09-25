@@ -1,6 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { doitChangerMotDePasse, estDesactive } from "@/lib/auth/roles";
+import { doitChangerMotDePasse, estDemo, estDesactive } from "@/lib/auth/roles";
 
 // Pages accessibles sans être connecté. La page de retour du lien de
 // réinitialisation en fait partie : c'est elle qui ouvre la session.
@@ -63,11 +63,18 @@ export async function updateSession(request: NextRequest) {
     return versPage("/login");
   }
 
+  // Le compte démo n'a pas de mot de passe à changer : il y entre sans.
+  if (user && estDemo(user) && chemin.startsWith(PAGE_CHANGEMENT)) {
+    return versPage("/dashboard");
+  }
+
   // Mot de passe provisoire pas encore changé : toutes les pages mènent au
   // formulaire de changement. Filet de sécurité — la page de connexion y
   // envoie déjà directement, par une navigation côté navigateur qui préserve
   // le mode plein écran de la PWA sur iOS.
-  if (user && doitChangerMotDePasse(user) && !chemin.startsWith(PAGE_CHANGEMENT)) {
+  // Jamais pour le compte démo : il est renvoyé HORS de cette page (règle
+  // ci-dessus), l'y renvoyer aussi créerait une boucle de redirections.
+  if (user && !estDemo(user) && doitChangerMotDePasse(user) && !chemin.startsWith(PAGE_CHANGEMENT)) {
     return versPage(PAGE_CHANGEMENT);
   }
 

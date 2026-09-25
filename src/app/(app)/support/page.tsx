@@ -1,4 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
+import { estDemo } from "@/lib/auth/roles";
+import { IndisponibleEnDemo } from "../components/IndisponibleEnDemo";
 import { LONGUEUR_MAX_MESSAGE, LONGUEUR_MAX_SUJET } from "./limites";
 import { SupportForm } from "./SupportForm";
 
@@ -14,6 +16,9 @@ export default async function SupportPage() {
         Contacter le support
       </h1>
 
+      {estDemo(user) ? (
+        <IndisponibleEnDemo raison="Tous les visiteurs de la démo partagent le même compte : le support n'y est pas ouvert." />
+      ) : (
       <section className="max-w-xl rounded-2xl border border-border bg-surface p-5 shadow-card sm:p-6">
         <p className="mb-5 text-sm text-muted">
           Une question, un bug, une idée ? Écris-nous : la réponse arrivera par
@@ -25,6 +30,7 @@ export default async function SupportPage() {
           longueurMaxMessage={LONGUEUR_MAX_MESSAGE}
         />
       </section>
+      )}
     </div>
   );
 }

@@ -1,4 +1,7 @@
 import { uploadInvoice } from "../actions";
+import { createClient } from "@/lib/supabase/server";
+import { estDemo } from "@/lib/auth/roles";
+import { IndisponibleEnDemo } from "../../components/IndisponibleEnDemo";
 
 // Messages associés aux codes d'erreur posés par `uploadInvoice`. Ils disent
 // ce qui s'est passé ET quoi faire, jamais juste « une erreur est survenue ».
@@ -6,6 +9,7 @@ const MESSAGES_ERREUR: Record<string, string> = {
   session:
     "Ta session a expiré pendant l'envoi. Reconnecte-toi, puis retente l'import.",
   "fichier-vide": "Aucun fichier reçu. Choisis un PDF avant de valider.",
+  demo: "L'envoi de fichiers est indisponible dans le compte de démonstration.",
   storage:
     "Le PDF n'a pas pu être enregistré. Vérifie qu'il fait moins de 10 Mo, puis retente.",
 };
@@ -19,6 +23,22 @@ export default async function UploadInvoicePage({
 }: UploadInvoicePageProps) {
   const { erreur } = await searchParams;
   const message = erreur ? MESSAGES_ERREUR[erreur] : undefined;
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (estDemo(user)) {
+    return (
+      <div className="flex flex-col gap-6">
+        <h1 className="font-display text-2xl font-bold tracking-tight text-foreground">
+          Importer un PDF
+        </h1>
+        <IndisponibleEnDemo raison="Le compte de démonstration est ouvert à tous : on ne peut pas y déposer de fichiers. Une facture d'exemple est déjà dans la liste." />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-6">

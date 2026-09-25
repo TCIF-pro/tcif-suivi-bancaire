@@ -3,8 +3,13 @@
 import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { doitChangerMotDePasse } from "@/lib/auth/roles";
+import { doitChangerMotDePasse, estDemo } from "@/lib/auth/roles";
 import { LONGUEUR_MIN_MOT_DE_PASSE } from "@/lib/auth/mot-de-passe";
+import {
+  EMAIL_DEMO,
+  reinitialiserDemo,
+  trouverOuCreerCompteDemo,
+} from "@/lib/demo/reinitialiser";
 
 // Aucune de ces actions ne fait de redirect() : sur iOS, une redirection
 // serveur au milieu d'une transition (même émise depuis une Server Action) peut
@@ -60,6 +65,11 @@ export async function changerMotDePasse(
   } = await supabase.auth.getUser();
   if (!user) return { erreur: "Ta session a expiré. Reconnecte-toi." };
 
+  // Le proxy n'envoie jamais la démo sur cette page ; ce refus couvre un appel
+  // direct à l'action. Un changement via l'API de Supabase, lui, reste possible
+  // — sans conséquence : on entre dans la démo sans mot de passe.
+  if (estDemo(user)) return { erreur: "Indisponible dans le compte de démonstration." };
+
   const { error } = await supabase.auth.updateUser({ password: nouveau });
   if (error) {
     return {
@@ -104,7 +114,10 @@ export async function demanderReinitialisation(
 ): Promise<EtatReinitialisation> {
   const email = String(formData.get("email") ?? "").trim();
 
-  if (email) {
+  // L'adresse de la démo n'a pas de boîte mail : l'email rebondirait, et les
+  // rebonds dégradent la réputation du domaine d'envoi auprès de Gmail ou
+  // Outlook. On ne l'envoie pas — la réponse reste la même que pour les autres.
+  if (email && email.toLowerCase() !== EMAIL_DEMO) {
     // Adresse de retour construite à partir de la requête, pour que le lien
     // fonctionne en local, depuis le téléphone et sur Vercel sans réglage.
     // Un en-tête falsifié ne mènerait nulle part : Supabase refuse toute
@@ -125,4 +138,45 @@ export async function demanderReinitialisation(
   // cas d'erreur d'envoi : un message différent permettrait de tester quelles
   // adresses sont inscrites.
   return { envoye: true };
+}
+
+/**
+ * « Essayer la démo » : ouvre une session sur le compte de démonstration.
+ *
+ * AUCUN mot de passe n'est en jeu. Le serveur génère, avec la clé admin, un
+ * lien de connexion à usage unique pour le compte démo, puis le consomme
+ * aussitôt lui-même : la session est posée dans les cookies du visiteur, et le
+ * lien ne quitte jamais le serveur.
+ *
+ * Pourquoi pas un mot de passe partagé : un visiteur connecté peut appeler
+ * l'API de Supabase depuis la console de son navigateur et le changer. Tous
+ * les visiteurs suivants seraient bloqués jusqu'à la remise à zéro. Ici, le
+ * mot de passe du compte démo n'est connu de personne et ne sert à rien.
+ */
+export async function entrerDansLaDemo(): Promise<{ ok: boolean }> {
+  try {
+    const { cree } = await trouverOuCreerCompteDemo();
+    // Première visite de tous les temps : le compte vient d'être créé, vide.
+    if (cree) await reinitialiserDemo();
+
+    // Toujours l'adresse de référence : `trouverOuCreerCompteDemo` la rétablit
+    // si un visiteur a réussi à la modifier.
+    const { data, error } = await createAdminClient().auth.admin.generateLink({
+      type: "magiclink",
+      email: EMAIL_DEMO,
+    });
+    if (error || !data.properties?.hashed_token) throw error ?? new Error("lien non généré");
+
+    const supabase = await createClient();
+    const { error: erreurSession } = await supabase.auth.verifyOtp({
+      type: "magiclink",
+      token_hash: data.properties.hashed_token,
+    });
+    if (erreurSession) throw erreurSession;
+
+    return { ok: true };
+  } catch (erreur) {
+    console.error("[demo] entrée dans la démo impossible", erreur);
+    return { ok: false };
+  }
 }

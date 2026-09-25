@@ -6,6 +6,8 @@ import { SideNav } from "./components/SideNav";
 import { SignOutButton } from "./components/SignOutButton";
 import { ThemeToggle } from "./components/ThemeToggle";
 import { NavIcon } from "./components/NavIcon";
+import { estDemo } from "@/lib/auth/roles";
+import { signOut } from "./actions";
 
 // Deuxième vérification de session, en plus du middleware : même si le
 // middleware laissait passer une requête par erreur, aucune page sous ce
@@ -65,6 +67,21 @@ export default async function AppLayout({
             <SignOutButton compact />
           </div>
         </header>
+
+        {/* Bandeau permanent du compte démo : le visiteur sait que ce qu'il
+            voit est fictif et partagé, et qu'il peut en sortir. */}
+        {estDemo(user) && (
+          <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 border-b border-accent/30 bg-accent/10 px-4 py-2 text-center text-xs font-medium text-foreground">
+            <span>
+              Compte de démonstration — données fictives, remises à zéro chaque nuit.
+            </span>
+            <form action={signOut}>
+              <button type="submit" className="font-semibold text-accent underline underline-offset-2">
+                Quitter la démo
+              </button>
+            </form>
+          </div>
+        )}
 
         {/* `pb-36` sur téléphone : la barre du bas est en `fixed`, sans cette
             marge le dernier élément de chaque page passerait dessous. */}
