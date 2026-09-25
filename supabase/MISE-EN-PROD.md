@@ -68,8 +68,7 @@ avec les environnements où elle existe (Production, Preview, Development).
       - **Site URL** : `https://app.tcif-pro.fr`
       - **Redirect URLs**, ajouter les deux adresses de l'app :
         - `https://app.tcif-pro.fr/auth/confirm`
-        - `https://<À COMPLÉTER>.vercel.app/auth/confirm` ← ton adresse Vercel
-          réelle (Vercel → projet → Settings → Domains)
+        - `https://tcif-suivi-bancaire.vercel.app/auth/confirm`
 
       Sans elles, les liens des emails (« mot de passe oublié ») ne ramènent pas
       dans l'app en ligne : Supabase refuse toute adresse de retour qu'il ne
@@ -117,7 +116,7 @@ avec les environnements où elle existe (Production, Preview, Development).
 - [ ] Vérifier que la tâche planifiée répond `401` sans secret :
 
       ```bash
-      curl -i https://<ton-domaine>/api/cron/generate-subscription-transactions
+      curl -i https://app.tcif-pro.fr/api/cron/generate-subscription-transactions
       ```
 
       Un `500` voudrait dire que `CRON_SECRET` manque (retour au point 3).

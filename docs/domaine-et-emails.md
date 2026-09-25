@@ -147,6 +147,6 @@ minutes.
   une app web est liée à son domaine. Supprime l'icône, ouvre
   `app.tcif-pro.fr` dans Safari, puis Partager → Sur l'écran d'accueil. Tu
   devras te reconnecter : la session ne suit pas d'un domaine à l'autre.
-- Optionnel : Vercel → Domains → sur l'adresse `.vercel.app` → **Redirect to**
+- Optionnel : Vercel → Domains → sur `tcif-suivi-bancaire.vercel.app` → **Redirect to**
   `app.tcif-pro.fr`. Les anciens liens continueront de marcher et mèneront tous
   au même endroit.
