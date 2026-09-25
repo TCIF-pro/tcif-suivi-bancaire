@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { entrerDansLaDemo, signIn } from "../actions";
+import { ChampMotDePasse } from "@/components/ChampMotDePasse";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -69,10 +70,9 @@ export default function LoginPage() {
           <label htmlFor="password" className="text-sm font-medium text-foreground">
             Mot de passe
           </label>
-          <input
+          <ChampMotDePasse
             id="password"
             name="password"
-            type="password"
             required
             autoComplete="current-password"
             className="rounded-xl border border-border bg-surface px-3.5 py-3 text-foreground outline-none focus:border-accent focus:ring-2 focus:ring-accent/25"

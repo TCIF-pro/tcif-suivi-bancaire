@@ -3,6 +3,7 @@
 import { useActionState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { changerMotDePasse, type EtatChangement } from "../actions";
+import { ChampMotDePasse } from "@/components/ChampMotDePasse";
 
 const CHAMP =
   "rounded-xl border border-border bg-surface px-3.5 py-3 text-foreground outline-none focus:border-accent focus:ring-2 focus:ring-accent/25";
@@ -27,10 +28,9 @@ export function ChangerMotDePasseForm({ longueurMin }: { longueurMin: number }) 
         <label htmlFor="password" className="text-sm font-medium text-foreground">
           Nouveau mot de passe
         </label>
-        <input
+        <ChampMotDePasse
           id="password"
           name="password"
-          type="password"
           required
           minLength={longueurMin}
           autoComplete="new-password"
@@ -43,10 +43,9 @@ export function ChangerMotDePasseForm({ longueurMin }: { longueurMin: number }) 
         <label htmlFor="confirmation" className="text-sm font-medium text-foreground">
           Confirme-le
         </label>
-        <input
+        <ChampMotDePasse
           id="confirmation"
           name="confirmation"
-          type="password"
           required
           minLength={longueurMin}
           autoComplete="new-password"
