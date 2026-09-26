@@ -6,7 +6,8 @@ import { SideNav } from "./components/SideNav";
 import { SignOutButton } from "./components/SignOutButton";
 import { ThemeToggle } from "./components/ThemeToggle";
 import { NavIcon } from "./components/NavIcon";
-import { estDemo } from "@/lib/auth/roles";
+import { doitChangerMotDePasse, estAdmin, estDemo } from "@/lib/auth/roles";
+import { TutorielBienvenue } from "./components/TutorielBienvenue";
 import { signOut } from "./actions";
 
 // Deuxième vérification de session, en plus du middleware : même si le
@@ -32,9 +33,24 @@ export default async function AppLayout({
   // source de vérité, juste une deuxième lecture du même réglage.
   const { data: settings } = await supabase
     .from("user_settings")
-    .select("theme")
+    .select("theme, tutoriel_vu_le")
     .single();
   const theme: "light" | "dark" = settings?.theme === "dark" ? "dark" : "light";
+
+  // Tutoriel de bienvenue : une seule fois par compte, à la première vraie
+  // arrivée dans l'app.
+  // - `=== null` et non « faux » : si la migration 0018 n'est pas appliquée, la
+  //   lecture échoue et `settings` est vide. Le tutoriel doit alors rester
+  //   caché, pas s'afficher chez tout le monde.
+  // - jamais pour l'admin, jamais pour le compte démo, qui a son propre bandeau ;
+  // - jamais avant le changement du mot de passe provisoire. Le proxy bloque
+  //   déjà toutes les pages dans ce cas, c'est une précaution de plus.
+  const afficherTutoriel =
+    settings !== null &&
+    settings.tutoriel_vu_le === null &&
+    !estAdmin(user) &&
+    !estDemo(user) &&
+    !doitChangerMotDePasse(user);
 
   return (
     // Une seule mise en page pour tous les écrans, deux bascules seulement :
@@ -90,6 +106,8 @@ export default async function AppLayout({
         </main>
 
         <BottomNav />
+
+        {afficherTutoriel && <TutorielBienvenue />}
       </div>
     </div>
   );
