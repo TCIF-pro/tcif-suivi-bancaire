@@ -199,3 +199,14 @@ La V2 est en ligne depuis le 25/09/2026 (migrations `0008` à `0017`). Chaque
       connecter, changer le mot de passe. Le tutoriel doit apparaître sur le
       tableau de bord, puis ne plus revenir une fois fermé. Supprimer ensuite le
       compte de test depuis Supabase (Authentication → Users).
+
+### Thème sombre par défaut
+
+- [ ] `0019_theme_sombre_par_defaut.sql` — SQL Editor de la prod → Run.
+
+      Dans n'importe quel ordre par rapport au push de `main` : elle ne change
+      que la valeur par défaut des comptes créés ensuite, aucun compte existant
+      n'est touché.
+- [ ] Vérification : le compte de test créé pour le tutoriel doit être en
+      thème sombre du début à la fin (connexion, nouveau mot de passe,
+      tableau de bord).

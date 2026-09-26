@@ -62,8 +62,9 @@ async function getAppearance(): Promise<{
   if (!user) {
     // Page /login : aucune préférence rattachée à un compte, puisqu'il n'y a
     // pas encore de compte. On sert le thème sombre plutôt que le clair —
-    // c'est celui de l'app une fois connecté, l'enchaînement est donc sans
-    // à-coup, et un écran sombre est plus confortable de nuit sur téléphone.
+    // c'est celui d'un compte neuf (valeur par défaut posée par la migration
+    // 0019), la première connexion s'enchaîne donc sans à-coup, et un écran
+    // sombre est plus confortable de nuit sur téléphone.
     return { theme: "dark", accentColorId: "brass" };
   }
 
