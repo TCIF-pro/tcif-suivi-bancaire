@@ -79,6 +79,7 @@ et ne mélange pas deux fichiers dans la même requête.
    - [ ] `0015_ownership_checks.sql`
    - [ ] `0016_support_messages.sql`
    - [ ] `0017_demo_restrictions.sql`
+   - [ ] `0018_tutoriel_bienvenue.sql`
 
    Le jour de la mise en ligne, c'est `MISE-EN-PROD.md` qu'il faut suivre.
 

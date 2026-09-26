@@ -55,8 +55,19 @@ avec les environnements où elle existe (Production, Preview, Development).
       plutôt que de s'ouvrir à tout le monde. S'il manque, les abonnements ne
       génèrent plus leurs transactions — ça ne se voit qu'au prochain
       prélèvement.
-- [ ] `SUPABASE_SERVICE_ROLE_KEY` est défini en Production, et **n'a pas** de
-      préfixe `NEXT_PUBLIC_`.
+- [ ] **`SUPABASE_SERVICE_ROLE_KEY` est défini en Production ET en Preview,
+      avec une valeur différente pour chacun**, et **n'a pas** de préfixe
+      `NEXT_PUBLIC_` :
+      - Production : la clé secrète du projet Supabase de **prod** ;
+      - Preview : la clé secrète du projet Supabase de **test**.
+
+      Cette clé doit venir du **même projet** que `NEXT_PUBLIC_SUPABASE_URL`
+      dans le même environnement. Sinon Supabase répond « Invalid API key »
+      et tout ce qui passe par elle échoue sans faire planter la page : `/admin`
+      (liste des comptes, messages, création de compte), le retrait du mot de
+      passe provisoire, la démo, les notifications du support, les tâches
+      planifiées. C'est arrivé sur la Preview `tutoriel-bienvenue` : la Preview
+      pointait vers la base de test avec la clé de la prod.
 - [ ] **`RESEND_API_KEY`, `EMAIL_FROM` et `SUPPORT_EMAIL_TO`** sont définis en
       Production ET en Preview (voir `.env.local.example`) :
       - `RESEND_API_KEY` : une clé **`app-tcif-prod`** créée pour l'occasion
@@ -69,7 +80,12 @@ avec les environnements où elle existe (Production, Preview, Development).
 - [ ] En **Production**, `NEXT_PUBLIC_SUPABASE_URL` pointe vers la base de **prod**.
 - [ ] En **Preview**, les variables Supabase **ne pointent pas** vers la base de
       prod — sinon chaque branche déployée pour essai écrirait dans tes vraies
-      données. Les faire pointer vers la base de test.
+      données. Les faire pointer vers la base de test : `NEXT_PUBLIC_SUPABASE_URL`,
+      `NEXT_PUBLIC_SUPABASE_ANON_KEY` et `SUPABASE_SERVICE_ROLE_KEY` viennent
+      toutes les trois du projet de test.
+- [ ] **Après toute modification d'une variable, redéployer.** Vercel ne
+      l'applique qu'aux déploiements créés ensuite : Deployments → le dernier
+      déploiement concerné → ⋯ → Redeploy.
 
 ## 4. Réglages Supabase de la prod (étapes 6.1 et 6.2)
 
@@ -178,3 +194,35 @@ avec les environnements où elle existe (Production, Preview, Development).
 - [ ] Réinstaller la PWA depuis `app.tcif-pro.fr` sur ton téléphone (voir
       `docs/domaine-et-emails.md`) : l'icône actuelle reste attachée à
       l'adresse `.vercel.app`.
+
+---
+
+## Mises à jour après la V2
+
+La V2 est en ligne depuis le 25/09/2026 (migrations `0008` à `0017`). Chaque
+évolution qui touche à la base ajoute ici sa migration, à appliquer sur la
+**prod** avant de fusionner la branche dans `main`.
+
+### Tutoriel de bienvenue
+
+- [ ] `0018_tutoriel_bienvenue.sql` — SQL Editor de la prod → Run.
+
+      **Avant** de pousser `main` : elle marque les comptes existants comme ayant
+      déjà vu le tutoriel. Dans l'autre ordre, rien ne casse — le tutoriel reste
+      caché tant que la colonne n'existe pas —, mais un compte créé entre les deux
+      et déjà connecté ne le verrait jamais.
+- [ ] Après la mise en ligne : créer un compte de test depuis `/admin`, s'y
+      connecter, changer le mot de passe. Le tutoriel doit apparaître sur le
+      tableau de bord, puis ne plus revenir une fois fermé. Supprimer ensuite le
+      compte de test depuis Supabase (Authentication → Users).
+
+### Thème sombre par défaut
+
+- [ ] `0019_theme_sombre_par_defaut.sql` — SQL Editor de la prod → Run.
+
+      Dans n'importe quel ordre par rapport au push de `main` : elle ne change
+      que la valeur par défaut des comptes créés ensuite, aucun compte existant
+      n'est touché.
+- [ ] Vérification : le compte de test créé pour le tutoriel doit être en
+      thème sombre du début à la fin (connexion, nouveau mot de passe,
+      tableau de bord).
