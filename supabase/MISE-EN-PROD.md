@@ -229,12 +229,12 @@ La V2 est en ligne depuis le 25/09/2026 (migrations `0008` à `0017`). Chaque
 
 ### PDF de plus de 4,5 Mo
 
-- [ ] `0020_limite_pdf_factures.sql` — SQL Editor de la prod → Run.
+- [x] `0020_limite_pdf_factures.sql` — SQL Editor de la prod → Run.
 
       Dans n'importe quel ordre par rapport au push de `main` : elle limite le
       stockage des factures aux PDF de 10 Mo maximum, ce que l'ancienne et la
       nouvelle page d'import respectent toutes les deux. Les fichiers déjà
       stockés ne sont pas touchés.
-- [ ] Vérification, **depuis le téléphone, sur l'app en ligne** : importer un
+- [x] Vérification, **depuis le téléphone, sur l'app en ligne** : importer un
       PDF de plus de 4,5 Mo (et de moins de 10 Mo). La facture doit s'ouvrir
       avec son PDF. Avant ce correctif, Vercel refusait l'envoi.
