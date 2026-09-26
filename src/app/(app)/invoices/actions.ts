@@ -7,39 +7,62 @@ import { extractPdfText } from "@/lib/pdf/extract";
 import { parseInvoiceFields } from "@/lib/pdf/parse-fields";
 import { estDemo } from "@/lib/auth/roles";
 
-// Chaque échec possible renvoie l'utilisateur sur le formulaire avec un code
-// d'erreur dans l'URL, que la page traduit en message lisible. Avant, ces cas
-// faisaient un `return` muet : le bouton semblait ne rien faire et il était
-// impossible de savoir ce qui avait échoué.
-function echecUpload(raison: string): never {
-  redirect(`/invoices/upload?erreur=${raison}`);
+export interface FichierImporte {
+  // Chemin du PDF que le navigateur vient de déposer dans Storage.
+  chemin: string;
+  nomFichier: string;
+  docType: string;
+  direction: string;
 }
 
-export async function uploadInvoice(formData: FormData) {
+export type ResultatImport = { id: string } | { erreur: string };
+
+// Chemin attendu : "{id de l'utilisateur}/{uuid}.pdf". L'uuid devient l'id de
+// la facture, ce qui empêche aussi d'enregistrer deux fois le même fichier.
+const FORMAT_CHEMIN = /^([0-9a-f-]{36})\/([0-9a-f-]{36})\.pdf$/;
+
+// Deuxième moitié de l'import. Le PDF n'arrive PAS ici : Vercel refuse tout
+// envoi de plus de 4,5 Mo vers le serveur, avant même que ce code tourne. Le
+// navigateur le dépose donc directement dans Supabase Storage (voir
+// FormulaireImport.tsx), puis n'envoie ici que son chemin — quelques octets.
+// Le serveur relit le fichier depuis Storage, où la limite de Vercel ne
+// s'applique pas, pour en extraire le texte.
+export async function enregistrerFactureImportee(
+  fichier: FichierImporte,
+): Promise<ResultatImport> {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) echecUpload("session");
+  if (!user) return { erreur: "session" };
   // Refusé aussi par le stockage lui-même (migration 0017).
-  if (estDemo(user)) echecUpload("demo");
+  if (estDemo(user)) return { erreur: "demo" };
 
-  const file = formData.get("file") as File | null;
-  if (!file || file.size === 0) echecUpload("fichier-vide");
+  // Le chemin vient du navigateur : on n'en fait rien sans vérifier qu'il est
+  // bien dans le dossier de l'utilisateur connecté. (Storage refuserait de
+  // toute façon de lire le dossier d'un autre, grâce à ses règles d'accès.)
+  const format = FORMAT_CHEMIN.exec(fichier.chemin);
+  if (!format || format[1] !== user.id) return { erreur: "fichier-vide" };
+  const id = format[2];
 
-  const docType = String(formData.get("doc_type"));
-  const direction = String(formData.get("direction"));
+  const docType = fichier.docType === "devis" ? "devis" : "facture";
+  const direction = fichier.direction === "sent" ? "sent" : "received";
 
-  const id = crypto.randomUUID();
-  const filePath = `${user.id}/${id}.pdf`;
-  const buffer = Buffer.from(await file.arrayBuffer());
-
-  const { error: uploadError } = await supabase.storage
+  const { data: contenu, error: erreurLecture } = await supabase.storage
     .from("invoices")
-    .upload(filePath, buffer, { contentType: "application/pdf" });
-  if (uploadError) {
-    console.error("[invoices] envoi vers le Storage refusé", uploadError);
-    echecUpload("storage");
+    .download(fichier.chemin);
+  if (erreurLecture || !contenu) {
+    console.error("[invoices] PDF déposé introuvable dans le Storage", erreurLecture);
+    return { erreur: "storage" };
+  }
+
+  const buffer = Buffer.from(await contenu.arrayBuffer());
+
+  // Le stockage ne vérifie que le type ANNONCÉ par le navigateur. Un vrai PDF
+  // commence toujours par "%PDF" : sinon, on retire le fichier et on refuse.
+  if (buffer.subarray(0, 4).toString("latin1") !== "%PDF") {
+    await supabase.storage.from("invoices").remove([fichier.chemin]);
+    return { erreur: "pas-un-pdf" };
   }
 
   // Volontairement hors de tout garde-fou d'erreur : `extractPdfText` ne lève
@@ -49,14 +72,14 @@ export async function uploadInvoice(formData: FormData) {
   const parsed = parseInvoiceFields(text);
   const hasUsableExtraction = parsed.confidence !== "failed";
 
-  await supabase.from("invoices").insert({
+  const { error: erreurFacture } = await supabase.from("invoices").insert({
     id,
     user_id: user.id,
     doc_type: docType,
     direction,
     status: "pending_review",
-    file_path: filePath,
-    file_name: file.name,
+    file_path: fichier.chemin,
+    file_name: fichier.nomFichier.slice(0, 255) || "facture.pdf",
     extracted_amount: parsed.amount,
     extracted_date: parsed.date,
     extracted_party_name: parsed.partyName,
@@ -65,8 +88,17 @@ export async function uploadInvoice(formData: FormData) {
     issued_date: hasUsableExtraction ? parsed.date : null,
     party_name: hasUsableExtraction ? parsed.partyName : null,
   });
+  if (erreurFacture) {
+    // Sans facture, le fichier ne serait rattaché à rien : on le retire.
+    console.error("[invoices] facture non créée après l'envoi du PDF", erreurFacture);
+    await supabase.storage.from("invoices").remove([fichier.chemin]);
+    return { erreur: "enregistrement" };
+  }
 
-  redirect(`/invoices/${id}`);
+  revalidatePath("/invoices");
+  // Pas de redirect() ici : le formulaire attend cette réponse pour savoir si
+  // tout s'est bien passé, puis navigue lui-même vers la facture.
+  return { id };
 }
 
 // Enregistre les corrections manuelles et, selon l'état de la facture/devis :
