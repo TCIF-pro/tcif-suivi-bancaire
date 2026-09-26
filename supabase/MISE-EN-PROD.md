@@ -178,3 +178,24 @@ avec les environnements où elle existe (Production, Preview, Development).
 - [ ] Réinstaller la PWA depuis `app.tcif-pro.fr` sur ton téléphone (voir
       `docs/domaine-et-emails.md`) : l'icône actuelle reste attachée à
       l'adresse `.vercel.app`.
+
+---
+
+## Mises à jour après la V2
+
+La V2 est en ligne depuis le 25/09/2026 (migrations `0008` à `0017`). Chaque
+évolution qui touche à la base ajoute ici sa migration, à appliquer sur la
+**prod** avant de fusionner la branche dans `main`.
+
+### Tutoriel de bienvenue
+
+- [ ] `0018_tutoriel_bienvenue.sql` — SQL Editor de la prod → Run.
+
+      **Avant** de pousser `main` : elle marque les comptes existants comme ayant
+      déjà vu le tutoriel. Dans l'autre ordre, rien ne casse — le tutoriel reste
+      caché tant que la colonne n'existe pas —, mais un compte créé entre les deux
+      et déjà connecté ne le verrait jamais.
+- [ ] Après la mise en ligne : créer un compte de test depuis `/admin`, s'y
+      connecter, changer le mot de passe. Le tutoriel doit apparaître sur le
+      tableau de bord, puis ne plus revenir une fois fermé. Supprimer ensuite le
+      compte de test depuis Supabase (Authentication → Users).
