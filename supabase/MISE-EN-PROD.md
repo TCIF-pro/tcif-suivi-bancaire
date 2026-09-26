@@ -238,3 +238,17 @@ La V2 est en ligne depuis le 25/09/2026 (migrations `0008` à `0017`). Chaque
 - [x] Vérification, **depuis le téléphone, sur l'app en ligne** : importer un
       PDF de plus de 4,5 Mo (et de moins de 10 Mo). La facture doit s'ouvrir
       avec son PDF. Avant ce correctif, Vercel refusait l'envoi.
+
+### App servie depuis Paris
+
+Les deux bases Supabase sont à Paris (AWS eu-west-3). Par défaut, Vercel
+faisait tourner l'app à Washington (`iad1`) : chaque appel à la base
+traversait l'Atlantique aller-retour, et une page en enchaîne jusqu'à six à
+la suite. `"regions": ["cdg1"]` dans `vercel.json` place l'app à Paris, pour
+la prod comme pour les Previews. Aucune migration.
+
+- [ ] Après le déploiement : `curl -sI https://app.tcif-pro.fr/login | grep x-vercel-id`
+      doit afficher `cdg1::cdg1::…` (et non plus `cdg1::iad1::…`). Le premier
+      `cdg1` est le point d'entrée du réseau Vercel, le second l'endroit où
+      tourne l'app.
+- [ ] Si un jour une base Supabase change de région, changer celle-ci avec.
