@@ -39,13 +39,10 @@ const nextConfig: NextConfig = {
     "/invoices/upload": FICHIERS_EXTRACTION_PDF,
   },
 
-  experimental: {
-    serverActions: {
-      // 1 Mo par défaut : une facture scannée les dépasse largement et se fait
-      // refuser avant même d'entrer dans le code de l'upload.
-      bodySizeLimit: "10mb",
-    },
-  },
+  // Pas de `serverActions.bodySizeLimit` : aucune action ne reçoit de fichier.
+  // Les PDF partent directement du navigateur vers Supabase Storage, parce que
+  // Vercel refuse de toute façon tout envoi de plus de 4,5 Mo vers le serveur
+  // (voir src/app/(app)/invoices/upload/FormulaireImport.tsx).
 
   // Autorise l'ouverture de l'app depuis un autre appareil du réseau local
   // (téléphone, tablette) pendant le développement.
