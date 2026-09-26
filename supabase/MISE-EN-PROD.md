@@ -55,8 +55,19 @@ avec les environnements où elle existe (Production, Preview, Development).
       plutôt que de s'ouvrir à tout le monde. S'il manque, les abonnements ne
       génèrent plus leurs transactions — ça ne se voit qu'au prochain
       prélèvement.
-- [ ] `SUPABASE_SERVICE_ROLE_KEY` est défini en Production, et **n'a pas** de
-      préfixe `NEXT_PUBLIC_`.
+- [ ] **`SUPABASE_SERVICE_ROLE_KEY` est défini en Production ET en Preview,
+      avec une valeur différente pour chacun**, et **n'a pas** de préfixe
+      `NEXT_PUBLIC_` :
+      - Production : la clé secrète du projet Supabase de **prod** ;
+      - Preview : la clé secrète du projet Supabase de **test**.
+
+      Cette clé doit venir du **même projet** que `NEXT_PUBLIC_SUPABASE_URL`
+      dans le même environnement. Sinon Supabase répond « Invalid API key »
+      et tout ce qui passe par elle échoue sans faire planter la page : `/admin`
+      (liste des comptes, messages, création de compte), le retrait du mot de
+      passe provisoire, la démo, les notifications du support, les tâches
+      planifiées. C'est arrivé sur la Preview `tutoriel-bienvenue` : la Preview
+      pointait vers la base de test avec la clé de la prod.
 - [ ] **`RESEND_API_KEY`, `EMAIL_FROM` et `SUPPORT_EMAIL_TO`** sont définis en
       Production ET en Preview (voir `.env.local.example`) :
       - `RESEND_API_KEY` : une clé **`app-tcif-prod`** créée pour l'occasion
@@ -69,7 +80,12 @@ avec les environnements où elle existe (Production, Preview, Development).
 - [ ] En **Production**, `NEXT_PUBLIC_SUPABASE_URL` pointe vers la base de **prod**.
 - [ ] En **Preview**, les variables Supabase **ne pointent pas** vers la base de
       prod — sinon chaque branche déployée pour essai écrirait dans tes vraies
-      données. Les faire pointer vers la base de test.
+      données. Les faire pointer vers la base de test : `NEXT_PUBLIC_SUPABASE_URL`,
+      `NEXT_PUBLIC_SUPABASE_ANON_KEY` et `SUPABASE_SERVICE_ROLE_KEY` viennent
+      toutes les trois du projet de test.
+- [ ] **Après toute modification d'une variable, redéployer.** Vercel ne
+      l'applique qu'aux déploiements créés ensuite : Deployments → le dernier
+      déploiement concerné → ⋯ → Redeploy.
 
 ## 4. Réglages Supabase de la prod (étapes 6.1 et 6.2)
 
