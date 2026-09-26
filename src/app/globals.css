@@ -155,3 +155,26 @@ form:not(:has(input[name="type"][value="savings"]:checked)) .champ-virement {
 form:not(:has(input[name="is_savings"]:checked)) .champ-virement-abo {
   display: none;
 }
+
+/* Squelettes des écrans de chargement (components/Squelette.tsx) : des blocs
+   de la couleur du texte secondaire, très atténuée, qui « respirent »
+   lentement. Dérivés de --muted, ils suivent le thème clair ou sombre sans
+   réglage de plus. */
+.squelette {
+  background-color: color-mix(in oklab, var(--muted) 16%, transparent);
+  animation: squelette-respire 1.6s ease-in-out infinite;
+}
+
+@keyframes squelette-respire {
+  50% {
+    opacity: 0.45;
+  }
+}
+
+/* Réglage d'accessibilité « réduire les animations » du téléphone : les
+   blocs restent visibles, mais immobiles. */
+@media (prefers-reduced-motion: reduce) {
+  .squelette {
+    animation: none;
+  }
+}

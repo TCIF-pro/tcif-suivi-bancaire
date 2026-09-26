@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { InvoiceFilters } from "./components/InvoiceFilters";
-import { InvoiceList, type InvoiceRow } from "./components/InvoiceList";
+import { InvoiceFilters } from "../components/InvoiceFilters";
+import { InvoiceList, type InvoiceRow } from "../components/InvoiceList";
 
 interface InvoicesPageProps {
   searchParams: Promise<{ doc_type?: string; status?: string }>;

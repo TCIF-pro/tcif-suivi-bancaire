@@ -7,7 +7,7 @@ import {
 } from "@/lib/accounts/visible";
 import { todayDateString } from "@/lib/dates";
 import { formatCurrency } from "@/lib/format";
-import { SubscriptionList, type SubscriptionRow } from "./components/SubscriptionList";
+import { SubscriptionList, type SubscriptionRow } from "../components/SubscriptionList";
 
 export default async function SubscriptionsPage() {
   const supabase = await createClient();
