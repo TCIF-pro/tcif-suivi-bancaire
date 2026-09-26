@@ -6,8 +6,8 @@ import {
   filtreComptesVisibles,
 } from "@/lib/accounts/visible";
 import { relationName } from "@/lib/supabase/relations";
-import { TransactionFilters } from "./components/TransactionFilters";
-import { TransactionList, type TransactionRow } from "./components/TransactionList";
+import { TransactionFilters } from "../components/TransactionFilters";
+import { TransactionList, type TransactionRow } from "../components/TransactionList";
 
 interface TransactionsPageProps {
   searchParams: Promise<{
