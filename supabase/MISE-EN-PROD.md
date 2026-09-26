@@ -247,7 +247,7 @@ traversait l'Atlantique aller-retour, et une page en enchaîne jusqu'à six à
 la suite. `"regions": ["cdg1"]` dans `vercel.json` place l'app à Paris, pour
 la prod comme pour les Previews. Aucune migration.
 
-- [ ] Après le déploiement : `curl -sI https://app.tcif-pro.fr/login | grep x-vercel-id`
+- [x] Après le déploiement : `curl -sI https://app.tcif-pro.fr/login | grep x-vercel-id`
       doit afficher `cdg1::cdg1::…` (et non plus `cdg1::iad1::…`). Le premier
       `cdg1` est le point d'entrée du réseau Vercel, le second l'endroit où
       tourne l'app.
