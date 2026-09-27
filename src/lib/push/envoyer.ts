@@ -67,11 +67,15 @@ export async function envoyerPush(
         const statut = (erreur as { statusCode?: number }).statusCode;
         // 404 / 410 : cet appareil n'existe plus pour le service de push. On
         // l'oublie, sinon on réessaierait chaque matin pour rien.
+        // DIAGNOSTIC PROVISOIRE (à retirer avant la fusion)
+        (bilan as BilanPush & { diag?: unknown[] }).diag ??= [];
+        (bilan as BilanPush & { diag?: unknown[] }).diag!.push({ statut, corps: (erreur as { body?: string }).body, hote: new URL(a.endpoint).host, message: String(erreur).slice(0, 200) });
         if (statut === 404 || statut === 410) {
+          console.warn("[push] appareil expiré, retiré", statut, (erreur as { body?: string }).body);
           await supabase.from("push_subscriptions").delete().eq("id", a.id);
           bilan.expires++;
         } else {
-          console.error("[push] envoi refusé", statut, erreur);
+          console.error("[push] envoi refusé", statut, (erreur as { body?: string }).body ?? erreur);
           bilan.echecs++;
         }
       }

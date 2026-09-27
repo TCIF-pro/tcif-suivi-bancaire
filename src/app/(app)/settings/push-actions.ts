@@ -58,5 +58,7 @@ export async function envoyerNotificationTest(): Promise<{ envoyes: number }> {
     body: "C'est ici que TCIF te préviendra si un compte approche de zéro.",
     url: "/settings",
   });
-  return { envoyes: bilan.envoyes };
+  // DIAGNOSTIC PROVISOIRE (à retirer avant la fusion)
+  if (process.env.VERCEL_ENV !== "production") console.log("[push] diag", JSON.stringify(bilan));
+  return { envoyes: bilan.envoyes, ...(process.env.VERCEL_ENV !== "production" ? { diag: bilan } : {}) } as { envoyes: number };
 }
