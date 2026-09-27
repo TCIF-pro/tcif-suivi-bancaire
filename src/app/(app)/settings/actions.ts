@@ -334,7 +334,7 @@ export async function updateDashboardCards(formData: FormData) {
   revalidatePath("/dashboard");
 }
 
-// Alertes envoyées par email (migration 0021). Même règle que les blocs du
+// Alertes envoyées par email (migrations 0021 et 0022). Même règle que les blocs du
 // tableau de bord : une case décochée n'est pas envoyée, son absence vaut
 // « désactivée ».
 export async function updateAlertes(formData: FormData) {
@@ -346,7 +346,10 @@ export async function updateAlertes(formData: FormData) {
 
   await supabase
     .from("user_settings")
-    .update({ alerte_tresorerie: formData.get("alerte_tresorerie") === "on" })
+    .update({
+      alerte_tresorerie: formData.get("alerte_tresorerie") === "on",
+      rappel_saisie: formData.get("rappel_saisie") === "on",
+    })
     .eq("user_id", user.id);
 
   revalidatePath("/settings");

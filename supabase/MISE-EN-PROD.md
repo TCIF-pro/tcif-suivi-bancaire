@@ -270,3 +270,18 @@ elles datent d'avant.)
 - [ ] `curl -i https://app.tcif-pro.fr/api/cron/quotidien` doit répondre `401`.
 - [ ] Le lendemain matin, Vercel → Logs (filtre `/api/cron/quotidien`) : la
       réponse liste `prelevements` et `alertesTresorerie`, sans `erreur`.
+
+### Rappel de saisie
+
+Troisième étape de la tâche du matin (`/api/cron/quotidien`) : un email quand
+rien n'a été saisi à la main depuis 7 jours, au plus un par semaine, 3 au
+maximum sans réaction.
+
+- [ ] `0022_rappel_saisie.sql` - SQL Editor de la prod → Run, **avant** de
+      pousser `main`. Dans l'autre ordre, seule l'étape des rappels échoue,
+      mais la case « Me rappeler » de Réglages ne s'enregistrerait pas.
+- [ ] À savoir : au premier passage, un compte dont la dernière saisie à la
+      main date de plus de 7 jours reçoit son premier rappel dès le lendemain
+      matin.
+- [ ] Le lendemain matin, Vercel → Logs (filtre `/api/cron/quotidien`) : la
+      réponse liste aussi `rappelsSaisie`, sans `erreur`.
