@@ -55,6 +55,11 @@ self.addEventListener("push", (event) => {
 // Un appui sur la notification ouvre l'app sur la page prévue (tableau de
 // bord du compte concerné, formulaire d'ajout...). Si l'app est déjà
 // ouverte, on la réutilise au lieu d'en ouvrir une deuxième.
+//
+// L'ordre compte : on change d'abord de page, PUIS on tente de mettre la
+// fenêtre au premier plan. Le navigateur peut refuser cette mise au premier
+// plan (« Not allowed to focus a window ») : avant, ce refus arrêtait tout et
+// la page ne changeait pas. Désormais il n'empêche plus rien.
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
 
@@ -64,12 +69,29 @@ self.addEventListener("notificationclick", (event) => {
   const cible = new URL(lien.pathname + lien.search, self.location.origin).href;
 
   event.waitUntil(
-    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((fenetres) => {
+    (async () => {
+      const fenetres = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
       const ouverte = fenetres.find((f) => new URL(f.url).origin === self.location.origin);
-      if (ouverte) {
-        return ouverte.focus().then((f) => (f && "navigate" in f ? f.navigate(cible) : undefined));
+
+      if (!ouverte) {
+        await self.clients.openWindow(cible);
+        return;
       }
-      return self.clients.openWindow(cible);
-    }),
+
+      let fenetre = ouverte;
+      try {
+        // Échoue sur une page que ce service worker ne contrôle pas encore :
+        // on ouvre alors la page dans une nouvelle fenêtre.
+        fenetre = (await ouverte.navigate(cible)) ?? ouverte;
+      } catch {
+        await self.clients.openWindow(cible);
+        return;
+      }
+      try {
+        await fenetre.focus();
+      } catch {
+        // Mise au premier plan refusée : la page a quand même changé.
+      }
+    })(),
   );
 });
