@@ -11,7 +11,7 @@ Le projet Supabase gratuit se **met en pause après ~7 jours d'inactivité**. Co
 - **Next.js** (App Router) — frontend + API routes dans un seul projet
 - **TailwindCSS**
 - **Supabase** (Postgres + Auth + Storage)
-- **Vercel** pour l'hébergement (+ Vercel Cron pour la génération automatique des transactions d'abonnement)
+- **Vercel** pour l'hébergement (+ Vercel Cron : chaque matin, génération des prélèvements d'abonnement et alertes de trésorerie par email)
 
 ## Setup local
 
@@ -35,4 +35,4 @@ Le schéma (tables + policies RLS) vit dans `supabase/migrations/`. Voir `supaba
 
 ## Déploiement
 
-Guide détaillé fourni à l'étape correspondante du projet (déploiement Vercel). En résumé : connecter le repo à Vercel, renseigner les mêmes variables d'environnement que `.env.local` dans les réglages du projet Vercel, et configurer le Cron Job (`vercel.json`) pour la génération des transactions d'abonnement.
+Guide détaillé fourni à l'étape correspondante du projet (déploiement Vercel). En résumé : connecter le repo à Vercel, renseigner les mêmes variables d'environnement que `.env.local` dans les réglages du projet Vercel, et configurer les Cron Jobs (`vercel.json`) : la tâche du matin (`/api/cron/quotidien`) et la remise à zéro de la démo.

@@ -334,6 +334,24 @@ export async function updateDashboardCards(formData: FormData) {
   revalidatePath("/dashboard");
 }
 
+// Alertes envoyées par email (migration 0021). Même règle que les blocs du
+// tableau de bord : une case décochée n'est pas envoyée, son absence vaut
+// « désactivée ».
+export async function updateAlertes(formData: FormData) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return;
+
+  await supabase
+    .from("user_settings")
+    .update({ alerte_tresorerie: formData.get("alerte_tresorerie") === "on" })
+    .eq("user_id", user.id);
+
+  revalidatePath("/settings");
+}
+
 // Créer un compte d'épargne. Aucun n'est créé d'office pour un nouvel
 // utilisateur : l'épargne reste facultative, on l'ajoute quand on en a besoin.
 export async function createSavingsAccount(formData: FormData) {
