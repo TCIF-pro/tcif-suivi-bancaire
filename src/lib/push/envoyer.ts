@@ -10,6 +10,17 @@ import type { BilanPush, NotificationPush } from "./contenu";
 
 let configure: boolean | null = null;
 
+// Un appareil qui vient de s'inscrire peut être refusé quelques secondes par
+// le service de push (« expiré », 404/410), le temps que son inscription se
+// propage chez Google ou Apple. Constaté en test : le même appareil est
+// accepté 2 secondes plus tard. D'où une seconde tentative, et jamais de
+// suppression d'un appareil inscrit il y a moins de 10 minutes.
+const ATTENTE_AVANT_REESSAI_MS = 2000;
+const AGE_MIN_AVANT_SUPPRESSION_MS = 10 * 60 * 1000;
+
+const estExpire = (statut: number | undefined) => statut === 404 || statut === 410;
+const statutDe = (erreur: unknown) => (erreur as { statusCode?: number }).statusCode;
+
 function configurer(): boolean {
   if (configure !== null) return configure;
   const publique = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
@@ -43,7 +54,7 @@ export async function envoyerPush(
 
   const { data: appareils, error } = await supabase
     .from("push_subscriptions")
-    .select("id, endpoint, p256dh, auth")
+    .select("id, endpoint, p256dh, auth, created_at")
     .eq("user_id", userId);
   if (error) {
     console.error("[push] appareils illisibles", error);
@@ -54,30 +65,50 @@ export async function envoyerPush(
 
   await Promise.all(
     (appareils ?? []).map(async (a) => {
-      try {
-        await webpush.sendNotification(
+      const envoyer = () =>
+        webpush.sendNotification(
           { endpoint: a.endpoint, keys: { p256dh: a.p256dh, auth: a.auth } },
           contenu,
           // Une alerte vieille de plus d'un jour n'a plus de sens : si
           // l'appareil est éteint plus longtemps, le service la jette.
           { TTL: 24 * 60 * 60, urgency: "normal" },
         );
-        bilan.envoyes++;
-      } catch (erreur) {
-        const statut = (erreur as { statusCode?: number }).statusCode;
-        // 404 / 410 : cet appareil n'existe plus pour le service de push. On
-        // l'oublie, sinon on réessaierait chaque matin pour rien.
-        // DIAGNOSTIC PROVISOIRE (à retirer avant la fusion)
-        (bilan as BilanPush & { diag?: unknown[] }).diag ??= [];
-        (bilan as BilanPush & { diag?: unknown[] }).diag!.push({ statut, corps: (erreur as { body?: string }).body, hote: new URL(a.endpoint).host, message: String(erreur).slice(0, 200) });
-        if (statut === 404 || statut === 410) {
-          console.warn("[push] appareil expiré, retiré", statut, (erreur as { body?: string }).body);
-          await supabase.from("push_subscriptions").delete().eq("id", a.id);
-          bilan.expires++;
-        } else {
-          console.error("[push] envoi refusé", statut, (erreur as { body?: string }).body ?? erreur);
-          bilan.echecs++;
+
+      let erreur: unknown = null;
+      try {
+        await envoyer();
+      } catch (e) {
+        erreur = e;
+        if (estExpire(statutDe(e))) {
+          await new Promise((r) => setTimeout(r, ATTENTE_AVANT_REESSAI_MS));
+          try {
+            await envoyer();
+            erreur = null;
+          } catch (e2) {
+            erreur = e2;
+          }
         }
+      }
+
+      if (erreur === null) {
+        bilan.envoyes++;
+        return;
+      }
+
+      const statut = statutDe(erreur);
+      const corps = (erreur as { body?: string }).body;
+      const recent = Date.now() - new Date(a.created_at).getTime() < AGE_MIN_AVANT_SUPPRESSION_MS;
+      // 404 / 410 deux fois de suite, sur un appareil qui n'est pas tout
+      // neuf : il n'existe plus pour le service de push (app désinstallée,
+      // autorisation retirée). On l'oublie, sinon on réessaierait chaque
+      // matin pour rien.
+      if (estExpire(statut) && !recent) {
+        console.warn("[push] appareil expiré, retiré", statut, corps);
+        await supabase.from("push_subscriptions").delete().eq("id", a.id);
+        bilan.expires++;
+      } else {
+        console.error("[push] envoi refusé", statut, corps ?? erreur);
+        bilan.echecs++;
       }
     }),
   );
