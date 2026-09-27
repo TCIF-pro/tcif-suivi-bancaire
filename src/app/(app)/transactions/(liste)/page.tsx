@@ -6,6 +6,7 @@ import {
   filtreComptesVisibles,
 } from "@/lib/accounts/visible";
 import { relationName } from "@/lib/supabase/relations";
+import { ListeIndisponible } from "../../components/ListeIndisponible";
 import { TransactionFilters } from "../components/TransactionFilters";
 import { TransactionList, type TransactionRow } from "../components/TransactionList";
 
@@ -56,9 +57,16 @@ export default async function TransactionsPage({
   // listes et des totaux, sans jamais être supprimées.
   const comptesVisibles = await idsDesComptesVisibles(supabase);
 
+  // `accounts!transactions_account_id_fkey` et non `accounts` tout court :
+  // depuis la migration 0010, une transaction est liée DEUX fois à la table
+  // des comptes (son compte, et le compte d'arrivée d'un virement d'épargne).
+  // La base refuse alors de deviner lequel on veut (erreur PGRST201). On
+  // nomme donc le lien : le compte de la transaction.
   let query = supabase
     .from("transactions")
-    .select("id, type, amount, occurred_on, label, categories(name), accounts(name)")
+    .select(
+      "id, type, amount, occurred_on, label, categories(name), accounts!transactions_account_id_fkey(name)",
+    )
     .or(filtreComptesVisibles(comptesVisibles))
     .order(sort.column, { ascending: sort.ascending })
     .limit(MAX_ROWS);
@@ -69,7 +77,8 @@ export default async function TransactionsPage({
   if (params.from) query = query.gte("occurred_on", params.from);
   if (params.to) query = query.lte("occurred_on", params.to);
 
-  const { data: transactions } = await query;
+  const { data: transactions, error } = await query;
+  if (error) console.error("[transactions] liste non chargée", error);
 
   const rows: TransactionRow[] = (transactions ?? []).map((t) => ({
     id: t.id,
@@ -109,6 +118,8 @@ export default async function TransactionsPage({
         values={params}
       />
 
+      {error && <ListeIndisponible quoi="des transactions" />}
+
       {aVenir.length > 0 && (
         <section className="flex flex-col gap-3">
           <div className="flex items-baseline gap-2">
@@ -124,7 +135,9 @@ export default async function TransactionsPage({
         </section>
       )}
 
-      <TransactionList rows={passees} />
+      {/* En cas d'erreur, pas de liste : elle serait vide, et afficherait
+          « aucune transaction » alors qu'il y en a. */}
+      {!error && <TransactionList rows={passees} />}
     </div>
   );
 }

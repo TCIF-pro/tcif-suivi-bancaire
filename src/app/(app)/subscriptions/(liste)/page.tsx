@@ -7,6 +7,7 @@ import {
 } from "@/lib/accounts/visible";
 import { todayDateString } from "@/lib/dates";
 import { formatCurrency } from "@/lib/format";
+import { ListeIndisponible } from "../../components/ListeIndisponible";
 import { SubscriptionList, type SubscriptionRow } from "../components/SubscriptionList";
 
 export default async function SubscriptionsPage() {
@@ -15,14 +16,21 @@ export default async function SubscriptionsPage() {
 
   const comptesVisibles = await idsDesComptesVisibles(supabase);
 
-  const { data: subscriptions } = await supabase
+  // `accounts!subscriptions_account_id_fkey` et non `accounts` tout court :
+  // depuis la migration 0010, un abonnement est lié DEUX fois à la table des
+  // comptes (son compte, et le compte d'arrivée d'un virement d'épargne). La
+  // base refuse alors de deviner lequel on veut (erreur PGRST201) et renvoie
+  // une erreur au lieu des abonnements. On nomme donc le lien : le compte de
+  // l'abonnement.
+  const { data: subscriptions, error } = await supabase
     .from("subscriptions")
     .select(
-      "id, name, amount, frequency, next_billing_date, is_active, monthly_equivalent_amount, categories(name), accounts(name)",
+      "id, name, amount, frequency, next_billing_date, is_active, monthly_equivalent_amount, categories(name), accounts!subscriptions_account_id_fkey(name)",
     )
     .or(filtreComptesVisibles(comptesVisibles))
     .order("is_active", { ascending: false })
     .order("next_billing_date", { ascending: true });
+  if (error) console.error("[abonnements] liste non chargée", error);
 
   const rows: SubscriptionRow[] = (subscriptions ?? []).map((s) => ({
     id: s.id,
@@ -53,19 +61,27 @@ export default async function SubscriptionsPage() {
         </Link>
       </div>
 
-      <div className="max-w-xs rounded-2xl border border-border bg-surface p-5 shadow-card sm:p-6">
-        <p className="text-sm text-muted">
-          Coût récurrent réel (mensualisé)
-        </p>
-        <p className="mt-2 font-display text-3xl font-bold tracking-tight text-foreground">
-          {formatCurrency(totalMonthlyEquivalent)}
-        </p>
-        <p className="mt-1 text-sm text-muted">
-          Total des abonnements actifs, annuels ramenés au mois.
-        </p>
-      </div>
+      {/* En cas d'erreur, ni total ni liste : un « 0,00 € » ferait croire qu'il
+          n'y a aucun abonnement. */}
+      {error ? (
+        <ListeIndisponible quoi="des abonnements" />
+      ) : (
+        <>
+          <div className="max-w-xs rounded-2xl border border-border bg-surface p-5 shadow-card sm:p-6">
+            <p className="text-sm text-muted">
+              Coût récurrent réel (mensualisé)
+            </p>
+            <p className="mt-2 font-display text-3xl font-bold tracking-tight text-foreground">
+              {formatCurrency(totalMonthlyEquivalent)}
+            </p>
+            <p className="mt-1 text-sm text-muted">
+              Total des abonnements actifs, annuels ramenés au mois.
+            </p>
+          </div>
 
-      <SubscriptionList today={today} rows={rows} />
+          <SubscriptionList today={today} rows={rows} />
+        </>
+      )}
     </div>
   );
 }
