@@ -306,3 +306,15 @@ secours si aucun appareil n'a pu être joint.
       (app installée), Réglages → Alertes → « Activer les notifications »,
       autoriser, puis « Envoyer une notification de test ». Elle doit
       arriver, et un appui doit ouvrir Réglages.
+
+### Abonnements prélevés un 29, 30 ou 31
+
+Le 31 janvier donnait le 3 mars : février était sauté. L'échéance vise
+désormais le jour d'origine, ramené à la fin des mois courts (31 janvier →
+28 février → 31 mars).
+
+- [ ] `0024_jour_prelevement.sql` - SQL Editor de la prod → Run, **avant** de
+      pousser `main` : la tâche du matin et la trésorerie lisent la nouvelle
+      colonne. Sans elle, l'étape des prélèvements échouerait.
+- [ ] Rien à reprendre à la main : aucun abonnement de Tom ou de son père
+      n'est prélevé un 29, 30 ou 31 (vérifié le 27/09/2026).

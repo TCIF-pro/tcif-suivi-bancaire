@@ -1,5 +1,5 @@
-import { addMonthsToDateString, daysBetween } from "@/lib/dates";
-import { nextOccurrence, type SubscriptionFrequency } from "@/lib/subscriptions/compute";
+import { ajouterMoisJourFixe, daysBetween } from "@/lib/dates";
+import { jourDe, nextOccurrence, type SubscriptionFrequency } from "@/lib/subscriptions/compute";
 
 // Garde-fou en nombre d'itérations : évite toute boucle infinie si jamais une
 // entrée était malformée. Grâce au saut d'années (plus bas), un calcul normal
@@ -25,6 +25,9 @@ export interface RunwaySubscriptionInput {
   amount: number;
   frequency: SubscriptionFrequency;
   nextBillingDate: string;
+  // Jour de prélèvement d'origine (voir nextOccurrence). À défaut, celui de
+  // nextBillingDate.
+  jourPrelevement?: number | null;
 }
 
 // Une transaction datée dans le futur : elle ne se produit qu'UNE fois, à sa
@@ -58,10 +61,12 @@ interface Evenement {
   date: string;
   delta: number;
   frequence: SubscriptionFrequency | null;
+  // Jour de prélèvement visé, pour les abonnements.
+  jour: number;
 }
 
 function suivante(e: Evenement): string | null {
-  return e.frequence === null ? null : nextOccurrence(e.date, e.frequence);
+  return e.frequence === null ? null : nextOccurrence(e.date, e.frequence, e.jour);
 }
 
 // Simule chronologiquement ce qui va toucher le compte — prélèvements des
@@ -94,8 +99,9 @@ export function computeRunway(
       date: s.nextBillingDate,
       delta: -enCentimes(s.amount),
       frequence: s.frequency,
+      jour: s.jourPrelevement ?? jourDe(s.nextBillingDate),
     })),
-    ...oneOffs.map((o) => ({ date: o.date, delta: enCentimes(o.amount), frequence: null })),
+    ...oneOffs.map((o) => ({ date: o.date, delta: enCentimes(o.amount), frequence: null, jour: jourDe(o.date) })),
   ];
 
   // Ce que coûtent les abonnements sur une année complète : 12 prélèvements
@@ -123,14 +129,11 @@ export function computeRunway(
     // une année de marge, puis on reprend prélèvement par prélèvement pour
     // trouver le jour exact.
     //
-    // Condition : tous les jours d'échéance sont ≤ 28. Un « 31 » avance
-    // autrement pas à pas (31 janvier → 3 mars) qu'en un seul saut (31
-    // janvier → 31 janvier) ; au-delà du 28, on continue donc pas à pas. Ces
-    // dates se stabilisent d'elles-mêmes après le premier mois trop court
-    // (le « 31 » devient un « 3 »), et le saut devient alors possible.
-    const sautPossible =
-      coutAnnuel > 0 &&
-      restants.every((e) => e.frequence !== null && Number(e.date.slice(8, 10)) <= 28);
+    // Condition : il ne reste que des abonnements. Chaque échéance vise son
+    // jour de prélèvement, ramené à la fin des mois courts : sauter 12 × n
+    // mois d'un coup tombe donc exactement sur la même date que les avancer
+    // un par un.
+    const sautPossible = coutAnnuel > 0 && restants.every((e) => e.frequence !== null);
     if (sautPossible) {
       const annees = Math.floor((balance - coutAnnuel) / coutAnnuel);
       if (annees >= 1) {
@@ -149,7 +152,7 @@ export function computeRunway(
         balance -= annees * coutAnnuel;
         restants = restants.map((e) => ({
           ...e,
-          date: addMonthsToDateString(e.date, annees * 12),
+          date: ajouterMoisJourFixe(e.date, annees * 12, e.jour),
         }));
       }
     }

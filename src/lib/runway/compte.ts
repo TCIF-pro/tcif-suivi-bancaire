@@ -74,7 +74,7 @@ export async function tresorerieDuCompte(
         .gt("occurred_on", today),
       supabase
         .from("subscriptions")
-        .select("id, amount, frequency, next_billing_date")
+        .select("id, amount, frequency, next_billing_date, jour_prelevement")
         .eq("is_active", true)
         .eq("account_id", compte.id),
     ]);
@@ -87,6 +87,7 @@ export async function tresorerieDuCompte(
       amount: Number(s.amount),
       frequency: s.frequency,
       nextBillingDate: s.next_billing_date,
+      jourPrelevement: s.jour_prelevement,
     })),
     // Montant SIGNÉ pour ce compte : en base `amount` est toujours positif et
     // c'est `type` (plus le sens du virement) qui porte le signe. Le moteur de
