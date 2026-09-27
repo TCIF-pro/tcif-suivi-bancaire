@@ -27,9 +27,33 @@ const plexMono = IBM_Plex_Mono({
   subsets: ["latin"],
 });
 
+// Texte de l'aperçu affiché quand on partage le lien (WhatsApp, Messages...),
+// avec l'image de opengraph-image.tsx. La description sert aussi aux moteurs
+// de recherche.
+const TITRE_PARTAGE = "TCIF — Sache où tu en es, avant ton banquier";
+const DESCRIPTION =
+  "Tes comptes, tes abonnements et tes factures au même endroit. Combien de jours tu tiens, en un coup d'œil. Essaie la démo, sans inscription.";
+
 export const metadata: Metadata = {
+  // Adresse de base des liens de l'aperçu (image comprise). En prod, le
+  // domaine de l'app ; ailleurs (Preview, local), Next prend l'adresse du
+  // déploiement.
+  metadataBase:
+    process.env.VERCEL_ENV === "production" ? new URL("https://app.tcif-pro.fr") : undefined,
   title: "TCIF — Suivi financier",
-  description: "Suivi de dépenses, abonnements et factures — usage perso",
+  description: DESCRIPTION,
+  openGraph: {
+    type: "website",
+    siteName: "TCIF",
+    locale: "fr_FR",
+    title: TITRE_PARTAGE,
+    description: DESCRIPTION,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: TITRE_PARTAGE,
+    description: DESCRIPTION,
+  },
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
