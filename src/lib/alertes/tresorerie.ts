@@ -75,7 +75,7 @@ export function emailAlerte({
     "",
     "Un salaire ou un virement est prévu ? Ajoute-le en opération à venir : il sera pris en compte dans le calcul.",
     "",
-    "—",
+    "-",
     "TCIF",
     `Tu reçois cet email parce que l'alerte de trésorerie est activée. Pour la couper : Réglages → Alertes, ${lienReglages}`,
   ].join("\n");

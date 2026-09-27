@@ -72,6 +72,9 @@ describe("emailAlerte", () => {
     expect(e.text).toMatch(/Solde actuel : 123,45\s€/);
     expect(e.text).toContain(liens.lienTableauDeBord);
     expect(e.text).toContain("Pour la couper : Réglages → Alertes, https://app.tcif-pro.fr/settings");
+    // Consigne de style : tirets courts, jamais de tiret cadratin dans les textes de l'app.
+    expect(e.subject + e.text).not.toContain("—");
+    expect(e.text).toContain("\n-\nTCIF");
   });
 
   it("singulier à 1 jour", () => {
