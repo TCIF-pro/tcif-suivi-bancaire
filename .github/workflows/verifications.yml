@@ -1,0 +1,50 @@
+# Vérifications automatiques, à chaque push sur n'importe quelle branche.
+#
+# GitHub installe le projet sur une machine neuve et lance les trois mêmes
+# vérifications que `npm run verifier` en local. Le résultat (✅ ou ❌)
+# s'affiche à côté de chaque commit sur GitHub. Règle de travail : une
+# branche n'est proposée à la fusion dans `main` que si elle est ✅.
+#
+# Aucun secret ici : ni base de données, ni clé. Les tests ne touchent que la
+# logique (calculs, lecture des PDF, règles d'alerte...), et le build n'a pas
+# besoin des variables d'environnement.
+name: Vérifications
+
+on:
+  push:
+    branches: ["**"]
+
+# Droits minimaux : lire le code, rien d'autre.
+permissions:
+  contents: read
+
+# Un nouveau push sur la même branche annule la vérification en cours.
+concurrency:
+  group: verifications-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verifier:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Installation (exactement les versions de package-lock.json)
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Tests
+        run: npm test
+
+      - name: Build de production (vérifie aussi les types)
+        run: npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: 1
