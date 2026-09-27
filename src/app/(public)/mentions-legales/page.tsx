@@ -14,7 +14,7 @@ export default function MentionsLegales() {
           Tom Caravaca.
         </p>
         <p>
-          Adresse : 1 lieu-dit Le Meaubatin, 16380 Feuillade, France.
+          Adresse : 1 Le Meaubatin, 16380 Feuillade, France.
           <br />
           SIRET : 108 325 226 00018
           <br />

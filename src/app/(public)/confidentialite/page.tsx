@@ -11,7 +11,7 @@ export default function Confidentialite() {
     <PageLegale titre="Politique de confidentialité" miseAJour="27 septembre 2026">
       <Section titre="Responsable du traitement">
         <p>
-          TCIF, entreprise individuelle de Tom Caravaca, 1 lieu-dit Le Meaubatin, 16380
+          TCIF, entreprise individuelle de Tom Caravaca, 1 Le Meaubatin, 16380
           Feuillade. Contact : contact@tcif-pro.fr.
         </p>
       </Section>
