@@ -47,6 +47,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
     { data: categories },
     { data: quickLabels },
     { data: alertes },
+    { data: rappel },
   ] = await Promise.all([
     supabase
       .from("user_settings")
@@ -72,6 +73,8 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
     // Lu à part : si la migration 0021 manque, seule cette lecture échoue, et
     // pas celle du thème et des autres réglages juste au-dessus.
     supabase.from("user_settings").select("alerte_tresorerie").maybeSingle(),
+    // Idem pour la migration 0022 : chaque réglage d'alerte est lu à part.
+    supabase.from("user_settings").select("rappel_saisie").maybeSingle(),
   ]);
 
   // Combien d'éléments utilisent chaque catégorie, dans les quatre tables qui
@@ -298,7 +301,10 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
       {user && !estDemo(user) && (
         <AlertesSection
           email={user.email ?? ""}
-          valeurs={{ alerteTresorerie: alertes?.alerte_tresorerie !== false }}
+          valeurs={{
+            alerteTresorerie: alertes?.alerte_tresorerie !== false,
+            rappelSaisie: rappel?.rappel_saisie !== false,
+          }}
         />
       )}
 

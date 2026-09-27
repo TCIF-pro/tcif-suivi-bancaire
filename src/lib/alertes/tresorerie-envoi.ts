@@ -1,19 +1,11 @@
 import "server-only";
-import type { SupabaseClient, User } from "@supabase/supabase-js";
-import { estDemo, estDesactive, doitChangerMotDePasse } from "@/lib/auth/roles";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { peutRecevoirEmails } from "./destinataires";
 import { envoyerEmail } from "@/lib/email/envoyer";
 import { parseAccountKind } from "@/lib/accounts/balance";
 import { tresorerieDuCompte } from "@/lib/runway/compte";
 import { adresseDeLApp } from "@/lib/app-url";
 import { deciderAlerte, emailAlerte } from "./tresorerie";
-
-// Qui peut recevoir une alerte : un vrai compte, en service, déjà utilisé.
-// Jamais le compte démo (partagé, sans vraie boîte mail), ni un compte
-// désactivé depuis /admin, ni un compte qui n'a pas encore choisi son mot de
-// passe (il n'a jamais vu l'app, ses soldes ne veulent rien dire).
-function peutRecevoir(user: User): boolean {
-  return Boolean(user.email) && !estDemo(user) && !estDesactive(user) && !doitChangerMotDePasse(user);
-}
 
 // Étape « alertes de trésorerie » de la tâche du matin. `admin` : client
 // service_role, qui voit les comptes de tout le monde.
@@ -25,7 +17,7 @@ export async function envoyerAlertesTresorerie(admin: SupabaseClient, today: str
   });
   if (erreurUtilisateurs) throw erreurUtilisateurs;
   const destinataires = new Map(
-    listeUtilisateurs.users.filter(peutRecevoir).map((u) => [u.id, u.email as string]),
+    listeUtilisateurs.users.filter(peutRecevoirEmails).map((u) => [u.id, u.email as string]),
   );
   if (destinataires.size === 0) return bilan;
 
