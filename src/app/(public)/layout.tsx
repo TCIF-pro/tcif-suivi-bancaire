@@ -32,7 +32,7 @@ export default function LayoutPublic({ children }: { children: React.ReactNode }
 
       <footer className="border-t border-border">
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 py-8 text-sm text-muted md:flex-row md:items-center md:justify-between md:px-8">
-          <p>© {new Date().getFullYear()} TCIF - Nontron (Dordogne)</p>
+          <p>© {new Date().getFullYear()} TCIF</p>
           <nav aria-label="Informations légales" className="flex flex-wrap gap-x-5 gap-y-2">
             <Link href="/mentions-legales" className="hover:text-foreground">
               Mentions légales

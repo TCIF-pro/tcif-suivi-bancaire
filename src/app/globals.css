@@ -100,6 +100,25 @@
   --font-display: var(--font-bricolage);
   --font-sans: var(--font-figtree);
   --font-mono: var(--font-plex-mono);
+
+  /* Noms de couleurs des composants shadcn/ui (src/components/ui), reliés
+     aux couleurs Horizon : ces composants prennent ainsi le style de l'app,
+     et pas le thème shadcn par défaut. `accent` et `muted` ont déjà un autre
+     sens ici (couleur d'action, texte secondaire) : les composants qui s'en
+     servaient autrement ont été ajustés à la main. */
+  --color-primary: var(--accent);
+  --color-primary-foreground: var(--on-accent);
+  --color-secondary: var(--surface);
+  --color-secondary-foreground: var(--foreground);
+  --color-card: var(--surface);
+  --color-card-foreground: var(--foreground);
+  --color-muted-foreground: var(--muted);
+  --color-input: var(--border);
+  --color-ring: var(--accent);
+  --color-destructive: var(--danger);
+
+  --animate-accordion-down: accordion-down 0.2s ease-out;
+  --animate-accordion-up: accordion-up 0.2s ease-out;
 }
 
 html {
@@ -175,6 +194,24 @@ form:not(:has(input[name="is_savings"]:checked)) .champ-virement-abo {
    blocs restent visibles, mais immobiles. */
 @media (prefers-reduced-motion: reduce) {
   .squelette {
+    animation: none;
+  }
+}
+
+/* Ouverture / fermeture des questions de l'accueil (Accordion shadcn/ui). */
+@keyframes accordion-down {
+  from { height: 0; }
+  to { height: var(--radix-accordion-content-height); }
+}
+@keyframes accordion-up {
+  from { height: var(--radix-accordion-content-height); }
+  to { height: 0; }
+}
+/* Visé par son attribut, pas par la classe : Tailwind nomme la classe
+   `data-[state=open]:animate-accordion-down`, que `.animate-accordion-down`
+   ne toucherait pas. Hors des couches Tailwind, cette règle l'emporte. */
+@media (prefers-reduced-motion: reduce) {
+  [data-slot="accordion-content"] {
     animation: none;
   }
 }

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { ACompleter, PageLegale, Section } from "../components/PageLegale";
+import { PageLegale, Section } from "../components/PageLegale";
 
 export const metadata: Metadata = { title: "Mentions légales - TCIF" };
 
@@ -11,21 +11,21 @@ export default function MentionsLegales() {
         <p>
           L&apos;application TCIF, accessible à l&apos;adresse app.tcif-pro.fr, est éditée par{" "}
           <strong>TCIF</strong>, entreprise individuelle (micro-entreprise) de{" "}
-          <ACompleter>prénom et nom de l&apos;entrepreneur</ACompleter>.
+          Tom Caravaca.
         </p>
         <p>
-          Adresse : <ACompleter>adresse postale complète</ACompleter>, 24300 Nontron, France.
+          Adresse : 1 lieu-dit Le Meaubatin, 16380 Feuillade, France.
           <br />
-          SIRET : <ACompleter>numéro SIRET à 14 chiffres (SIREN 108 325 226 + 5 chiffres)</ACompleter>
+          SIRET : 108 325 226 00018
           <br />
           TVA non applicable, article 293 B du Code général des impôts.
           <br />
           Email : <a href="mailto:contact@tcif-pro.fr" className="text-accent hover:underline">contact@tcif-pro.fr</a>
           <br />
-          Téléphone : <ACompleter>numéro de téléphone</ACompleter>
+          Téléphone : 06 31 52 11 23
         </p>
         <p>
-          Directeur de la publication : <ACompleter>prénom et nom</ACompleter>.
+          Directeur de la publication : Tom Caravaca.
         </p>
       </Section>
 
