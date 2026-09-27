@@ -78,7 +78,7 @@ export default async function ImageApercu() {
               letterSpacing: -2,
             }}
           >
-            Sache où tu en es, avant ton banquier.
+            Vois où tu en es, avant ton banquier.
           </div>
           <div style={{ display: "flex", marginTop: 28, fontSize: 28, color: SECONDAIRE }}>
             Comptes, abonnements et factures au même endroit.

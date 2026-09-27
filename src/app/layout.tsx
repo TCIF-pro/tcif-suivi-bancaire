@@ -30,7 +30,7 @@ const plexMono = IBM_Plex_Mono({
 // Texte de l'aperçu affiché quand on partage le lien (WhatsApp, Messages...),
 // avec l'image de opengraph-image.tsx. La description sert aussi aux moteurs
 // de recherche.
-const TITRE_PARTAGE = "TCIF — Sache où tu en es, avant ton banquier";
+const TITRE_PARTAGE = "TCIF - Suivi financier · Vois où tu en es, avant ton banquier.";
 const DESCRIPTION =
   "Tes comptes, tes abonnements et tes factures au même endroit. Combien de jours tu tiens, en un coup d'œil. Essaie la démo, sans inscription.";
 
