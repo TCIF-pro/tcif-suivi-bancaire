@@ -1,13 +1,24 @@
 import { addMonthsToDateString, daysBetween } from "@/lib/dates";
 import { nextOccurrence, type SubscriptionFrequency } from "@/lib/subscriptions/compute";
 
-// Au-delà de cet horizon, on arrête la simulation et on affiche "pas
-// d'échéance connue" plutôt qu'une date lointaine peu fiable.
-const HORIZON_MONTHS = 24;
+// Garde-fou en nombre d'itérations : évite toute boucle infinie si jamais une
+// entrée était malformée. Grâce au saut d'années (plus bas), un calcul normal
+// n'en fait que quelques centaines, même pour une rupture dans 500 ans.
+const MAX_ITERATIONS = 100_000;
 
-// Garde-fou supplémentaire en nombre d'itérations, en plus de l'horizon en
-// date : évite toute boucle infinie si jamais une entrée était malformée.
-const MAX_ITERATIONS = 10_000;
+// Au-delà de l'an 9999, une date ne s'écrit plus AAAA-MM-JJ et JavaScript ne
+// sait plus la manipuler. Seul un solde démesuré face à des prélèvements
+// minuscules y arrive : on donne alors un nombre de jours approché, sans date.
+const DERNIERE_ANNEE_CALCULABLE = 9999;
+
+// Durée moyenne d'une année (années bissextiles comprises), en jours.
+const JOURS_PAR_AN = 365.2425;
+
+// Les montants sont convertis en centimes (nombres entiers) le temps du
+// calcul. En euros à virgule, 0,1 + 0,2 ne vaut pas exactement 0,3 : sur des
+// milliers de prélèvements, ces écarts s'additionneraient et pourraient
+// décaler d'un prélèvement le moment où le solde touche zéro pile.
+const enCentimes = (euros: number) => Math.round(euros * 100);
 
 export interface RunwaySubscriptionInput {
   id: string;
@@ -28,9 +39,16 @@ export interface RunwayOneOffInput {
 
 export interface RunwayResult {
   currentBalance: number;
+  // Date à laquelle le solde atteint zéro. `null` si le solde ne baisse
+  // jamais, ou (cas extrême) si elle tombe après l'an 9999.
   zeroDate: string | null;
+  // Nombre de jours avant la rupture. `null` seulement si le solde ne baisse
+  // jamais.
   daysRemaining: number | null;
-  horizonExceeded: boolean;
+  // Aucun prélèvement ne vient jamais faire baisser le solde (pas
+  // d'abonnement actif, et les opérations à venir ne suffisent pas à le
+  // vider) : la trésorerie est infinie.
+  jamaisAZero: boolean;
 }
 
 // Un événement de la simulation : un montant signé à une date donnée, et la
@@ -39,13 +57,21 @@ export interface RunwayResult {
 interface Evenement {
   date: string;
   delta: number;
-  suivante: (date: string) => string | null;
+  frequence: SubscriptionFrequency | null;
+}
+
+function suivante(e: Evenement): string | null {
+  return e.frequence === null ? null : nextOccurrence(e.date, e.frequence);
 }
 
 // Simule chronologiquement ce qui va toucher le compte — prélèvements des
 // abonnements actifs ET transactions déjà saisies mais datées dans le futur —
-// à partir du solde actuel, jusqu'à ce que le solde atteigne zéro (ou que
-// l'horizon de simulation soit dépassé).
+// à partir du solde actuel, jusqu'à ce que le solde atteigne zéro, aussi loin
+// que ce soit.
+//
+// Avant, la simulation s'arrêtait à 24 mois et la carte affichait « Aucune
+// rupture en vue » au-delà, sans chiffre. Elle va désormais jusqu'au bout,
+// grâce au saut d'années expliqué plus bas.
 export function computeRunway(
   currentBalance: number,
   today: string,
@@ -53,49 +79,84 @@ export function computeRunway(
   oneOffs: RunwayOneOffInput[] = [],
 ): RunwayResult {
   if (currentBalance <= 0) {
-    return {
-      currentBalance,
-      zeroDate: today,
-      daysRemaining: 0,
-      horizonExceeded: false,
-    };
+    return { currentBalance, zeroDate: today, daysRemaining: 0, jamaisAZero: false };
   }
 
-  const evenements: Evenement[] = [
+  const infini: RunwayResult = {
+    currentBalance,
+    zeroDate: null,
+    daysRemaining: null,
+    jamaisAZero: true,
+  };
+
+  let restants: Evenement[] = [
     ...subscriptions.map((s) => ({
       date: s.nextBillingDate,
-      delta: -s.amount,
-      suivante: (date: string) => nextOccurrence(date, s.frequency),
+      delta: -enCentimes(s.amount),
+      frequence: s.frequency,
     })),
-    ...oneOffs.map((o) => ({
-      date: o.date,
-      delta: o.amount,
-      suivante: () => null,
-    })),
+    ...oneOffs.map((o) => ({ date: o.date, delta: enCentimes(o.amount), frequence: null })),
   ];
 
-  if (evenements.length === 0) {
-    return {
-      currentBalance,
-      zeroDate: null,
-      daysRemaining: null,
-      horizonExceeded: true,
-    };
-  }
+  // Ce que coûtent les abonnements sur une année complète : 12 prélèvements
+  // pour un mensuel, 1 pour un annuel. C'est ce qui fait baisser le solde
+  // année après année, une fois les opérations ponctuelles passées.
+  const coutAnnuel = subscriptions.reduce(
+    (total, s) => total + enCentimes(s.amount) * (s.frequency === "monthly" ? 12 : 1),
+    0,
+  );
 
-  const horizonDate = addMonthsToDateString(today, HORIZON_MONTHS);
-  let balance = currentBalance;
-  let restants = evenements;
+  let balance = enCentimes(currentBalance);
 
   for (let i = 0; i < MAX_ITERATIONS; i++) {
-    if (restants.length === 0) break;
+    // Plus rien ne fait baisser le solde : il ne sera jamais à zéro.
+    if (restants.length === 0 || (coutAnnuel <= 0 && !restants.some((e) => e.delta < 0))) {
+      return infini;
+    }
 
+    // --- Saut d'années ---------------------------------------------------
+    //
+    // Une fois les opérations ponctuelles passées, il ne reste que des
+    // abonnements : chaque année coûte exactement `coutAnnuel`. Plutôt que de
+    // simuler des milliers de prélèvements identiques, on saute d'un coup
+    // autant d'années entières que le solde le permet, en gardant au moins
+    // une année de marge, puis on reprend prélèvement par prélèvement pour
+    // trouver le jour exact.
+    //
+    // Condition : tous les jours d'échéance sont ≤ 28. Un « 31 » avance
+    // autrement pas à pas (31 janvier → 3 mars) qu'en un seul saut (31
+    // janvier → 31 janvier) ; au-delà du 28, on continue donc pas à pas. Ces
+    // dates se stabilisent d'elles-mêmes après le premier mois trop court
+    // (le « 31 » devient un « 3 »), et le saut devient alors possible.
+    const sautPossible =
+      coutAnnuel > 0 &&
+      restants.every((e) => e.frequence !== null && Number(e.date.slice(8, 10)) <= 28);
+    if (sautPossible) {
+      const annees = Math.floor((balance - coutAnnuel) / coutAnnuel);
+      if (annees >= 1) {
+        const plusProche = restants.reduce((a, b) => (a.date < b.date ? a : b));
+        if (Number(plusProche.date.slice(0, 4)) + annees > DERNIERE_ANNEE_CALCULABLE) {
+          // Cas extrême : on estime la fin à partir du rythme annuel.
+          return {
+            currentBalance,
+            zeroDate: null,
+            daysRemaining: Math.round(
+              daysBetween(today, plusProche.date) + (balance / coutAnnuel) * JOURS_PAR_AN,
+            ),
+            jamaisAZero: false,
+          };
+        }
+        balance -= annees * coutAnnuel;
+        restants = restants.map((e) => ({
+          ...e,
+          date: addMonthsToDateString(e.date, annees * 12),
+        }));
+      }
+    }
+
+    // --- Pas à pas : le prochain événement ------------------------------
     restants.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
     const prochain = restants[0];
-
-    if (prochain.date > horizonDate) {
-      break;
-    }
 
     balance += prochain.delta;
 
@@ -104,13 +165,13 @@ export function computeRunway(
         currentBalance,
         zeroDate: prochain.date,
         daysRemaining: daysBetween(today, prochain.date),
-        horizonExceeded: false,
+        jamaisAZero: false,
       };
     }
 
     // Un abonnement repart à sa prochaine échéance ; une transaction ponctuelle
     // sort de la simulation, elle ne se reproduira pas.
-    const dateSuivante = prochain.suivante(prochain.date);
+    const dateSuivante = suivante(prochain);
     if (dateSuivante === null) {
       restants = restants.slice(1);
     } else {
@@ -118,10 +179,7 @@ export function computeRunway(
     }
   }
 
-  return {
-    currentBalance,
-    zeroDate: null,
-    daysRemaining: null,
-    horizonExceeded: true,
-  };
+  // Jamais atteint pour des entrées normales (voir MAX_ITERATIONS). Faute de
+  // mieux, on retombe sur « pas de rupture calculée ».
+  return infini;
 }

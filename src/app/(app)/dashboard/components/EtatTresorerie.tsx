@@ -4,7 +4,21 @@ interface EtatTresorerieProps {
   balance: number;
   daysRemaining: number | null;
   zeroDate: string | null;
-  horizonExceeded: boolean;
+  jamaisAZero: boolean;
+}
+
+const JOURS_PAR_MOIS = 365.2425 / 12;
+
+// « environ 11 ans et 10 mois » : un grand nombre de jours est difficile à se
+// représenter. Arrondi au mois le plus proche (d'où « environ ») ; le nombre
+// de jours, lui, reste exact et affiché en premier. `null` en dessous d'un an.
+export function enAnnees(jours: number): string | null {
+  const moisTotal = Math.round(jours / JOURS_PAR_MOIS);
+  if (moisTotal < 12) return null;
+  const ans = Math.floor(moisTotal / 12);
+  const mois = moisTotal % 12;
+  const partAns = `${ans.toLocaleString("fr-FR")} an${ans > 1 ? "s" : ""}`;
+  return mois === 0 ? `environ ${partAns}` : `environ ${partAns} et ${mois} mois`;
 }
 
 // Remplace la barre d'horizon, retirée après essai.
@@ -21,7 +35,7 @@ export function EtatTresorerie({
   balance,
   daysRemaining,
   zeroDate,
-  horizonExceeded,
+  jamaisAZero,
 }: EtatTresorerieProps) {
   // Un compte vide n'est pas un compte en difficulté : `computeRunway` renvoie
   // bien « 0 jour, rupture aujourd'hui », ce qui est exact, mais l'afficher en
@@ -34,11 +48,19 @@ export function EtatTresorerie({
     );
   }
 
-  if (horizonExceeded || daysRemaining === null || zeroDate === null) {
+  // Rien ne fait jamais baisser le solde : la trésorerie est infinie. Le
+  // symbole seul pourrait surprendre, la ligne du dessous dit pourquoi.
+  if (jamaisAZero || daysRemaining === null) {
     return (
-      <p className="text-base font-medium text-muted">
-        Aucune rupture de trésorerie en vue.
-      </p>
+      <div>
+        <p className="text-base font-medium text-muted">
+          <span className="font-bold text-foreground">∞ jours</span> de trésorerie
+          devant toi
+        </p>
+        <p className="mt-1 text-sm font-medium text-muted">
+          Aucune dépense prévue sur ce compte : ton solde ne baisse pas.
+        </p>
+      </div>
     );
   }
 
@@ -46,13 +68,18 @@ export function EtatTresorerie({
     <div>
       <p className="text-base font-medium text-muted">
         <span className="font-bold text-foreground">
-          {daysRemaining} jour{daysRemaining !== 1 ? "s" : ""}
+          {daysRemaining.toLocaleString("fr-FR")} jour{daysRemaining > 1 ? "s" : ""}
         </span>{" "}
         de trésorerie devant toi
+        {enAnnees(daysRemaining) && ` (${enAnnees(daysRemaining)})`}
       </p>
-      <p className="mt-1 text-sm font-medium text-expense">
-        Rupture estimée le {formatDateLong(zeroDate)}
-      </p>
+      {/* Pas de date au-delà de l'an 9999 (voir computeRunway) : seul un solde
+          démesuré y arrive, le nombre de jours suffit alors. */}
+      {zeroDate && (
+        <p className="mt-1 text-sm font-medium text-expense">
+          Rupture estimée le {formatDateLong(zeroDate)}
+        </p>
+      )}
     </div>
   );
 }

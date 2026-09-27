@@ -452,7 +452,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
                   balance={carte.balance}
                   daysRemaining={carte.runway.daysRemaining}
                   zeroDate={carte.runway.zeroDate}
-                  horizonExceeded={carte.runway.horizonExceeded}
+                  jamaisAZero={carte.runway.jamaisAZero}
                 />
               </div>
             )}
