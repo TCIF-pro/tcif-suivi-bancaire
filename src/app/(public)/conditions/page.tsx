@@ -48,7 +48,14 @@ export default function Conditions() {
 
       <Section titre="4. Abonnement et prix">
         <p>
-          <ACompleter>formules, prix et durée de l&apos;essai gratuit</ACompleter>
+          Le Service est <strong>gratuit pour tous jusqu&apos;au 30 novembre 2026 inclus</strong>,
+          quelle que soit la date d&apos;inscription. À partir du 1er décembre 2026, son
+          utilisation nécessite un abonnement payant. Les utilisateurs inscrits en sont informés
+          par email avant cette date, et aucun prélèvement n&apos;a lieu sans qu&apos;ils aient
+          souscrit.
+        </p>
+        <p>
+          <ACompleter>formules et prix de l&apos;abonnement</ACompleter>
         </p>
         <p>
           Les prix sont indiqués en euros. TVA non applicable, article 293 B du Code général des

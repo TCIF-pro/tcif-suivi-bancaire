@@ -1,10 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Check } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { BoutonDemo } from "@/components/BoutonDemo";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Accordion,
   AccordionContent,
@@ -12,109 +10,36 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Montant } from "../(app)/components/Montant";
+import { StatTile } from "../(app)/dashboard/components/BalanceCard";
+import { EtatTresorerie } from "../(app)/dashboard/components/EtatTresorerie";
+import { CategoryChart } from "../(app)/dashboard/components/CategoryChart";
+import { UpcomingSubscriptions } from "../(app)/dashboard/components/UpcomingSubscriptions";
 
 // Page d'accueil publique (V3). Déjà connecté : direction le tableau de bord.
 //
-// Parti pris : montrer ce que fait l'app avec de vrais morceaux de son
-// interface (le relevé des jours à venir, la liste des abonnements, une
-// facture lue), plutôt que des cartes à icônes. Pas de prix affichés : les
-// formules ne sont pas encore décidées.
+// Règle fixée par Tom : l'aperçu montre de VRAIS écrans de l'app, jamais une
+// interface inventée. La carte de solde reprend celle du tableau de bord, et
+// l'extrait plus bas utilise les composants mêmes du tableau de bord
+// (EtatTresorerie, StatTile, CategoryChart, UpcomingSubscriptions), avec des
+// données fictives.
 
-// Relevés fictifs des jours à venir, un par compte. Le solde après chaque
-// ligne est calculé, pour que les chiffres affichés restent justes. Le compte
-// Pro arrive à zéro le 5 octobre, comme l'annonce la notification de la carte.
-const RELEVES = {
-  perso: {
-    solde: 2480,
-    lignes: [
-      { date: "1 oct.", libelle: "Salle de sport", montant: -29.9 },
-      { date: "5 oct.", libelle: "Loyer", montant: -650 },
-      { date: "7 oct.", libelle: "Forfait mobile", montant: -14.99 },
-      { date: "12 oct.", libelle: "Streaming musique", montant: -11.99 },
-      { date: "15 oct.", libelle: "Assurance habitation", montant: -38.5 },
-      { date: "28 oct.", libelle: "Salaire", montant: 1980 },
-    ],
-    conclusion: "372 jours de trésorerie devant toi.",
-  },
-  pro: {
-    solde: 180,
-    lignes: [
-      { date: "1 oct.", libelle: "Hébergement web", montant: -12.99 },
-      { date: "3 oct.", libelle: "Logiciel de comptabilité", montant: -24 },
-      { date: "5 oct.", libelle: "Assurance pro", montant: -160 },
-    ],
-    conclusion: "À zéro le 5 octobre, dans 8 jours : l'alerte part ce matin.",
-  },
-} as const;
+// « Aujourd'hui » de l'aperçu, fixe : les « dans 4 jours » et la date de
+// rupture restent identiques d'un jour à l'autre. Le compte Pro passe sous
+// zéro le 5 octobre, comme l'annonce la notification de la carte de solde.
+const AUJOURDHUI_APERCU = "2026-09-27";
 
-function Releve({ compte }: { compte: keyof typeof RELEVES }) {
-  const { solde, lignes, conclusion } = RELEVES[compte];
-  // Solde après chaque ligne : le précédent plus le montant, arrondi au centime.
-  const avecSolde = lignes.reduce<{ date: string; libelle: string; montant: number; apres: number }[]>(
-    (acc, l) => [
-      ...acc,
-      { ...l, apres: Math.round(((acc.at(-1)?.apres ?? solde) + l.montant) * 100) / 100 },
-    ],
-    [],
-  );
+const PROCHAINS_PRELEVEMENTS = [
+  { id: "hebergement", name: "Hébergement web", amount: 12.99, nextBillingDate: "2026-10-01" },
+  { id: "compta", name: "Logiciel de comptabilité", amount: 24, nextBillingDate: "2026-10-03" },
+  { id: "assurance", name: "Assurance pro", amount: 160, nextBillingDate: "2026-10-05" },
+  { id: "mobile", name: "Forfait mobile", amount: 14.99, nextBillingDate: "2026-10-07" },
+];
 
-  return (
-    <div className="overflow-hidden rounded-2xl border border-border bg-surface">
-      <table className="w-full text-sm">
-        <caption className="sr-only">
-          Opérations à venir sur le compte {compte === "perso" ? "Perso" : "Pro"}, et solde après
-          chacune
-        </caption>
-        <thead>
-          <tr className="border-b border-border text-left text-xs text-muted">
-            <th scope="col" className="px-4 py-3 font-medium sm:px-6">Date</th>
-            <th scope="col" className="px-2 py-3 font-medium">Opération</th>
-            <th scope="col" className="px-2 py-3 text-right font-medium">Montant</th>
-            <th scope="col" className="hidden px-4 py-3 text-right font-medium sm:table-cell sm:px-6">
-              Solde après
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr className="border-b border-border">
-            <td className="px-4 py-3 text-muted sm:px-6">Aujourd&apos;hui</td>
-            <td className="px-2 py-3 text-muted">Solde actuel</td>
-            {/* Sur téléphone, la colonne « Solde après » est masquée : le solde
-                de départ s'affiche ici à la place. */}
-            <td className="px-2 py-3 text-right whitespace-nowrap sm:invisible">
-              <Montant value={solde} ton="solde" taille="sm" />
-            </td>
-            <td className="hidden px-4 py-3 text-right sm:table-cell sm:px-6">
-              <Montant value={solde} ton="solde" taille="sm" />
-            </td>
-          </tr>
-          {avecSolde.map((l) => (
-            <tr key={l.libelle} className={`border-b border-border last:border-b-0 ${l.apres <= 0 ? "bg-danger-bg" : ""}`}>
-              <td className="px-4 py-3 whitespace-nowrap text-muted sm:px-6">{l.date}</td>
-              <td className="px-2 py-3 font-medium text-foreground">{l.libelle}</td>
-              <td className="px-2 py-3 text-right whitespace-nowrap">
-                <Montant value={Math.abs(l.montant)} ton={l.montant < 0 ? "expense" : "income"} taille="sm" />
-              </td>
-              <td className="hidden px-4 py-3 text-right whitespace-nowrap sm:table-cell sm:px-6">
-                <Montant value={l.apres} ton="solde" taille="sm" />
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      <p className="border-t border-border px-4 py-4 font-display text-base font-bold text-foreground sm:px-6">
-        {conclusion}
-      </p>
-    </div>
-  );
-}
-
-const ABONNEMENTS = [
-  { nom: "Loyer", montant: 650 },
-  { nom: "Assurance habitation", montant: 38.5 },
-  { nom: "Salle de sport", montant: 29.9 },
-  { nom: "Forfait mobile", montant: 14.99 },
-  { nom: "Streaming musique", montant: 11.99 },
+const DEPENSES_PAR_CATEGORIE = [
+  { categoryId: "logement", name: "Logement", previous: 688.5, current: 688.5 },
+  { categoryId: "courses", name: "Courses", previous: 312.4, current: 268.9 },
+  { categoryId: "transport", name: "Transport", previous: 94.2, current: 131.6 },
+  { categoryId: "abonnements", name: "Abonnements", previous: 96.4, current: 92.9 },
 ];
 
 const QUESTIONS = [
@@ -136,7 +61,7 @@ const QUESTIONS = [
   {
     question: "Combien ça coûte ?",
     reponse:
-      "Les tarifs seront annoncés à l'ouverture des inscriptions. La démo, elle, est gratuite et sans inscription.",
+      "Rien jusqu'au 1er décembre 2026 : tout le monde peut créer un compte et utiliser TCIF gratuitement jusque-là, quelle que soit sa date d'inscription. Les tarifs seront annoncés avant. La démo, elle, reste gratuite et sans inscription.",
   },
 ];
 
@@ -147,7 +72,6 @@ export default async function PageAccueil() {
   } = await supabase.auth.getUser();
   if (user) redirect("/dashboard");
 
-  const totalAbonnements = ABONNEMENTS.reduce((t, a) => t + a.montant, 0);
 
   return (
     <>
@@ -195,109 +119,106 @@ export default async function PageAccueil() {
         </div>
       </section>
 
-      {/* Le relevé des jours à venir : ce que TCIF calcule, ligne par ligne. */}
+      {/* Extrait du tableau de bord, avec ses propres composants. */}
       <section className="border-y border-border bg-sidebar">
-        <div className="mx-auto grid w-full max-w-6xl gap-10 px-4 py-20 md:grid-cols-[1fr_1.4fr] md:px-8 md:py-24">
-          <div className="flex flex-col gap-4">
+        <div className="mx-auto w-full max-w-6xl px-4 py-20 md:px-8 md:py-24">
+          <div className="grid gap-6 md:grid-cols-[1fr_1.4fr] md:items-end">
             <h2 className="font-display text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-              Tes prochaines semaines, ligne par ligne
+              Le tableau de bord, tel que tu le verras
             </h2>
-            <p className="max-w-md leading-relaxed text-muted">
-              Chaque prélèvement prévu, chaque rentrée déjà saisie, et le solde qui en résulte. Quand
-              un compte va passer sous zéro, tu le sais des jours à l&apos;avance, pas sur ton relevé
-              de fin de mois.
+            <p className="max-w-xl leading-relaxed text-muted">
+              Pour chaque compte, le solde et le nombre de jours avant zéro. En dessous, tes
+              dépenses du mois comparées au mois dernier, et les prochains prélèvements.
             </p>
           </div>
-          <Tabs defaultValue="pro">
-            <TabsList className="h-10">
-              <TabsTrigger value="perso" className="px-4">Perso</TabsTrigger>
-              <TabsTrigger value="pro" className="px-4">Pro</TabsTrigger>
-            </TabsList>
-            <TabsContent value="perso">
-              <Releve compte="perso" />
-            </TabsContent>
-            <TabsContent value="pro">
-              <Releve compte="pro" />
-            </TabsContent>
-          </Tabs>
+
+          {/* Décoratif pour les lecteurs d'écran : le texte ci-dessus le décrit. */}
+          <div aria-hidden="true" className="pointer-events-none mt-12 flex flex-col gap-5 rounded-3xl border border-border bg-background p-4 select-none sm:p-6">
+            <section className="rounded-2xl border border-border bg-surface p-5 shadow-card sm:p-6">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between lg:gap-10">
+                <div className="lg:shrink-0">
+                  <p className="text-sm font-medium text-muted">Solde disponible · Pro</p>
+                  <Montant value={180} ton="solde" taille="hero" className="mt-2 block" />
+                  <p className="mt-3 text-sm font-medium text-muted">
+                    <Montant value={36.99} ton="expense" taille="sm" /> ce mois-ci, revenus moins
+                    dépenses
+                  </p>
+                </div>
+                <div className="lg:min-w-0 lg:flex-1">
+                  <EtatTresorerie balance={180} daysRemaining={8} zeroDate="2026-10-05" jamaisAZero={false} />
+                </div>
+              </div>
+            </section>
+
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <StatTile label="Dépenses du mois · tous comptes" value={1181.9} ton="expense" />
+              <StatTile
+                label="Abonnements · tous comptes"
+                value={745.38}
+                ton="neutral"
+                hint="Coût mensualisé, annuels ramenés au mois"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
+              <section className="rounded-2xl border border-border bg-surface p-5 shadow-card sm:p-6 lg:col-span-3">
+                <h3 className="font-display text-base font-bold text-foreground">Dépenses par catégorie</h3>
+                <p className="mt-1 text-sm text-muted">Mois en cours comparé au mois précédent.</p>
+                <div className="mt-5">
+                  <CategoryChart rows={DEPENSES_PAR_CATEGORIE} />
+                </div>
+              </section>
+              <section className="rounded-2xl border border-border bg-surface p-5 shadow-card sm:p-6 lg:col-span-2">
+                <h3 className="font-display text-base font-bold text-foreground">Prochains prélèvements</h3>
+                <div className="mt-3 flex gap-2">
+                  {[7, 14, 30].map((jours) => (
+                    <span
+                      key={jours}
+                      className={`inline-flex h-9 items-center rounded-full px-3 text-xs font-semibold ${
+                        jours === 14 ? "bg-accent text-on-accent" : "border border-border text-muted"
+                      }`}
+                    >
+                      {jours === 30 ? "1 mois" : `${jours} jours`}
+                    </span>
+                  ))}
+                </div>
+                <div className="mt-4">
+                  <UpcomingSubscriptions today={AUJOURDHUI_APERCU} rows={PROCHAINS_PRELEVEMENTS} horizonDays={14} />
+                </div>
+              </section>
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* Le reste de l'app, montré plutôt que décrit. */}
+      {/* Ce que fait l'app en plus, dit simplement : pas de fausse interface. */}
       <section className="mx-auto w-full max-w-6xl px-4 py-20 md:px-8 md:py-24">
         <h2 className="max-w-2xl font-display text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
           Le reste se fait presque tout seul
         </h2>
-
-        <div className="mt-14 grid gap-14 lg:grid-cols-3 lg:gap-10">
-          <div className="flex flex-col gap-5">
-            <div>
-              <h3 className="font-display text-xl font-bold text-foreground">Abonnements</h3>
-              <p className="mt-2 leading-relaxed text-muted">
-                Déclarés une fois, prélevés chaque mois dans ton suivi, sans rien ressaisir.
-              </p>
-            </div>
-            <ul aria-label="Exemple d'abonnements" className="divide-y divide-border rounded-2xl border border-border bg-surface text-sm">
-              {ABONNEMENTS.map((a) => (
-                <li key={a.nom} className="flex items-center justify-between px-4 py-2.5">
-                  <span className="text-foreground">{a.nom}</span>
-                  <Montant value={a.montant} ton="expense" taille="sm" />
-                </li>
-              ))}
-              <li className="flex items-center justify-between px-4 py-3">
-                <span className="font-semibold text-foreground">Par mois</span>
-                <Montant value={totalAbonnements} ton="neutral" taille="sm" />
-              </li>
-            </ul>
+        <dl className="mt-12 grid gap-10 md:grid-cols-3">
+          <div>
+            <dt className="font-display text-xl font-bold text-foreground">Abonnements</dt>
+            <dd className="mt-2 leading-relaxed text-muted">
+              Déclarés une fois, ils s&apos;ajoutent à ton suivi le jour du prélèvement, sans rien
+              ressaisir. Tu vois ce qu&apos;ils te coûtent vraiment chaque mois.
+            </dd>
           </div>
-
-          <div className="flex flex-col gap-5">
-            <div>
-              <h3 className="font-display text-xl font-bold text-foreground">Factures</h3>
-              <p className="mt-2 leading-relaxed text-muted">
-                Importe le PDF : fournisseur, date et montant sont lus pour toi. Tu vérifies, tu
-                valides, la dépense est ajoutée.
-              </p>
-            </div>
-            <dl className="rounded-2xl border border-border bg-surface p-4 text-sm">
-              <p className="font-mono text-xs text-muted">facture-edf-aout-2026.pdf</p>
-              <div className="mt-3 grid grid-cols-[auto_1fr] gap-x-6 gap-y-2">
-                <dt className="text-muted">Fournisseur</dt>
-                <dd className="text-foreground">EDF</dd>
-                <dt className="text-muted">Date</dt>
-                <dd className="text-foreground">3 août 2026</dd>
-                <dt className="text-muted">Montant</dt>
-                <dd>
-                  <Montant value={84.2} ton="expense" taille="sm" />
-                </dd>
-              </div>
-              <p className="mt-4 flex items-center gap-2 text-xs font-medium text-positive">
-                <Check className="size-3.5" aria-hidden="true" />
-                Lu automatiquement, à vérifier
-              </p>
-            </dl>
+          <div>
+            <dt className="font-display text-xl font-bold text-foreground">Factures</dt>
+            <dd className="mt-2 leading-relaxed text-muted">
+              Importe le PDF : le fournisseur, la date et le montant sont lus pour toi. Tu vérifies,
+              tu valides, et la dépense est ajoutée.
+            </dd>
           </div>
-
-          <div className="flex flex-col gap-5">
-            <div>
-              <h3 className="font-display text-xl font-bold text-foreground">Alertes</h3>
-              <p className="mt-2 leading-relaxed text-muted">
-                Une notification quand un compte passe sous 10 jours de trésorerie, et un rappel si
-                tu oublies de noter tes dépenses. Chacune se coupe d&apos;un geste.
-              </p>
-            </div>
-            <div aria-hidden="true" className="flex flex-col gap-3 rounded-2xl border border-border bg-surface p-4 text-sm">
-              {["Trésorerie bientôt à zéro", "Me rappeler de saisir mes dépenses", "Notifications sur cet iPhone"].map((r) => (
-                <div key={r} className="flex items-center justify-between gap-4">
-                  <span className="text-foreground">{r}</span>
-                  <span className="flex h-6 w-10 shrink-0 items-center justify-end rounded-full bg-accent p-0.5">
-                    <span className="h-5 w-5 rounded-full bg-on-accent" />
-                  </span>
-                </div>
-              ))}
-            </div>
+          <div>
+            <dt className="font-display text-xl font-bold text-foreground">Alertes</dt>
+            <dd className="mt-2 leading-relaxed text-muted">
+              Une notification quand un compte passe sous 10 jours de trésorerie, et un rappel si tu
+              n&apos;as rien noté depuis une semaine. Chacune se coupe dans les réglages.
+            </dd>
           </div>
-        </div>
+        </dl>
       </section>
 
       {/* Ce que TCIF ne fait pas : les vraies inquiétudes d'une app d'argent. */}
