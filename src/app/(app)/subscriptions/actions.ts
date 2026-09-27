@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { creerCompteEpargne } from "@/lib/accounts/create";
+import { jourDe } from "@/lib/subscriptions/compute";
 
 function parseSubscriptionFormData(formData: FormData) {
   const categoryId = formData.get("category_id");
@@ -87,9 +88,24 @@ export async function updateSubscription(id: string, formData: FormData) {
   const { donnees, erreur } = await avecCompteEpargneSiDemande(supabase, user.id, formData);
   if (erreur) redirect(`/subscriptions/${id}/edit?erreur=${erreur}`);
 
+  // Jour de prélèvement (migration 0024) : il ne change que si la date de
+  // prochaine échéance change. Réenregistrer un abonnement du 31 dont
+  // l'échéance est au 28 février ne doit pas le faire passer au 28 pour
+  // toujours.
+  const { data: actuel } = await supabase
+    .from("subscriptions")
+    .select("next_billing_date")
+    .eq("id", id)
+    .eq("user_id", user.id)
+    .single();
+  const nouveauJour =
+    actuel && actuel.next_billing_date !== donnees.next_billing_date
+      ? { jour_prelevement: jourDe(donnees.next_billing_date) }
+      : {};
+
   await supabase
     .from("subscriptions")
-    .update(donnees)
+    .update({ ...donnees, ...nouveauJour })
     .eq("id", id)
     .eq("user_id", user.id);
 

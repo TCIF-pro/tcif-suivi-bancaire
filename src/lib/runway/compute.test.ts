@@ -28,8 +28,8 @@ function simulationNaive(
 ): string | null {
   let centimes = Math.round(solde * 100);
   const evts = [
-    ...subs.map((s) => ({ date: s.nextBillingDate, delta: -Math.round(s.amount * 100), f: s.frequency as SubscriptionFrequency | null })),
-    ...ponctuels.map((o) => ({ date: o.date, delta: Math.round(o.amount * 100), f: null as SubscriptionFrequency | null })),
+    ...subs.map((s) => ({ date: s.nextBillingDate, delta: -Math.round(s.amount * 100), f: s.frequency as SubscriptionFrequency | null, jour: Number(s.nextBillingDate.slice(8, 10)) })),
+    ...ponctuels.map((o) => ({ date: o.date, delta: Math.round(o.amount * 100), f: null as SubscriptionFrequency | null, jour: 0 })),
   ];
   for (let i = 0; i < maxEvenements && evts.length > 0; i++) {
     evts.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
@@ -37,7 +37,7 @@ function simulationNaive(
     centimes += e.delta;
     if (centimes <= 0) return e.date;
     if (e.f === null) evts.shift();
-    else e.date = nextOccurrence(e.date, e.f);
+    else e.date = nextOccurrence(e.date, e.f, e.jour);
   }
   return null;
 }
@@ -94,6 +94,12 @@ describe("computeRunway — sans limite de durée", () => {
     expect(r.zeroDate).toBe("2326-09-01");
     expect(r.daysRemaining).toBe(daysBetween(AUJOURDHUI, "2326-09-01"));
     expect(performance.now() - debut).toBeLessThan(50);
+  });
+
+  it("abonnement du 31 : le prélèvement de février compte (il était sauté avant le 27/09/2026)", () => {
+    // 100 € et 50 € le 31 : deux prélèvements, le 31 janvier puis le 28 février.
+    const r = computeRunway(100, "2027-01-15", [abonnement(50, "2027-01-31")]);
+    expect(r.zeroDate).toBe("2027-02-28");
   });
 
   it("un salaire à venir repousse la rupture", () => {

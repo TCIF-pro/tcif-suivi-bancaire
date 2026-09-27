@@ -15,7 +15,7 @@ const MAX_ITERATIONS_PER_SUBSCRIPTION = 60;
 export async function genererPrelevements(supabase: SupabaseClient, today: string) {
   const { data: subscriptions } = await supabase
     .from("subscriptions")
-    .select("id, user_id, name, amount, frequency, next_billing_date, category_id, account_id, is_savings, transfer_account_id")
+    .select("id, user_id, name, amount, frequency, next_billing_date, jour_prelevement, category_id, account_id, is_savings, transfer_account_id")
     .eq("is_active", true)
     .lte("next_billing_date", today);
 
@@ -52,7 +52,9 @@ export async function genererPrelevements(supabase: SupabaseClient, today: strin
 
       if (!error && count) created += count;
 
-      dueDate = nextOccurrence(dueDate, sub.frequency);
+      // Le jour de prélèvement d'origine (migration 0024) : un abonnement du
+      // 31 passe au 28 février puis revient au 31 mars, sans sauter février.
+      dueDate = nextOccurrence(dueDate, sub.frequency, sub.jour_prelevement ?? undefined);
     }
 
     await supabase
