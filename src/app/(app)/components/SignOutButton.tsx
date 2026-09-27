@@ -1,11 +1,30 @@
+"use client";
+
 import { signOut } from "../actions";
 
+// Avant de déconnecter, on désabonne CET appareil des notifications : sinon
+// la personne qui se connecterait ensuite sur le même téléphone recevrait les
+// alertes (et les soldes) du compte précédent. Sans notifications activées,
+// rien ne change.
+async function seDeconnecter(formData: FormData) {
+  try {
+    const inscription = await navigator.serviceWorker?.getRegistration();
+    const abonnement = await inscription?.pushManager?.getSubscription();
+    if (abonnement) {
+      formData.set("appareil", abonnement.endpoint);
+      await abonnement.unsubscribe();
+    }
+  } catch {
+    // Un échec ici ne doit jamais empêcher de se déconnecter.
+  }
+  await signOut(formData);
+}
+
 // Extrait du layout pour pouvoir être posé indifféremment dans le menu
-// latéral (ordinateur) ou dans l'en-tête (téléphone). Même action serveur
-// qu'avant, rien n'a changé côté déconnexion.
+// latéral (ordinateur) ou dans l'en-tête (téléphone).
 export function SignOutButton({ compact = false }: { compact?: boolean }) {
   return (
-    <form action={signOut} className={compact ? "" : "flex-1"}>
+    <form action={seDeconnecter} className={compact ? "" : "flex-1"}>
       <button
         type="submit"
         aria-label="Déconnexion"

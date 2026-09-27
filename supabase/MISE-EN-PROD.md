@@ -285,3 +285,24 @@ maximum sans réaction.
       matin.
 - [ ] Le lendemain matin, Vercel → Logs (filtre `/api/cron/quotidien`) : la
       réponse liste aussi `rappelsSaisie`, sans `erreur`.
+
+### Notifications push
+
+Les alertes (trésorerie, rappel de saisie) arrivent en notification sur les
+appareils où on les a activées (Réglages → Alertes), l'email restant le
+secours si aucun appareil n'a pu être joint.
+
+- [ ] Générer une paire de clés **propre à la prod** (jamais celle de
+      `.env.local`, qui sert au test) : `npx web-push generate-vapid-keys`.
+- [ ] Vercel → Settings → Environment Variables, en **Production** :
+      `NEXT_PUBLIC_VAPID_PUBLIC_KEY` (Public Key), `VAPID_PRIVATE_KEY`
+      (Private Key), `VAPID_SUBJECT=mailto:contact@tcif-pro.fr`.
+      En **Preview** : les trois valeurs de `.env.local` (paire de test).
+      Puis redéployer. Changer une paire plus tard désabonne tous les
+      appareils : chacun devra réactiver les notifications.
+- [ ] `0023_push_subscriptions.sql` - SQL Editor de la prod → Run, avant de
+      pousser `main`.
+- [ ] Après le déploiement, **sur l'iPhone** : ouvrir TCIF depuis son icône
+      (app installée), Réglages → Alertes → « Activer les notifications »,
+      autoriser, puis « Envoyer une notification de test ». Elle doit
+      arriver, et un appui doit ouvrir Réglages.

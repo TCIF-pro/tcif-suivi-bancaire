@@ -1,14 +1,14 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { envoyerEmail } from "@/lib/email/envoyer";
+import { prevenir } from "./prevenir";
 import { adresseDeLApp } from "@/lib/app-url";
 import { peutRecevoirEmails } from "./destinataires";
-import { deciderRappel, emailRappel } from "./rappel";
+import { deciderRappel, emailRappel, notificationRappel } from "./rappel";
 
 // Étape « rappels de saisie » de la tâche du matin. `admin` : client
 // service_role, qui voit les réglages et les opérations de tout le monde.
 export async function envoyerRappelsSaisie(admin: SupabaseClient, today: string) {
-  const bilan = { comptesVerifies: 0, rappelsEnvoyes: 0, reinitialises: 0, echecsEnvoi: 0 };
+  const bilan = { comptesVerifies: 0, rappelsEnvoyes: 0, parPush: 0, parEmail: 0, reinitialises: 0, echecsEnvoi: 0 };
 
   const { data: listeUtilisateurs, error: erreurUtilisateurs } = await admin.auth.admin.listUsers({
     perPage: 1000,
@@ -62,20 +62,33 @@ export async function envoyerRappelsSaisie(admin: SupabaseClient, today: string)
     });
 
     if (decision.numero !== null && decision.joursSansSaisie !== null) {
-      const email = emailRappel({
-        joursSansSaisie: decision.joursSansSaisie,
-        numero: decision.numero,
-        lienAjout: `${base}/transactions/new`,
-        lienReglages: `${base}/settings`,
-      });
-      const envoye = await envoyerEmail({ to: destinataires.get(r.user_id)!, ...email });
-      // Noté seulement si l'email est parti : sinon, nouvel essai demain.
-      if (envoye) {
+      const lienAjout = `${base}/transactions/new`;
+      const canal = await prevenir(
+        admin,
+        { userId: r.user_id, email: destinataires.get(r.user_id)! },
+        {
+          push: notificationRappel({
+            joursSansSaisie: decision.joursSansSaisie,
+            numero: decision.numero,
+            url: lienAjout,
+          }),
+          email: emailRappel({
+            joursSansSaisie: decision.joursSansSaisie,
+            numero: decision.numero,
+            lienAjout,
+            lienReglages: `${base}/settings`,
+          }),
+        },
+      );
+      // Noté seulement si le rappel est parti : sinon, nouvel essai demain.
+      if (canal !== "echec") {
         await admin
           .from("user_settings")
           .update({ rappel_saisie_dernier_le: today, rappel_saisie_nombre: decision.numero })
           .eq("user_id", r.user_id);
         bilan.rappelsEnvoyes++;
+        if (canal === "push") bilan.parPush++;
+        else bilan.parEmail++;
         if (decision.reinitialiser) bilan.reinitialises++;
         continue;
       }

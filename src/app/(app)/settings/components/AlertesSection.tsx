@@ -1,6 +1,7 @@
 import { updateAlertes } from "../actions";
 import { SEUIL_ALERTE_JOURS } from "@/lib/alertes/tresorerie";
 import { JOURS_AVANT_RAPPEL, RAPPELS_MAX } from "@/lib/alertes/rappel";
+import { NotificationsAppareil } from "./NotificationsAppareil";
 
 // Emails envoyés par la tâche du matin (migrations 0021 et 0022). Une case par type
 // d'alerte, sur le modèle de la section « Tableau de bord ».
@@ -14,7 +15,10 @@ export function AlertesSection({
   return (
     <section className="max-w-md rounded-2xl border border-border bg-surface p-5 shadow-card sm:p-6">
       <h2 className="font-display text-base font-bold text-foreground">Alertes</h2>
-      <p className="mt-1 text-sm text-muted">Envoyées par email à {email}.</p>
+      <p className="mt-1 text-sm text-muted">
+        Envoyées par email à {email}, ou en notification sur les appareils où tu les as
+        activées.
+      </p>
 
       <form action={updateAlertes} className="mt-4 flex flex-col gap-4">
         <label className="flex items-start gap-3">
@@ -60,6 +64,8 @@ export function AlertesSection({
           Enregistrer
         </button>
       </form>
+
+      <NotificationsAppareil />
     </section>
   );
 }

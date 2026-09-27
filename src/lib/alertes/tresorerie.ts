@@ -1,5 +1,6 @@
 import { formatCurrency, formatDateLong } from "@/lib/format";
 import type { RunwayResult } from "@/lib/runway/compute";
+import type { NotificationPush } from "@/lib/push/contenu";
 
 // Alerte « trésorerie bientôt à zéro » : la règle de décision et le texte de
 // l'email. Aucun accès à la base ni à l'envoi ici, pour pouvoir tout tester
@@ -81,4 +82,32 @@ export function emailAlerte({
   ].join("\n");
 
   return { subject, text };
+}
+
+// Version notification push : courte, un iPhone n'affiche que deux ou trois
+// lignes. Le détail est sur le tableau de bord, ouvert d'un appui.
+export function notificationAlerte({
+  nomCompte,
+  tresorerie,
+  url,
+}: {
+  nomCompte: string;
+  tresorerie: RunwayResult;
+  url: string;
+}): NotificationPush {
+  const jours = tresorerie.daysRemaining ?? 0;
+  const date = tresorerie.zeroDate ? formatDateLong(tresorerie.zeroDate) : null;
+  return {
+    title:
+      jours === 0
+        ? `⚠️ ${nomCompte} arrive à zéro aujourd'hui`
+        : jours === 1
+          ? `⚠️ Plus qu'un jour sur ${nomCompte}`
+          : `⚠️ Plus que ${jours} jours sur ${nomCompte}`,
+    body:
+      jours === 0 || !date
+        ? "Si rien ne rentre, à cause des prélèvements prévus. Touche pour voir ton tableau de bord."
+        : `À zéro le ${date} si rien ne rentre. Touche pour voir ton tableau de bord.`,
+    url,
+  };
 }

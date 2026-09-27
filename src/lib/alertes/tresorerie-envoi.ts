@@ -1,16 +1,16 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { peutRecevoirEmails } from "./destinataires";
-import { envoyerEmail } from "@/lib/email/envoyer";
+import { prevenir } from "./prevenir";
 import { parseAccountKind } from "@/lib/accounts/balance";
 import { tresorerieDuCompte } from "@/lib/runway/compte";
 import { adresseDeLApp } from "@/lib/app-url";
-import { deciderAlerte, emailAlerte } from "./tresorerie";
+import { deciderAlerte, emailAlerte, notificationAlerte } from "./tresorerie";
 
 // Étape « alertes de trésorerie » de la tâche du matin. `admin` : client
 // service_role, qui voit les comptes de tout le monde.
 export async function envoyerAlertesTresorerie(admin: SupabaseClient, today: string) {
-  const bilan = { comptesVerifies: 0, alertesEnvoyees: 0, rearmees: 0, echecsEnvoi: 0 };
+  const bilan = { comptesVerifies: 0, alertesEnvoyees: 0, parPush: 0, parEmail: 0, rearmees: 0, echecsEnvoi: 0 };
 
   const { data: listeUtilisateurs, error: erreurUtilisateurs } = await admin.auth.admin.listUsers({
     perPage: 1000,
@@ -53,18 +53,27 @@ export async function envoyerAlertesTresorerie(admin: SupabaseClient, today: str
     const decision = deciderAlerte(tresorerie, compte.alerte_tresorerie_envoyee_le);
 
     if (decision === "envoyer") {
-      const email = emailAlerte({
-        nomCompte: compte.name,
-        tresorerie,
-        lienTableauDeBord: `${base}/dashboard?account=${compte.id}`,
-        lienReglages: `${base}/settings`,
-      });
-      const envoye = await envoyerEmail({ to: destinataires.get(compte.user_id)!, ...email });
-      // La date n'est notée QUE si l'email est parti : en cas d'échec, on
-      // réessaie le lendemain au lieu de perdre l'alerte.
-      if (envoye) {
+      const lienTableauDeBord = `${base}/dashboard?account=${compte.id}`;
+      const canal = await prevenir(
+        admin,
+        { userId: compte.user_id, email: destinataires.get(compte.user_id)! },
+        {
+          push: notificationAlerte({ nomCompte: compte.name, tresorerie, url: lienTableauDeBord }),
+          email: emailAlerte({
+            nomCompte: compte.name,
+            tresorerie,
+            lienTableauDeBord,
+            lienReglages: `${base}/settings`,
+          }),
+        },
+      );
+      // La date n'est notée QUE si l'alerte est partie (push ou email) : en
+      // cas d'échec, on réessaie le lendemain au lieu de la perdre.
+      if (canal !== "echec") {
         await admin.from("accounts").update({ alerte_tresorerie_envoyee_le: today }).eq("id", compte.id);
         bilan.alertesEnvoyees++;
+        if (canal === "push") bilan.parPush++;
+        else bilan.parEmail++;
       } else {
         bilan.echecsEnvoi++;
       }
