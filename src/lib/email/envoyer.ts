@@ -37,6 +37,22 @@ export async function envoyerEmail({ to, subject, text, replyTo }: EmailTexte): 
     return false;
   }
 
+  // Hors production (Preview, local), AUCUN email ne part vers son vrai
+  // destinataire : il est redirigé vers SUPPORT_EMAIL_TO, le vrai
+  // destinataire indiqué dans l'objet. La base de test contient des adresses
+  // fictives ; un email envoyé à une adresse qui n'existe pas « rebondit »,
+  // et les rebonds abîment la réputation du domaine d'envoi auprès de Gmail
+  // ou d'Outlook. Et un test ne doit jamais écrire à une vraie personne.
+  if (process.env.VERCEL_ENV !== "production") {
+    const boiteDeTest = process.env.SUPPORT_EMAIL_TO;
+    if (!boiteDeTest) {
+      console.warn("[email] hors production sans SUPPORT_EMAIL_TO : email non envoyé");
+      return false;
+    }
+    subject = `[TEST → ${to}] ${subject}`;
+    to = boiteDeTest;
+  }
+
   try {
     const reponse = await fetch("https://api.resend.com/emails", {
       method: "POST",

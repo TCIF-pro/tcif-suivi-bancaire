@@ -4,7 +4,7 @@
   ],
   "crons": [
     {
-      "path": "/api/cron/generate-subscription-transactions",
+      "path": "/api/cron/quotidien",
       "schedule": "0 6 * * *"
     },
     {

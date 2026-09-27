@@ -252,3 +252,21 @@ la prod comme pour les Previews. Aucune migration.
       `cdg1` est le point d'entrée du réseau Vercel, le second l'endroit où
       tourne l'app.
 - [ ] Si un jour une base Supabase change de région, changer celle-ci avec.
+
+### Tâche du matin regroupée + alerte de trésorerie
+
+La tâche `generate-subscription-transactions` est remplacée par
+`/api/cron/quotidien`, qui génère les prélèvements PUIS envoie les alertes
+« 10 jours de trésorerie ». On reste à deux tâches planifiées. (Les
+vérifications de la mise en ligne V2 ci-dessus citent encore l'ancien nom :
+elles datent d'avant.)
+
+- [ ] `0021_alerte_tresorerie.sql` — SQL Editor de la prod → Run, **avant** de
+      pousser `main`. Dans l'autre ordre, rien ne casse (les prélèvements
+      tournent, seule l'étape des alertes échoue), mais autant l'éviter.
+- [ ] Après le déploiement, Vercel → Settings → **Cron Jobs** : deux tâches,
+      `/api/cron/quotidien` (6 h UTC) et `/api/cron/reset-demo` (3 h UTC).
+      L'ancienne `generate-subscription-transactions` ne doit plus apparaître.
+- [ ] `curl -i https://app.tcif-pro.fr/api/cron/quotidien` doit répondre `401`.
+- [ ] Le lendemain matin, Vercel → Logs (filtre `/api/cron/quotidien`) : la
+      réponse liste `prelevements` et `alertesTresorerie`, sans `erreur`.

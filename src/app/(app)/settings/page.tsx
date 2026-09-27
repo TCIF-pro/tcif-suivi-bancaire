@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { estAdmin } from "@/lib/auth/roles";
+import { estAdmin, estDemo } from "@/lib/auth/roles";
 import { ACCENT_COLORS, isAccentColorId, type AccentColorId } from "@/lib/accent-colors";
 import {
   updateAccountBalance,
@@ -12,6 +12,7 @@ import {
 import { QuickLabelsSection } from "./components/QuickLabelsSection";
 import { CategoriesSection } from "./components/CategoriesSection";
 import { DashboardCardsSection } from "./components/DashboardCardsSection";
+import { AlertesSection } from "./components/AlertesSection";
 
 const MESSAGES_ERREUR: Record<string, string> = {
   "categorie-vide": "Le nom ne peut pas être vide.",
@@ -45,6 +46,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
     { data: accounts },
     { data: categories },
     { data: quickLabels },
+    { data: alertes },
   ] = await Promise.all([
     supabase
       .from("user_settings")
@@ -67,6 +69,9 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
       .from("quick_labels")
       .select("id, label, type, category_id")
       .order("position", { ascending: true }),
+    // Lu à part : si la migration 0021 manque, seule cette lecture échoue, et
+    // pas celle du thème et des autres réglages juste au-dessus.
+    supabase.from("user_settings").select("alerte_tresorerie").maybeSingle(),
   ]);
 
   // Combien d'éléments utilisent chaque catégorie, dans les quatre tables qui
@@ -287,6 +292,15 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
           showUpcoming: settings?.show_upcoming !== false,
         }}
       />
+
+      {/* Pas d'alertes pour le compte démo : il est partagé et n'a pas de
+          vraie boîte mail. */}
+      {user && !estDemo(user) && (
+        <AlertesSection
+          email={user.email ?? ""}
+          valeurs={{ alerteTresorerie: alertes?.alerte_tresorerie !== false }}
+        />
+      )}
 
       <CategoriesSection
         categories={(categories ?? []).map((c) => ({

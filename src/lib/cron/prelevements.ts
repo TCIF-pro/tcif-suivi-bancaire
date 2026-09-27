@@ -1,20 +1,18 @@
-import { createAdminClient } from "@/lib/supabase/admin";
-import { refuserSiNonAutorise } from "@/lib/cron/autorisation";
+import "server-only";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { nextOccurrence } from "@/lib/subscriptions/compute";
-import { todayDateString } from "@/lib/dates";
+
+// Étape « prélèvements d'abonnements » de la tâche du matin : crée les
+// transactions des abonnements arrivés à échéance, puis avance leur prochaine
+// date. Déplacée telle quelle depuis l'ancienne route
+// /api/cron/generate-subscription-transactions.
 
 // Garde-fou : au cas où next_billing_date traînerait très loin dans le passé
 // (abonnement resté inactif un moment, cron qui n'a pas tourné), on rattrape
 // les échéances manquées sans jamais boucler indéfiniment.
 const MAX_ITERATIONS_PER_SUBSCRIPTION = 60;
 
-export async function GET(request: Request) {
-  const refus = refuserSiNonAutorise(request);
-  if (refus) return refus;
-
-  const supabase = createAdminClient();
-  const today = todayDateString();
-
+export async function genererPrelevements(supabase: SupabaseClient, today: string) {
   const { data: subscriptions } = await supabase
     .from("subscriptions")
     .select("id, user_id, name, amount, frequency, next_billing_date, category_id, account_id, is_savings, transfer_account_id")
@@ -63,5 +61,5 @@ export async function GET(request: Request) {
       .eq("id", sub.id);
   }
 
-  return Response.json({ subscriptionsChecked: subscriptions?.length ?? 0, created });
+  return { subscriptionsChecked: subscriptions?.length ?? 0, created };
 }
