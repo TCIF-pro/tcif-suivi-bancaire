@@ -4,7 +4,20 @@ import { doitChangerMotDePasse, estDemo, estDesactive } from "@/lib/auth/roles";
 
 // Pages accessibles sans être connecté. La page de retour du lien de
 // réinitialisation en fait partie : c'est elle qui ouvre la session.
-const PAGES_PUBLIQUES = ["/login", "/mot-de-passe-oublie", "/auth/confirm"];
+const PAGES_PUBLIQUES = [
+  "/login",
+  "/mot-de-passe-oublie",
+  "/auth/confirm",
+  // Site public (V3) : pages lisibles sans compte.
+  "/inscription",
+  "/mentions-legales",
+  "/conditions",
+  "/confidentialite",
+];
+
+// L'accueil « / » est public lui aussi, mais comparé EXACTEMENT : avec
+// `startsWith`, « / » rendrait publiques toutes les pages de l'app.
+const PAGES_PUBLIQUES_EXACTES = ["/"];
 
 const PAGE_CHANGEMENT = "/changer-mot-de-passe";
 
@@ -40,7 +53,8 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const chemin = request.nextUrl.pathname;
-  const estPublique = PAGES_PUBLIQUES.some((p) => chemin.startsWith(p));
+  const estPublique =
+    PAGES_PUBLIQUES_EXACTES.includes(chemin) || PAGES_PUBLIQUES.some((p) => chemin.startsWith(p));
 
   const versPage = (destination: string) => {
     const url = request.nextUrl.clone();

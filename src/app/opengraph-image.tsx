@@ -13,7 +13,7 @@ import { ImageResponse } from "next/og";
 // page de connexion : voir la liste des exceptions dans src/proxy.ts.
 
 export const alt =
-  "TCIF — une carte de compte avec 372 jours de trésorerie devant toi, sur fond bleu nuit";
+  "TCIF - une carte de compte avec 372 jours de trésorerie devant toi, sur fond bleu nuit";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
