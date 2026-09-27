@@ -1,4 +1,5 @@
 import { daysBetween } from "@/lib/dates";
+import type { NotificationPush } from "@/lib/push/contenu";
 
 // Rappel « tu n'as rien saisi depuis un moment » : la règle de décision et le
 // texte de l'email. Aucun accès à la base ni à l'envoi ici, pour pouvoir tout
@@ -73,5 +74,25 @@ export function emailRappel({
       "TCIF",
       `Tu reçois cet email parce que les rappels de saisie sont activés. Pour les couper : Réglages → Alertes, ${lienReglages}`,
     ].join("\n"),
+  };
+}
+
+// Version notification push du rappel, même ton en plus court.
+export function notificationRappel({
+  joursSansSaisie,
+  numero,
+  url,
+}: {
+  joursSansSaisie: number;
+  numero: number;
+  url: string;
+}): NotificationPush {
+  return {
+    title: `Ça fait ${joursSansSaisie} jours... 👀`,
+    body:
+      numero >= RAPPELS_MAX
+        ? "Tes dépenses t'attendent. Dernier rappel : après, on te laisse tranquille."
+        : "Tes dépenses t'attendent. Deux minutes pour les rentrer, et tu sais où t'en es.",
+    url,
   };
 }

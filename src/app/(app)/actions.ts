@@ -5,11 +5,19 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { estDemo } from "@/lib/auth/roles";
 
-export async function signOut() {
+export async function signOut(formData?: FormData) {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
+  // Appareil désabonné des notifications par le bouton de déconnexion (voir
+  // SignOutButton) : on retire sa ligne tant que la session est encore
+  // ouverte, la RLS ne le permet plus après.
+  const appareil = formData?.get("appareil");
+  if (typeof appareil === "string" && appareil) {
+    await supabase.from("push_subscriptions").delete().eq("endpoint", appareil);
+  }
 
   // Par défaut, Supabase déconnecte TOUTES les sessions du compte, sur tous
   // les appareils (scope « global »). Sur le compte démo, partagé par tous les

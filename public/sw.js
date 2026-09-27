@@ -26,3 +26,50 @@ self.addEventListener("fetch", (event) => {
     );
   }
 });
+
+// ---------------------------------------------------------------------------
+// Notifications push (alertes de trésorerie, rappels de saisie).
+// Le serveur envoie { title, body, url } (voir src/lib/push/contenu.ts).
+// Rien n'est mis en cache ici non plus : on affiche, c'est tout.
+// ---------------------------------------------------------------------------
+
+self.addEventListener("push", (event) => {
+  let donnees = {};
+  try {
+    donnees = event.data ? event.data.json() : {};
+  } catch {
+    // Contenu illisible : on affiche quand même quelque chose plutôt que rien.
+  }
+
+  const titre = donnees.title || "TCIF";
+  event.waitUntil(
+    self.registration.showNotification(titre, {
+      body: donnees.body || "",
+      icon: "/icons/icon-192.png",
+      badge: "/icons/icon-192.png",
+      data: { url: donnees.url || "/dashboard" },
+    }),
+  );
+});
+
+// Un appui sur la notification ouvre l'app sur la page prévue (tableau de
+// bord du compte concerné, formulaire d'ajout...). Si l'app est déjà
+// ouverte, on la réutilise au lieu d'en ouvrir une deuxième.
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+
+  // On ne garde que le chemin : l'app s'ouvre toujours sur son propre
+  // domaine, même si le lien de la notification en indique un autre.
+  const lien = new URL(event.notification.data?.url || "/dashboard", self.location.origin);
+  const cible = new URL(lien.pathname + lien.search, self.location.origin).href;
+
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((fenetres) => {
+      const ouverte = fenetres.find((f) => new URL(f.url).origin === self.location.origin);
+      if (ouverte) {
+        return ouverte.focus().then((f) => (f && "navigate" in f ? f.navigate(cible) : undefined));
+      }
+      return self.clients.openWindow(cible);
+    }),
+  );
+});
