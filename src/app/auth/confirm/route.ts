@@ -2,8 +2,10 @@ import { NextResponse, type NextRequest } from "next/server";
 import type { EmailOtpType } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 
-// Arrivée depuis le lien de réinitialisation reçu par email. Ouvre la session
-// correspondante, puis envoie vers la page de changement de mot de passe.
+// Arrivée depuis un lien reçu par email : réinitialisation du mot de passe,
+// ou confirmation de l'adresse après une inscription (V3). Ouvre la session
+// correspondante, puis envoie vers `next` (le changement de mot de passe par
+// défaut, le tableau de bord pour une inscription).
 //
 // Deux formats de lien existent selon la configuration de Supabase : un `code`
 // (flux PKCE, celui du modèle d'email par défaut avec @supabase/ssr) ou un
@@ -31,8 +33,13 @@ export async function GET(request: NextRequest) {
       : { error: new Error("lien incomplet") };
 
   if (error) {
-    console.error("[auth] lien de réinitialisation invalide ou expiré", error);
-    return NextResponse.redirect(`${origin}/mot-de-passe-oublie?lien=expire`);
+    // Lien de confirmation d'inscription (V3) : on repropose d'en recevoir un
+    // nouveau. Sinon, c'était un lien de mot de passe oublié.
+    const inscription = type === "signup" || type === "magiclink";
+    console.error(`[auth] lien ${inscription ? "de confirmation" : "de réinitialisation"} invalide ou expiré`, error);
+    return NextResponse.redirect(
+      inscription ? `${origin}/inscription?lien=expire` : `${origin}/mot-de-passe-oublie?lien=expire`,
+    );
   }
 
   return NextResponse.redirect(`${origin}${next}`);

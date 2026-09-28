@@ -11,12 +11,14 @@ export default function LoginPage() {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState(false);
+  const [nonConfirme, setNonConfirme] = useState(false);
 
   function handleSubmit(formData: FormData) {
     setError(false);
     startTransition(async () => {
       const result = await signIn(formData);
 
+      setNonConfirme(result.nonConfirme);
       if (result.error) {
         setError(true);
         return;
@@ -68,7 +70,14 @@ export default function LoginPage() {
         {/* Un seul message pour tous les échecs, compte désactivé compris :
             un message différent révélerait quelles adresses ont un compte
             (voir l'action signIn). */}
-        {error && (
+        {nonConfirme ? (
+          <p role="alert" className="text-sm text-danger">
+            Confirme d&apos;abord ton adresse : ouvre le lien reçu par email à l&apos;inscription.{" "}
+            <Link href="/inscription?renvoyer=1" className="font-semibold underline">
+              Recevoir un nouveau lien
+            </Link>
+          </p>
+        ) : error && (
           <p role="alert" className="text-sm text-danger">
             Email ou mot de passe incorrect. Si ton compte a été désactivé,
             contacte l&apos;administrateur de l&apos;app.

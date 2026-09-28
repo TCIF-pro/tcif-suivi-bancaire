@@ -17,7 +17,7 @@ export default async function AdminPage() {
   // Liste de tous les comptes : seule la clé service_role y a accès, d'où le
   // client admin — derrière la vérification ci-dessus.
   const admin = createAdminClient();
-  const [{ data, error }, { data: messages, error: erreurMessages }] = await Promise.all([
+  const [{ data, error }, { data: messages, error: erreurMessages }, { data: inscriptions }] = await Promise.all([
     admin.auth.admin.listUsers({ perPage: 200 }),
     // Les messages non traités d'abord, puis du plus récent au plus ancien.
     admin
@@ -26,7 +26,12 @@ export default async function AdminPage() {
       .order("traite", { ascending: true })
       .order("created_at", { ascending: false })
       .limit(100),
+    // Comptes créés par la personne elle-même (V3) : ils ont accepté les
+    // conditions à l'inscription (migration 0025). Sans la migration, la
+    // lecture échoue et aucune étiquette ne s'affiche, sans autre effet.
+    admin.from("user_settings").select("user_id").not("conditions_acceptees_le", "is", null),
   ]);
+  const inscritsSeuls = new Set((inscriptions ?? []).map((r) => r.user_id as string));
   const aTraiter = (messages ?? []).filter((m) => !m.traite).length;
   const comptes = [...(data?.users ?? [])].sort((a, b) =>
     a.created_at < b.created_at ? -1 : 1,
@@ -136,6 +141,16 @@ export default async function AdminPage() {
                   {estDemo(compte) && (
                     <span className="rounded-full bg-pending-bg px-2 py-0.5 text-[0.625rem] font-semibold text-pending">
                       démo · remis à zéro chaque nuit
+                    </span>
+                  )}
+                  {inscritsSeuls.has(compte.id) && (
+                    <span className="rounded-full bg-positive-bg px-2 py-0.5 text-[0.625rem] font-semibold text-positive">
+                      inscription
+                    </span>
+                  )}
+                  {!compte.email_confirmed_at && (
+                    <span className="rounded-full bg-warning-bg px-2 py-0.5 text-[0.625rem] font-semibold text-warning">
+                      non confirmé
                     </span>
                   )}
                   {desactive && (

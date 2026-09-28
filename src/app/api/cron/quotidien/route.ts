@@ -4,6 +4,7 @@ import { todayDateString } from "@/lib/dates";
 import { genererPrelevements } from "@/lib/cron/prelevements";
 import { envoyerAlertesTresorerie } from "@/lib/alertes/tresorerie-envoi";
 import { envoyerRappelsSaisie } from "@/lib/alertes/rappel-envoi";
+import { purgerComptesNonConfirmes } from "@/lib/cron/purge-non-confirmes";
 
 // La tâche planifiée du matin (vercel.json), qui regroupe plusieurs étapes :
 // le plan gratuit de Vercel n'autorise que 2 tâches planifiées, et l'autre est
@@ -18,6 +19,7 @@ const ETAPES = [
   { nom: "prelevements", lancer: genererPrelevements },
   { nom: "alertesTresorerie", lancer: envoyerAlertesTresorerie },
   { nom: "rappelsSaisie", lancer: envoyerRappelsSaisie },
+  { nom: "comptesNonConfirmes", lancer: purgerComptesNonConfirmes },
 ] as const;
 
 export async function GET(request: Request) {
