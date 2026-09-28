@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 // Captcha Cloudflare Turnstile. Souvent invisible ou réduit à une case : il
 // vérifie en arrière-plan que le visiteur n'est pas un robot, puis dépose un
@@ -39,6 +39,10 @@ function chargerScript(): Promise<void> {
 
 export function Turnstile() {
   const conteneur = useRef<HTMLDivElement>(null);
+  // Code d'erreur de Cloudflare (ex. 110200 : ce domaine n'est pas autorisé
+  // dans le widget). Sans ce message, le visiteur ne voyait que le lien
+  // anglais « Troubleshoot » de Cloudflare, et ne pouvait pas s'inscrire.
+  const [erreur, setErreur] = useState<string | null>(null);
 
   useEffect(() => {
     const cle = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
@@ -53,14 +57,34 @@ export function Turnstile() {
           theme: "dark",
           language: "fr",
           size: "flexible",
+          "error-callback": (code: string) => {
+            console.error("[inscription] captcha Turnstile en erreur", code);
+            setErreur(code);
+            // Laisse Cloudflare réessayer tout seul (erreurs passagères).
+            return false;
+          },
+          callback: () => setErreur(null),
         });
       })
-      .catch((e) => console.error("[inscription]", e));
+      .catch((e) => {
+        console.error("[inscription]", e);
+        setErreur("chargement");
+      });
     return () => {
       annule = true;
       if (id) window.turnstile?.remove(id);
     };
   }, []);
 
-  return <div ref={conteneur} className="min-h-[65px]" />;
+  return (
+    <div>
+      <div ref={conteneur} className="min-h-[65px]" />
+      {erreur && (
+        <p role="alert" className="mt-2 text-sm text-danger">
+          La vérification anti-robot n&apos;a pas pu se faire. Recharge la page ; si ça
+          recommence, écris à contact@tcif-pro.fr (code {erreur}).
+        </p>
+      )}
+    </div>
+  );
 }
