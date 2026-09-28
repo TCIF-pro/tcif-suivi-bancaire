@@ -346,10 +346,17 @@ de confirmation (Resend). Un compte jamais confirmé est supprimé au bout de
       sa fonction).
 - [ ] Supabase **prod** → Authentication → Sign In / Providers : « Allow new
       users to sign up » **décoché** (c'est notre serveur qui crée les comptes).
-- [ ] Cloudflare → Turnstile → widget de **prod** (domaine `app.tcif-pro.fr`).
-      Vercel, **Production** : `NEXT_PUBLIC_TURNSTILE_SITE_KEY` et
-      `TURNSTILE_SECRET_KEY`. En **Preview** : un widget pour `vercel.app`, ou
-      les clés de test de `.env.local.example`.
+- [x] Cloudflare → Turnstile : deux widgets créés le 28/09/2026, « Production »
+      (`app.tcif-pro.fr`) et « Preview / Local » (`localhost` + alias de
+      branche Vercel).
+- [ ] Vercel, **Production** : `NEXT_PUBLIC_TURNSTILE_SITE_KEY` et
+      `TURNSTILE_SECRET_KEY` du widget Production. **Preview** : ceux du widget
+      Preview / Local. En local : `.env.local` (widget Preview / Local).
+- [ ] Widget Preview / Local : n'accepte que les noms de domaine listés. Y
+      ajouter l'**alias fixe** de chaque branche qui touche à l'inscription,
+      `tcif-suivi-bancaire-git-<branche>-tcif1.vercel.app` (jamais `vercel.app`
+      entier, qui ouvrirait la clé à tous les sites Vercel), et tester via cet
+      alias, pas via l'adresse du déploiement (avec hash).
 - [ ] **Ouverture des inscriptions** : seulement après la validation des pages
       légales et le choix du médiateur. Vercel, Production :
       `INSCRIPTIONS_OUVERTES=true`, puis redéployer. Pour refermer : supprimer
