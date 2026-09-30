@@ -328,7 +328,7 @@ tableau de bord), avec `/inscription` (provisoire : « les inscriptions ouvrent
 bientôt » et la démo), `/mentions-legales`, `/conditions` et
 `/confidentialite`. Aucune migration.
 
-- [ ] **Aucun bloc « À compléter » ne part en production.** Les pages légales
+- [x] **Aucun bloc « À compléter » ne part en production.** Les pages légales
       sont des modèles : nom, adresse, SIRET à 14 chiffres, téléphone,
       médiateur de la consommation, formules et prix restent à fournir, et
       l'ensemble à faire valider par un professionnel. Vérifier avant le push :

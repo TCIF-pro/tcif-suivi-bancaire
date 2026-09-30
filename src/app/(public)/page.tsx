@@ -61,7 +61,7 @@ const QUESTIONS = [
   {
     question: "Combien ça coûte ?",
     reponse:
-      "Rien jusqu'au 1er décembre 2026 : tout le monde peut créer un compte et utiliser TCIF gratuitement jusque-là, quelle que soit sa date d'inscription. Les tarifs seront annoncés avant. La démo, elle, reste gratuite et sans inscription.",
+      "Rien jusqu'au 1er décembre 2026 : tout le monde peut créer un compte et utiliser TCIF gratuitement jusque-là, quelle que soit sa date d'inscription. Ensuite, l'abonnement coûte 3,99 € par mois, sans engagement. La démo, elle, reste gratuite et sans inscription.",
   },
 ];
 

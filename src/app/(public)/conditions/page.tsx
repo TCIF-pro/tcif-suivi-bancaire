@@ -1,15 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ACompleter, PageLegale, Section } from "../components/PageLegale";
+import { PageLegale, Section } from "../components/PageLegale";
 
 export const metadata: Metadata = { title: "Conditions générales - TCIF" };
 
 // MODÈLE de conditions générales d'utilisation et de vente, à faire valider
-// avant la mise en production (voir MISE-EN-PROD.md). La section prix
-// dépend de choix encore ouverts.
+// avant la mise en production (voir MISE-EN-PROD.md).
 export default function Conditions() {
   return (
-    <PageLegale titre="Conditions générales d'utilisation et de vente" miseAJour="27 septembre 2026">
+    <PageLegale titre="Conditions générales d'utilisation et de vente" miseAJour="30 septembre 2026">
       <Section titre="1. Objet">
         <p>
           Les présentes conditions encadrent l&apos;utilisation de l&apos;application TCIF (le
@@ -55,7 +54,8 @@ export default function Conditions() {
           souscrit.
         </p>
         <p>
-          <ACompleter>formules et prix de l&apos;abonnement</ACompleter>
+          L&apos;abonnement TCIF est disponible en une seule formule : 3,99 € par mois, sans
+          engagement, résiliable à tout moment.
         </p>
         <p>
           Les prix sont indiqués en euros. TVA non applicable, article 293 B du Code général des

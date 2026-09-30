@@ -29,14 +29,3 @@ export function Section({ titre, children }: { titre: string; children: React.Re
     </section>
   );
 }
-
-// Information légale obligatoire que Tom doit encore fournir. Surlignée pour
-// ne pas passer inaperçue : AUCUNE page légale ne doit partir en production
-// avec un de ces blocs (voir supabase/MISE-EN-PROD.md, section V3).
-export function ACompleter({ children }: { children: React.ReactNode }) {
-  return (
-    <mark className="rounded bg-warning-bg px-1.5 py-0.5 font-semibold text-warning">
-      À compléter : {children}
-    </mark>
-  );
-}
