@@ -40,7 +40,7 @@ export const metadata: Metadata = {
   // déploiement.
   metadataBase:
     process.env.VERCEL_ENV === "production" ? new URL("https://app.tcif-pro.fr") : undefined,
-  title: "TCIF — Suivi financier",
+  title: "TCIF - Suivi financier",
   description: DESCRIPTION,
   openGraph: {
     type: "website",

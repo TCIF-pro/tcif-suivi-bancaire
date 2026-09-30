@@ -318,3 +318,18 @@ désormais le jour d'origine, ramené à la fin des mois courts (31 janvier →
       colonne. Sans elle, l'étape des prélèvements échouerait.
 - [ ] Rien à reprendre à la main : aucun abonnement de Tom ou de son père
       n'est prélevé un 29, 30 ou 31 (vérifié le 27/09/2026).
+
+## V3 - ouverture au public
+
+### Phase 1 : page d'accueil et pages légales
+
+`/` devient une page d'accueil publique (déjà connecté : redirection vers le
+tableau de bord), avec `/inscription` (provisoire : « les inscriptions ouvrent
+bientôt » et la démo), `/mentions-legales`, `/conditions` et
+`/confidentialite`. Aucune migration.
+
+- [ ] **Aucun bloc « À compléter » ne part en production.** Les pages légales
+      sont des modèles : nom, adresse, SIRET à 14 chiffres, téléphone,
+      médiateur de la consommation, formules et prix restent à fournir, et
+      l'ensemble à faire valider par un professionnel. Vérifier avant le push :
+      `grep -rn "<ACompleter" "src/app/(public)"` ne doit rien renvoyer.

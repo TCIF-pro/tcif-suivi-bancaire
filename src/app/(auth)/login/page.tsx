@@ -3,8 +3,9 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { entrerDansLaDemo, signIn } from "../actions";
+import { signIn } from "../actions";
 import { ChampMotDePasse } from "@/components/ChampMotDePasse";
+import { BoutonDemo } from "@/components/BoutonDemo";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -14,7 +15,6 @@ export default function LoginPage() {
   // (formulaire à action). Sans ça, un mot de passe erroné obligeait à
   // retaper aussi l'email. Le mot de passe, lui, est bien vidé.
   const [email, setEmail] = useState("");
-  const [erreurDemo, setErreurDemo] = useState(false);
 
   function handleSubmit(formData: FormData) {
     setError(false);
@@ -31,20 +31,6 @@ export default function LoginPage() {
       // compte au mot de passe provisoire part directement vers le formulaire
       // de changement, sans détour par le tableau de bord.
       router.push(result.doitChangerMotDePasse ? "/changer-mot-de-passe" : "/dashboard");
-    });
-  }
-
-  function essayerLaDemo() {
-    setErreurDemo(false);
-    startTransition(async () => {
-      const result = await entrerDansLaDemo();
-      if (!result.ok) {
-        setErreurDemo(true);
-        return;
-      }
-      // Même règle que la connexion : navigation côté navigateur, pour rester
-      // en mode plein écran dans la PWA sur iOS.
-      router.push("/dashboard");
     });
   }
 
@@ -105,22 +91,10 @@ export default function LoginPage() {
       </form>
 
       <div className="mt-6 border-t border-border pt-6">
-        <button
-          type="button"
-          onClick={essayerLaDemo}
-          disabled={isPending}
-          className="inline-flex h-12 w-full items-center justify-center rounded-xl border border-border px-5 font-semibold text-foreground transition-colors hover:border-accent disabled:opacity-50"
-        >
-          Essayer la démo
-        </button>
+        <BoutonDemo className="w-full" />
         <p className="mt-2 text-center text-xs text-muted">
           Un compte rempli de données fictives, sans inscription.
         </p>
-        {erreurDemo && (
-          <p role="alert" className="mt-2 text-center text-sm text-danger">
-            La démo n&apos;est pas disponible pour le moment. Réessaie dans un instant.
-          </p>
-        )}
       </div>
 
       <Link
@@ -129,6 +103,13 @@ export default function LoginPage() {
       >
         Mot de passe oublié ?
       </Link>
+
+      <p className="mt-6 border-t border-border pt-6 text-sm text-muted">
+        Pas encore de compte ?{" "}
+        <Link href="/inscription" className="font-semibold text-accent hover:underline">
+          Créer un compte
+        </Link>
+      </p>
     </div>
   );
 }
