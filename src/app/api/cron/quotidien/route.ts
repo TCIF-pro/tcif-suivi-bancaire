@@ -37,5 +37,9 @@ export async function GET(request: Request) {
     }
   }
 
+  // Bilan écrit dans les logs Vercel (onglet Logs, filtre
+  // /api/cron/quotidien) : la réponse, elle, n'y apparaît jamais, et
+  // personne ne la voit quand c'est Vercel qui lance la tâche.
+  console.log("[cron] quotidien", JSON.stringify(resultats));
   return Response.json(resultats);
 }

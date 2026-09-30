@@ -10,6 +10,10 @@ export default function LoginPage() {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState(false);
+  // Champ contrôlé : React vide les champs d'un formulaire après chaque envoi
+  // (formulaire à action). Sans ça, un mot de passe erroné obligeait à
+  // retaper aussi l'email. Le mot de passe, lui, est bien vidé.
+  const [email, setEmail] = useState("");
   const [erreurDemo, setErreurDemo] = useState(false);
 
   function handleSubmit(formData: FormData) {
@@ -62,6 +66,8 @@ export default function LoginPage() {
             type="email"
             required
             autoComplete="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             className="rounded-xl border border-border bg-surface px-3.5 py-3 text-foreground outline-none focus:border-accent focus:ring-2 focus:ring-accent/25"
           />
         </div>
