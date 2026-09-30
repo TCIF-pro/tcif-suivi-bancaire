@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { ACompleter, PageLegale, Section } from "../components/PageLegale";
+import { PageLegale, Section } from "../components/PageLegale";
 
 export const metadata: Metadata = { title: "Confidentialité - TCIF" };
 
@@ -60,11 +60,16 @@ export default function Confidentialite() {
           <strong>Resend</strong> (envoi des emails), <strong>GoCardless</strong> (prélèvements),
           et les services de notification d&apos;Apple et de Google pour les notifications.
         </p>
+        {/* Texte fourni par Tom le 30/09/2026. */}
         <p>
-          Certains de ces prestataires sont établis aux États-Unis : les transferts sont encadrés
-          par les clauses contractuelles types de la Commission européenne ou par le cadre de
-          protection des données UE-États-Unis.{" "}
-          <ACompleter>à vérifier pour chaque prestataire</ACompleter>
+          Certains de nos prestataires techniques peuvent traiter vos données en dehors de
+          l&apos;Union européenne, notamment aux États-Unis : l&apos;hébergement de
+          l&apos;application (Vercel) et l&apos;envoi d&apos;emails (Resend). Ces transferts sont
+          encadrés par les clauses contractuelles types de la Commission européenne, un mécanisme
+          reconnu par le RGPD garantissant un niveau de protection équivalent à celui de l&apos;UE.
+          Notre base de données (Supabase) est hébergée en France (région eu-west-3), et les
+          prélèvements bancaires européens (GoCardless) sont traités au sein de l&apos;Espace
+          économique européen.
         </p>
       </Section>
 
