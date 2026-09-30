@@ -9,12 +9,29 @@ interface EtatTresorerieProps {
 
 const JOURS_PAR_MOIS = 365.2425 / 12;
 
-// « environ 11 ans et 10 mois » : un grand nombre de jours est difficile à se
-// représenter. Arrondi au mois le plus proche (d'où « environ ») ; le nombre
-// de jours, lui, reste exact et affiché en premier. `null` en dessous d'un an.
-export function enAnnees(jours: number): string | null {
+// Équivalent parlant d'un nombre de jours, affiché entre parenthèses :
+// - moins de 7 jours : rien, le nombre de jours se lit tout seul ;
+// - de 7 à 59 jours : en semaines (« environ 6 semaines ») ;
+// - de 60 jours à un an : en mois (« environ 3 mois ») ;
+// - au-delà : en années et mois (« environ 11 ans et 10 mois »).
+// Bascule à 60 jours : en dessous, « environ 1 mois » recouvrirait aussi bien
+// 30 que 59 jours, alors que les semaines restent précises.
+// Arrondi à l'unité la plus proche (d'où « environ ») ; le nombre de jours,
+// lui, reste exact et affiché en premier.
+export const SEUIL_SEMAINES_JOURS = 7;
+export const SEUIL_MOIS_JOURS = 60;
+
+export function dureeLisible(jours: number): string | null {
+  if (jours < SEUIL_SEMAINES_JOURS) return null;
+
+  if (jours < SEUIL_MOIS_JOURS) {
+    const semaines = Math.round(jours / 7);
+    return `environ ${semaines} semaine${semaines > 1 ? "s" : ""}`;
+  }
+
   const moisTotal = Math.round(jours / JOURS_PAR_MOIS);
-  if (moisTotal < 12) return null;
+  if (moisTotal < 12) return `environ ${moisTotal} mois`;
+
   const ans = Math.floor(moisTotal / 12);
   const mois = moisTotal % 12;
   const partAns = `${ans.toLocaleString("fr-FR")} an${ans > 1 ? "s" : ""}`;
@@ -71,7 +88,7 @@ export function EtatTresorerie({
           {daysRemaining.toLocaleString("fr-FR")} jour{daysRemaining > 1 ? "s" : ""}
         </span>{" "}
         de trésorerie devant toi
-        {enAnnees(daysRemaining) && ` (${enAnnees(daysRemaining)})`}
+        {dureeLisible(daysRemaining) && ` (${dureeLisible(daysRemaining)})`}
       </p>
       {/* Pas de date au-delà de l'an 9999 (voir computeRunway) : seul un solde
           démesuré y arrive, le nombre de jours suffit alors. */}
