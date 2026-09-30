@@ -5,8 +5,8 @@ import { ACompleter, PageLegale, Section } from "../components/PageLegale";
 export const metadata: Metadata = { title: "Conditions générales - TCIF" };
 
 // MODÈLE de conditions générales d'utilisation et de vente, à faire valider
-// avant la mise en production (voir MISE-EN-PROD.md). Les sections prix,
-// rétractation et médiation dépendent de choix encore ouverts.
+// avant la mise en production (voir MISE-EN-PROD.md). Les sections prix et
+// rétractation dépendent de choix encore ouverts.
 export default function Conditions() {
   return (
     <PageLegale titre="Conditions générales d'utilisation et de vente" miseAJour="27 septembre 2026">
@@ -110,10 +110,30 @@ export default function Conditions() {
       </Section>
 
       <Section titre="10. Droit applicable et litiges">
+        <p>Les présentes conditions sont soumises au droit français.</p>
+        {/* Mention fournie par CM2C, reprise mot pour mot (adhésion valable
+            jusqu'au 30/09/2029). */}
         <p>
-          Les présentes conditions sont soumises au droit français. En cas de litige, le
-          consommateur peut recourir gratuitement au médiateur de la consommation :{" "}
-          <ACompleter>nom et coordonnées du médiateur de la consommation choisi</ACompleter>
+          Conformément aux dispositions du Code de la consommation concernant « le processus de
+          médiation des litiges de la consommation », après nous avoir sollicités et à défaut de
+          réponse vous satisfaisant, vous avez la possibilité de recourir gratuitement à une
+          procédure de médiation de la consommation auprès de :
+        </p>
+        <p>
+          <strong>CM2C</strong>
+          <br />
+          49 rue de Ponthieu
+          <br />
+          75008 PARIS
+          <br />
+          Tel : 01 89 47 00 14
+          <br />
+          Site internet :{" "}
+          <a href="https://www.cm2c.net/declarer-un-litige.php" className="text-accent hover:underline">
+            https://www.cm2c.net/declarer-un-litige.php
+          </a>
+          <br />
+          Mail : <a href="mailto:litiges@cm2c.net" className="text-accent hover:underline">litiges@cm2c.net</a>
         </p>
       </Section>
     </PageLegale>
