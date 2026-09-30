@@ -43,9 +43,15 @@ export default async function SubscriptionsPage() {
     isActive: s.is_active,
   }));
 
-  const totalMonthlyEquivalent = (subscriptions ?? [])
-    .filter((s) => s.is_active)
-    .reduce((sum, s) => sum + Number(s.monthly_equivalent_amount), 0);
+  // Coût mensualisé des abonnements actifs, compte par compte (Pro, Perso...),
+  // puis le total. Les comptes sont dans l'ordre alphabétique.
+  const parCompte = new Map<string, number>();
+  for (const s of (subscriptions ?? []).filter((s) => s.is_active)) {
+    const compte = relationName(s.accounts) ?? "Sans compte";
+    parCompte.set(compte, (parCompte.get(compte) ?? 0) + Number(s.monthly_equivalent_amount));
+  }
+  const coutsParCompte = [...parCompte.entries()].sort(([a], [b]) => a.localeCompare(b, "fr"));
+  const totalMonthlyEquivalent = coutsParCompte.reduce((total, [, cout]) => total + cout, 0);
 
   return (
     <div className="flex flex-col gap-6">
@@ -67,15 +73,33 @@ export default async function SubscriptionsPage() {
         <ListeIndisponible quoi="des abonnements" />
       ) : (
         <>
-          <div className="max-w-xs rounded-2xl border border-border bg-surface p-5 shadow-card sm:p-6">
+          {/* Une carte par compte, puis le total. Sur téléphone : deux cartes
+              côte à côte, le total en pleine largeur en dessous. Avec un seul
+              compte, le total ferait doublon : il n'est pas affiché. */}
+          <div className="flex flex-col gap-2">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:max-w-3xl">
+              {coutsParCompte.map(([compte, cout]) => (
+                <div
+                  key={compte}
+                  className="rounded-2xl border border-border bg-surface p-4 shadow-card sm:p-5"
+                >
+                  <p className="text-sm text-muted">{compte}</p>
+                  <p className="mt-1 font-display text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+                    {formatCurrency(cout)}
+                  </p>
+                </div>
+              ))}
+              {coutsParCompte.length !== 1 && (
+                <div className="col-span-2 rounded-2xl border border-accent/40 bg-accent/10 p-4 shadow-card sm:col-span-1 sm:p-5">
+                  <p className="text-sm text-muted">Total</p>
+                  <p className="mt-1 font-display text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+                    {formatCurrency(totalMonthlyEquivalent)}
+                  </p>
+                </div>
+              )}
+            </div>
             <p className="text-sm text-muted">
-              Coût récurrent réel (mensualisé)
-            </p>
-            <p className="mt-2 font-display text-3xl font-bold tracking-tight text-foreground">
-              {formatCurrency(totalMonthlyEquivalent)}
-            </p>
-            <p className="mt-1 text-sm text-muted">
-              Total des abonnements actifs, annuels ramenés au mois.
+              Coût récurrent réel par mois : abonnements actifs, annuels ramenés au mois.
             </p>
           </div>
 
