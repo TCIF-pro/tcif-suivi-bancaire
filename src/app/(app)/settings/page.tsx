@@ -169,6 +169,9 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                 <input
                   id={`starting_balance_${account.id}`}
                   name="starting_balance"
+                  // Seul champ de montant sans clavier décimal : un solde de
+                  // départ peut être négatif (découvert), et le clavier
+                  // décimal de l'iPhone n'a pas de touche « - ».
                   type="number"
                   step="0.01"
                   required

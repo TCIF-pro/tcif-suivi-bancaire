@@ -7,7 +7,7 @@ import {
   TitreDePage,
 } from "@/components/Squelette";
 
-// Même disposition que page.tsx : le total mensuel, puis la liste.
+// Même disposition que page.tsx : le coût mensuel par compte, puis la liste.
 //
 // Rangé dans « (liste) », invisible dans l'adresse, pour ne couvrir que la
 // liste : placé plus haut, il s'afficherait aussi pendant le chargement des
@@ -25,11 +25,16 @@ export default function ChargementAbonnements() {
         </Link>
       </div>
 
-      <CarteSquelette className="max-w-xs">
-        <Bloc className="h-4 w-32" />
-        <Bloc className="mt-3 h-9 w-28" />
-        <Bloc className="mt-2 h-4 w-40" />
-      </CarteSquelette>
+      {/* Coût par compte et total : deux cartes, puis le total en pleine
+          largeur sur téléphone (comme page.tsx). */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:max-w-3xl">
+        {[0, 1, 2].map((i) => (
+          <CarteSquelette key={i} className={`p-4 sm:p-5 ${i === 2 ? "col-span-2 sm:col-span-1" : ""}`}>
+            <Bloc className="h-4 w-16" />
+            <Bloc className="mt-2 h-8 w-24" />
+          </CarteSquelette>
+        ))}
+      </div>
 
       <ListeSquelette lignes={5} />
     </EcranDeChargement>

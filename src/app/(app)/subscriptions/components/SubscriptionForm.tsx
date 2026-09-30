@@ -1,4 +1,5 @@
 import { todayDateString } from "@/lib/dates";
+import { MOTIF_MONTANT } from "@/lib/montant";
 
 interface SubscriptionFormProps {
   action: (formData: FormData) => void;
@@ -73,9 +74,13 @@ export function SubscriptionForm({
         <input
           id="amount"
           name="amount"
-          type="number"
-          step="0.01"
-          min="0.01"
+          // Clavier numérique avec virgule sur téléphone ; champ texte plutôt
+          // que « number », qui interprète mal la virgule du clavier français.
+          type="text"
+          inputMode="decimal"
+          pattern={MOTIF_MONTANT}
+          title="Un montant, par exemple 12,50"
+          autoComplete="off"
           required
           defaultValue={defaultValues?.amount}
           className="rounded-xl border border-border bg-surface px-3.5 py-3 text-foreground outline-none focus:border-accent focus:ring-2 focus:ring-accent/25"

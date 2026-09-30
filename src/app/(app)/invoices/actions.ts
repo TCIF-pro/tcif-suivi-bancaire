@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { lireMontant } from "@/lib/montant";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { extractPdfText } from "@/lib/pdf/extract";
@@ -113,7 +114,8 @@ export async function saveInvoice(id: string, formData: FormData) {
   } = await supabase.auth.getUser();
   if (!user) return;
 
-  const amount = formData.get("amount") ? Number(formData.get("amount")) : null;
+  // « 12,50 » comme « 12.50 » ; vide ou illisible : pas de montant.
+  const amount = lireMontant(formData.get("amount"));
   const issuedDate = formData.get("issued_date")
     ? String(formData.get("issued_date"))
     : null;
