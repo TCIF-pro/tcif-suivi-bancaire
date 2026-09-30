@@ -8,7 +8,7 @@ import { LONGUEUR_MIN_MOT_DE_PASSE } from "@/lib/auth/longueur-mot-de-passe";
 // Version des conditions générales et de la politique de confidentialité
 // acceptées à l'inscription, enregistrée avec la date (migration 0025). À
 // changer à chaque modification de ces pages.
-export const VERSION_CONDITIONS = "2026-09-27";
+export const VERSION_CONDITIONS = "2026-09-30";
 
 // Délai minimum entre deux emails de confirmation pour une même adresse :
 // le captcha freine les robots, ce délai évite qu'on inonde une boîte mail.
