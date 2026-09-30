@@ -5,8 +5,8 @@ import { ACompleter, PageLegale, Section } from "../components/PageLegale";
 export const metadata: Metadata = { title: "Conditions générales - TCIF" };
 
 // MODÈLE de conditions générales d'utilisation et de vente, à faire valider
-// avant la mise en production (voir MISE-EN-PROD.md). Les sections prix et
-// rétractation dépendent de choix encore ouverts.
+// avant la mise en production (voir MISE-EN-PROD.md). La section prix
+// dépend de choix encore ouverts.
 export default function Conditions() {
   return (
     <PageLegale titre="Conditions générales d'utilisation et de vente" miseAJour="27 septembre 2026">
@@ -66,12 +66,24 @@ export default function Conditions() {
       </Section>
 
       <Section titre="5. Droit de rétractation">
+        {/* Texte fourni par Tom le 30/09/2026. */}
         <p>
-          L&apos;utilisateur consommateur dispose d&apos;un délai de 14 jours à compter de la
-          souscription pour se rétracter, sans avoir à se justifier, en écrivant à
-          contact@tcif-pro.fr. S&apos;il a demandé à utiliser le Service pendant ce délai, le
-          montant correspondant à la période déjà utilisée reste dû.{" "}
-          <ACompleter>à faire valider, selon la formule d&apos;essai retenue</ACompleter>
+          Conformément aux articles L221-18 et suivants du Code de la consommation, vous disposez
+          d&apos;un délai de 14 jours à compter de la souscription à un abonnement payant pour
+          exercer votre droit de rétractation, sans avoir à justifier de motifs ni à payer de
+          pénalités.
+        </p>
+        <p>
+          Pour exercer ce droit, vous devez nous notifier votre décision de rétractation par tout
+          moyen écrit non ambigu (email à{" "}
+          <a href="mailto:contact@tcif-pro.fr" className="text-accent hover:underline">contact@tcif-pro.fr</a>
+          ) avant l&apos;expiration de ce délai de 14 jours.
+        </p>
+        <p>
+          Toutefois, si vous demandez expressément à bénéficier du service immédiatement dès la
+          souscription, vous reconnaissez que votre droit de rétractation ne pourra plus être exercé
+          une fois le service pleinement exécuté, conformément à l&apos;article L221-28 13° du Code
+          de la consommation.
         </p>
       </Section>
 
