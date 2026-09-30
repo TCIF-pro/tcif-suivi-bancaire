@@ -1,5 +1,6 @@
 "use server";
 
+import { lireMontant } from "@/lib/montant";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
@@ -12,7 +13,8 @@ export async function updateAccountBalance(accountId: string, formData: FormData
   } = await supabase.auth.getUser();
   if (!user) return;
 
-  const startingBalance = Number(formData.get("starting_balance"));
+  const startingBalance = lireMontant(formData.get("starting_balance"));
+  if (startingBalance === null) return;
   const startingBalanceDate = String(formData.get("starting_balance_date"));
 
   await supabase

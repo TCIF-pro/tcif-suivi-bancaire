@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { lireMontant } from "@/lib/montant";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { parseTransactionType } from "@/lib/transactions/types";
@@ -16,7 +17,8 @@ function parseTransactionFormData(formData: FormData) {
     // Passe par le parseur partagé : un type inconnu retombe sur "expense"
     // plutôt que de heurter la contrainte CHECK de la base.
     type,
-    amount: Number(formData.get("amount")),
+    // « 12,50 » comme « 12.50 » : voir src/lib/montant.ts.
+    amount: lireMontant(formData.get("amount")),
     occurred_on: String(formData.get("occurred_on")),
     label: String(formData.get("label")),
     category_id: categoryId ? String(categoryId) : null,

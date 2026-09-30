@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { lireMontant } from "@/lib/montant";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { creerCompteEpargne } from "@/lib/accounts/create";
@@ -15,7 +16,8 @@ function parseSubscriptionFormData(formData: FormData) {
 
   return {
     name: String(formData.get("name")),
-    amount: Number(formData.get("amount")),
+    // « 12,50 » comme « 12.50 » : voir src/lib/montant.ts.
+    amount: lireMontant(formData.get("amount")),
     frequency: String(formData.get("frequency")),
     next_billing_date: String(formData.get("next_billing_date")),
     category_id: categoryId ? String(categoryId) : null,
