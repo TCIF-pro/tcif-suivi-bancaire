@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { PageLegale, Section } from "../components/PageLegale";
 
 export const metadata: Metadata = { title: "Mentions légales - TCIF" };
@@ -46,6 +47,19 @@ export default function MentionsLegales() {
           L&apos;application, son code, ses textes, son identité visuelle et le nom TCIF sont la
           propriété de l&apos;éditeur. Toute reproduction sans autorisation écrite est interdite.
           Les données saisies par chaque utilisateur restent sa propriété.
+        </p>
+      </Section>
+
+      <Section titre="Médiation de la consommation">
+        <p>
+          En cas de litige, après nous avoir sollicités et à défaut de réponse satisfaisante, vous
+          pouvez recourir gratuitement au médiateur de la consommation <strong>CM2C</strong>, 49 rue
+          de Ponthieu, 75008 Paris,{" "}
+          <a href="https://www.cm2c.net/declarer-un-litige.php" className="text-accent hover:underline">
+            www.cm2c.net
+          </a>
+          . Détails dans les{" "}
+          <Link href="/conditions" className="text-accent hover:underline">conditions générales</Link>.
         </p>
       </Section>
 
