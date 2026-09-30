@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { estAdmin, estDemo } from "@/lib/auth/roles";
+import { estAdmin, estDemo, estGratuitAVie } from "@/lib/auth/roles";
+import { gocardlessConfigure } from "@/lib/abonnement/gocardless";
+import type { StatutAbonnement } from "@/lib/abonnement/regles";
 import { ACCENT_COLORS, isAccentColorId, type AccentColorId } from "@/lib/accent-colors";
 import {
   updateAccountBalance,
@@ -13,6 +15,7 @@ import { QuickLabelsSection } from "./components/QuickLabelsSection";
 import { CategoriesSection } from "./components/CategoriesSection";
 import { DashboardCardsSection } from "./components/DashboardCardsSection";
 import { AlertesSection } from "./components/AlertesSection";
+import { AbonnementSection } from "./components/AbonnementSection";
 
 const MESSAGES_ERREUR: Record<string, string> = {
   "categorie-vide": "Le nom ne peut pas être vide.",
@@ -27,19 +30,28 @@ const MESSAGES_ERREUR: Record<string, string> = {
   "compte-nom-pris":
     "Un compte courant porte déjà ce nom. Choisis un autre nom pour ton compte d'épargne.",
   "compte-echec": "Le compte d'épargne n'a pas pu être créé. Retente dans un instant.",
+  abonnement: "La page de signature du mandat n'a pas pu être préparée. Retente dans un instant.",
+  resiliation:
+    "La résiliation n'a pas abouti. Retente dans un instant, ou écris au support : on s'en occupe.",
 };
 
 interface SettingsPageProps {
-  searchParams: Promise<{ erreur?: string }>;
+  searchParams: Promise<{ erreur?: string; abonnement?: string }>;
 }
 
 export default async function SettingsPage({ searchParams }: SettingsPageProps) {
-  const { erreur } = await searchParams;
+  const { erreur, abonnement } = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   const administrateur = estAdmin(user);
+  // Abonnement : seulement là où GoCardless est configuré (Preview pour
+  // l'instant), jamais pour le compte démo.
+  const avecAbonnement = gocardlessConfigure() && Boolean(user) && !estDemo(user);
+  const { data: ligneAbonnement } = avecAbonnement
+    ? await supabase.from("abonnements").select("statut").maybeSingle()
+    : { data: null };
 
   const [
     { data: settings },
@@ -139,6 +151,14 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
         >
           {MESSAGES_ERREUR[erreur] ?? "L'opération a échoué."}
         </p>
+      )}
+
+      {avecAbonnement && (
+        <AbonnementSection
+          gratuitAVie={estGratuitAVie(user)}
+          statut={(ligneAbonnement?.statut as StatutAbonnement | undefined) ?? null}
+          vientDeSigner={abonnement === "signe"}
+        />
       )}
 
       <section className="max-w-md rounded-2xl border border-border bg-surface p-5 shadow-card sm:p-6">

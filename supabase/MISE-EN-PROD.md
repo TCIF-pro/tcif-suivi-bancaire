@@ -365,3 +365,43 @@ de confirmation (Resend). Un compte jamais confirmé est supprimé au bout de
       app.tcif-pro.fr, ouvrir l'email, cliquer le lien. Tableau de bord et
       tutoriel doivent s'afficher ; /admin doit montrer le compte avec
       l'étiquette « inscription ».
+
+### Phase 3 : abonnement GoCardless (3,99 € par mois)
+
+Une seule formule, 3,99 € par mois, sans engagement. Réglages → « Abonnement »
+envoie vers GoCardless pour signer un mandat SEPA ; le webhook
+`/api/webhooks/gocardless` crée l'abonnement (premier prélèvement le
+1er décembre 2026 au plus tôt) puis tient le statut à jour (actif / en retard
+/ annulé). Pas encore de blocage de l'app selon le statut. La section
+n'apparaît que si `GOCARDLESS_ACCESS_TOKEN` est défini.
+
+Sandbox (Preview) :
+
+- [x] Compte **sandbox** GoCardless créé (manage-sandbox.gocardless.com,
+      compte séparé du live). Vercel, Preview : `GOCARDLESS_ACCESS_TOKEN`
+      (jeton sandbox) et `GOCARDLESS_ENVIRONMENT=sandbox`.
+- [ ] `0026_abonnements.sql` sur la base de **TEST**.
+- [ ] Sandbox → Developers → Create → Webhook endpoint, adresse :
+      `https://tcif-suivi-bancaire-git-<branche>-tcif1.vercel.app/api/webhooks/gocardless?x-vercel-protection-bypass=<VERCEL_BYPASS>`
+      (sans le paramètre, la protection des Preview bloque GoCardless).
+      Secret affiché une seule fois → Vercel, Preview :
+      `GOCARDLESS_WEBHOOK_SECRET`, puis redéployer.
+- [ ] Jeton **live** créé par erreur le 30/09/2026 : le révoquer dans le
+      dashboard GoCardless live (Developers → Access tokens).
+
+Accès gratuit à vie (Tom et son père), indépendant de GoCardless : marqueur
+`gratuit_a_vie` des app_metadata (que l'utilisateur ne peut pas modifier).
+SQL Editor, sur TEST puis sur la prod, en remplaçant les adresses :
+
+```sql
+update auth.users
+set raw_app_meta_data = raw_app_meta_data || '{"gratuit_a_vie": true}'
+where email in ('adresse-de-tom@exemple.fr', 'adresse-du-pere@exemple.fr');
+```
+
+Effet immédiat : Réglages relit l'utilisateur auprès de Supabase Auth
+(`getUser()`) à chaque affichage.
+
+Passage en live (phase 5), plus tard : `0026` sur la prod, jeton live et
+webhook live (`https://app.tcif-pro.fr/api/webhooks/gocardless`) en
+Production, `GOCARDLESS_ENVIRONMENT=live`.

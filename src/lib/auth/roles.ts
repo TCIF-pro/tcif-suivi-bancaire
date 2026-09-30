@@ -40,3 +40,12 @@ export function estDesactive(user: Pick<User, "banned_until"> | null): boolean {
 export function estDemo(user: Pick<User, "app_metadata"> | null): boolean {
   return user?.app_metadata?.role === "demo";
 }
+
+/**
+ * Accès gratuit à vie (Tom et son père) : jamais d'abonnement à payer,
+ * indépendamment de GoCardless. Posé à la main en SQL, voir
+ * supabase/MISE-EN-PROD.md (phase 3).
+ */
+export function estGratuitAVie(user: Pick<User, "app_metadata"> | null): boolean {
+  return user?.app_metadata?.gratuit_a_vie === true;
+}
