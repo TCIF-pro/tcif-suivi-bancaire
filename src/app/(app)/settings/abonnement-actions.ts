@@ -49,6 +49,7 @@ export async function sAbonner() {
           redirect_uri: `${retour}?abonnement=signe`,
           exit_uri: retour,
           prefilled_customer: { email: user.email },
+          language: "fr",
           links: { billing_request: billing_requests.id },
         },
       },

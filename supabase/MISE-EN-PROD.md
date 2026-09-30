@@ -399,8 +399,8 @@ set raw_app_meta_data = raw_app_meta_data || '{"gratuit_a_vie": true}'
 where email in ('adresse-de-tom@exemple.fr', 'adresse-du-pere@exemple.fr');
 ```
 
-La personne doit se reconnecter (ou attendre le renouvellement de sa session,
-une heure au plus) pour que l'app le voie.
+Effet immédiat : Réglages relit l'utilisateur auprès de Supabase Auth
+(`getUser()`) à chaque affichage.
 
 Passage en live (phase 5), plus tard : `0026` sur la prod, jeton live et
 webhook live (`https://app.tcif-pro.fr/api/webhooks/gocardless`) en
