@@ -1,4 +1,5 @@
 import "server-only";
+import { destinationEmail } from "./destination";
 
 // Envoi d'emails par l'API de Resend : un simple appel HTTP, aucune
 // bibliothèque à installer. `server-only` : la clé d'API ne doit jamais
@@ -37,21 +38,21 @@ export async function envoyerEmail({ to, subject, text, replyTo }: EmailTexte): 
     return false;
   }
 
-  // Hors production (Preview, local), AUCUN email ne part vers son vrai
-  // destinataire : il est redirigé vers SUPPORT_EMAIL_TO, le vrai
-  // destinataire indiqué dans l'objet. La base de test contient des adresses
-  // fictives ; un email envoyé à une adresse qui n'existe pas « rebondit »,
-  // et les rebonds abîment la réputation du domaine d'envoi auprès de Gmail
-  // ou d'Outlook. Et un test ne doit jamais écrire à une vraie personne.
-  if (process.env.VERCEL_ENV !== "production") {
-    const boiteDeTest = process.env.SUPPORT_EMAIL_TO;
-    if (!boiteDeTest) {
-      console.warn("[email] hors production sans SUPPORT_EMAIL_TO : email non envoyé");
-      return false;
-    }
-    subject = `[TEST → ${to}] ${subject}`;
-    to = boiteDeTest;
+  // Hors production, l'email peut être redirigé vers la boîte de test : la
+  // règle complète est dans destination.ts.
+  const destination = destinationEmail(
+    { to, subject },
+    {
+      VERCEL_ENV: process.env.VERCEL_ENV,
+      SUPPORT_EMAIL_TO: process.env.SUPPORT_EMAIL_TO,
+      EMAILS_TEST_AUTORISES: process.env.EMAILS_TEST_AUTORISES,
+    },
+  );
+  if (!destination) {
+    console.warn("[email] hors production sans SUPPORT_EMAIL_TO : email non envoyé");
+    return false;
   }
+  ({ to, subject } = destination);
 
   try {
     const reponse = await fetch("https://api.resend.com/emails", {

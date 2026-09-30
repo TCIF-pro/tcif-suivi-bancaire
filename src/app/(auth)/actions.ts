@@ -34,6 +34,11 @@ export async function signIn(formData: FormData) {
   // mentionne les deux cas.
   return {
     error: Boolean(error),
+    // Adresse pas encore confirmée (inscription en libre-service, V3). Aucune
+    // fuite ici, contrairement au compte désactivé : Supabase ne répond
+    // `email_not_confirmed` qu'avec le BON mot de passe (vérifié sur la base
+    // de test). Un mauvais mot de passe donne toujours `invalid_credentials`.
+    nonConfirme: error?.code === "email_not_confirmed",
     // Mot de passe provisoire : la page de connexion enchaîne directement sur
     // le formulaire de changement au lieu du tableau de bord.
     doitChangerMotDePasse: doitChangerMotDePasse(data.user),

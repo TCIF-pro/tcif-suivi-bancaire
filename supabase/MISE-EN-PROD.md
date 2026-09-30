@@ -333,3 +333,35 @@ bientôt » et la démo), `/mentions-legales`, `/conditions` et
       médiateur de la consommation, formules et prix restent à fournir, et
       l'ensemble à faire valider par un professionnel. Vérifier avant le push :
       `grep -rn "<ACompleter" "src/app/(public)"` ne doit rien renvoyer.
+
+### Phase 2 : inscription en libre-service
+
+L'inscription publique de Supabase reste **désactivée** : le serveur crée le
+compte lui-même, après le captcha Cloudflare Turnstile, puis envoie l'email
+de confirmation (Resend). Un compte jamais confirmé est supprimé au bout de
+7 jours (étape `comptesNonConfirmes` de la tâche du matin).
+
+- [ ] `0025_inscription.sql` - SQL Editor de la prod → Run, **avant** de
+      pousser `main` (la page /admin et l'inscription lisent ses colonnes et
+      sa fonction).
+- [ ] Supabase **prod** → Authentication → Sign In / Providers : « Allow new
+      users to sign up » **décoché** (c'est notre serveur qui crée les comptes).
+- [x] Cloudflare → Turnstile : deux widgets créés le 28/09/2026, « Production »
+      (`app.tcif-pro.fr`) et « Preview / Local » (`localhost` + alias de
+      branche Vercel).
+- [ ] Vercel, **Production** : `NEXT_PUBLIC_TURNSTILE_SITE_KEY` et
+      `TURNSTILE_SECRET_KEY` du widget Production. **Preview** : ceux du widget
+      Preview / Local. En local : `.env.local` (widget Preview / Local).
+- [ ] Widget Preview / Local : n'accepte que les noms de domaine listés. Y
+      ajouter l'**alias fixe** de chaque branche qui touche à l'inscription,
+      `tcif-suivi-bancaire-git-<branche>-tcif1.vercel.app` (jamais `vercel.app`
+      entier, qui ouvrirait la clé à tous les sites Vercel), et tester via cet
+      alias, pas via l'adresse du déploiement (avec hash).
+- [ ] **Ouverture des inscriptions** : seulement après la validation des pages
+      légales et le choix du médiateur. Vercel, Production :
+      `INSCRIPTIONS_OUVERTES=true`, puis redéployer. Pour refermer : supprimer
+      la variable et redéployer.
+- [ ] Après ouverture : créer un compte avec une adresse à toi sur
+      app.tcif-pro.fr, ouvrir l'email, cliquer le lien. Tableau de bord et
+      tutoriel doivent s'afficher ; /admin doit montrer le compte avec
+      l'étiquette « inscription ».

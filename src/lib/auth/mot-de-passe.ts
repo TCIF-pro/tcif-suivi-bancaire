@@ -19,5 +19,4 @@ export function genererMotDePasseProvisoire(): string {
   return groupes.join("-");
 }
 
-/** Longueur minimale d'un mot de passe choisi par l'utilisateur. */
-export const LONGUEUR_MIN_MOT_DE_PASSE = 10;
+export { LONGUEUR_MIN_MOT_DE_PASSE } from "./longueur-mot-de-passe";
