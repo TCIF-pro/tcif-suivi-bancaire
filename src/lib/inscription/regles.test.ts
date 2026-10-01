@@ -70,6 +70,8 @@ describe("emails de l'inscription", () => {
     expect(e.subject).toBe("Confirme ton adresse pour TCIF");
     expect(e.text).toContain("https://app.tcif-pro.fr/auth/confirm?token_hash=abc&type=signup&next=/dashboard");
     expect(e.text).toContain("Tu n'as pas créé de compte ? Ignore cet email");
+    expect(e.html).toContain(">Confirmer mon adresse</a>");
+    expect(e.text).toContain("Ce lien est valable une heure");
   });
   it("compte existant : liens de connexion et de mot de passe oublié", () => {
     const e = emailCompteExistant("https://app.tcif-pro.fr");
@@ -79,6 +81,6 @@ describe("emails de l'inscription", () => {
   it("tirets courts uniquement", () => {
     const tout = [emailConfirmation("x"), emailCompteExistant("x")].map((e) => e.subject + e.text).join("");
     expect(tout).not.toContain("—");
-    expect(tout).toContain("\n-\nTCIF");
+    expect(tout).toContain("\n--\nTCIF");
   });
 });

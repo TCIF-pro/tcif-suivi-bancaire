@@ -1,3 +1,4 @@
+import { email, type Email } from "@/lib/email/gabarit";
 import { formatCurrency, formatDateLong } from "@/lib/format";
 import type { RunwayResult } from "@/lib/runway/compute";
 import type { NotificationPush } from "@/lib/push/contenu";
@@ -34,11 +35,6 @@ export function deciderAlerte(tresorerie: RunwayResult, dejaEnvoyeeLe: string | 
   return dejaEnvoyeeLe === null ? "rien" : "rearmer";
 }
 
-export interface EmailAlerte {
-  subject: string;
-  text: string;
-}
-
 export function emailAlerte({
   nomCompte,
   tresorerie,
@@ -49,7 +45,7 @@ export function emailAlerte({
   tresorerie: RunwayResult;
   lienTableauDeBord: string;
   lienReglages: string;
-}): EmailAlerte {
+}): Email {
   const jours = tresorerie.daysRemaining ?? 0;
   const date = tresorerie.zeroDate ? formatDateLong(tresorerie.zeroDate) : null;
 
@@ -65,23 +61,18 @@ export function emailAlerte({
       ? "aujourd'hui"
       : `le ${date} (dans ${jours} jour${jours > 1 ? "s" : ""})`;
 
-  const text = [
-    "Salut,",
-    "",
-    `Si rien ne rentre d'ici là, ton compte ${nomCompte} sera à zéro ${quand}, à cause des prélèvements prévus.`,
-    "",
-    `Solde actuel : ${formatCurrency(tresorerie.currentBalance)}`,
-    "",
-    `Regarde ce qui arrive sur ton tableau de bord : ${lienTableauDeBord}`,
-    "",
-    "Un salaire ou un virement est prévu ? Ajoute-le en opération à venir : il sera pris en compte dans le calcul.",
-    "",
-    "-",
-    "TCIF",
-    `Tu reçois cet email parce que l'alerte de trésorerie est activée. Pour la couper : Réglages → Alertes, ${lienReglages}`,
-  ].join("\n");
-
-  return { subject, text };
+  return email(subject, {
+    titre: jours === 0 ? `${nomCompte} arrive à zéro aujourd'hui` : `Trésorerie basse sur ${nomCompte}`,
+    paragraphes: [
+      `Si rien ne rentre d'ici là, ton compte ${nomCompte} sera à zéro ${quand}, à cause des prélèvements prévus.`,
+    ],
+    details: [["Solde actuel", formatCurrency(tresorerie.currentBalance)]],
+    bouton: { libelle: "Voir mon tableau de bord", url: lienTableauDeBord },
+    apres: [
+      "Un salaire ou un virement est prévu ? Ajoute-le en opération à venir : il sera pris en compte dans le calcul.",
+    ],
+    raison: `l'alerte de trésorerie est activée. Pour la couper : Réglages → Alertes, ${lienReglages}`,
+  });
 }
 
 // Version notification push : courte, un iPhone n'affiche que deux ou trois

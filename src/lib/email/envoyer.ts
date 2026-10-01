@@ -5,10 +5,12 @@ import { destinationEmail } from "./destination";
 // bibliothèque à installer. `server-only` : la clé d'API ne doit jamais
 // atteindre le navigateur, la compilation échoue si ce module y est importé.
 
-interface EmailTexte {
+interface EmailAEnvoyer {
   to: string;
   subject: string;
   text: string;
+  /** Version HTML, produite par le gabarit commun (gabarit.ts), qui échappe tout le texte. */
+  html?: string;
   /** Adresse utilisée quand le destinataire clique sur « Répondre ». */
   replyTo?: string;
 }
@@ -21,15 +23,16 @@ function uneSeuleLigne(valeur: string): string {
 }
 
 /**
- * Envoie un email en TEXTE BRUT. Jamais en HTML : le contenu vient en partie
- * de ce qu'un utilisateur a tapé, et du HTML permettrait d'y glisser des liens
- * ou du code déguisés.
+ * Envoie un email : la version texte brut toujours, et la version HTML quand
+ * elle est fournie. Le HTML ne vient QUE du gabarit commun (gabarit.ts), qui
+ * échappe tout ce qu'un utilisateur a pu taper : jamais de HTML assemblé à la
+ * main ailleurs, il permettrait d'y glisser des liens ou du code déguisés.
  *
  * Ne lève jamais d'exception : renvoie `false` si l'envoi n'a pas eu lieu,
  * pour que l'appelant garde la main (le message du support est déjà
  * enregistré, un échec d'envoi ne doit pas le faire perdre).
  */
-export async function envoyerEmail({ to, subject, text, replyTo }: EmailTexte): Promise<boolean> {
+export async function envoyerEmail({ to, subject, text, html, replyTo }: EmailAEnvoyer): Promise<boolean> {
   const cle = process.env.RESEND_API_KEY;
   const expediteur = process.env.EMAIL_FROM;
 
@@ -66,6 +69,7 @@ export async function envoyerEmail({ to, subject, text, replyTo }: EmailTexte): 
         to: [to],
         subject: uneSeuleLigne(subject),
         text,
+        ...(html ? { html } : {}),
         ...(replyTo ? { reply_to: uneSeuleLigne(replyTo) } : {}),
       }),
     });

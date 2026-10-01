@@ -1,4 +1,5 @@
 import { LONGUEUR_MIN_MOT_DE_PASSE } from "@/lib/auth/longueur-mot-de-passe";
+import { email, type Email } from "@/lib/email/gabarit";
 
 // Règles de l'inscription en libre-service (V3, phase 2) : validation du
 // formulaire et textes des emails. Sans accès au serveur ni à la base, pour
@@ -87,43 +88,35 @@ export function suiteRenvoi(
   return suite === "recreer" ? "renvoyer" : (suite as SuiteRenvoi);
 }
 
-export function emailConfirmation(lien: string): { subject: string; text: string } {
-  return {
-    subject: "Confirme ton adresse pour TCIF",
-    text: [
-      "Salut !",
-      "",
-      "Bienvenue sur TCIF. Pour activer ton compte, confirme ton adresse en ouvrant ce lien :",
-      "",
-      lien,
-      "",
-      "Le lien n'est valable que peu de temps. S'il a expiré, tu pourras en demander un nouveau depuis la page qui s'ouvrira.",
-      "",
+export function emailConfirmation(lien: string): Email {
+  return email("Confirme ton adresse pour TCIF", {
+    titre: "Confirme ton adresse",
+    apercu: "Une dernière étape pour activer ton compte TCIF.",
+    paragraphes: [
+      "Bienvenue sur TCIF ! Il reste une étape pour activer ton compte : confirmer que cette adresse est bien la tienne.",
+    ],
+    bouton: { libelle: "Confirmer mon adresse", url: lien, lienDeSecours: true },
+    apres: [
+      "Ce lien est valable une heure et ne sert qu'une fois. S'il a expiré, tu pourras en demander un nouveau depuis la page qui s'ouvrira.",
       "Tu n'as pas créé de compte ? Ignore cet email : rien ne sera activé.",
-      "",
-      "-",
-      "TCIF",
-    ].join("\n"),
-  };
+    ],
+    raison: "quelqu'un a créé un compte TCIF avec cette adresse.",
+  });
 }
 
-export function emailCompteExistant(base: string): { subject: string; text: string } {
-  return {
-    subject: "Tu as déjà un compte TCIF",
-    text: [
-      "Salut !",
-      "",
-      "Quelqu'un, sans doute toi, a voulu créer un compte TCIF avec cette adresse. Elle en a déjà un.",
-      "",
-      `Pour te connecter : ${base}/login`,
-      `Mot de passe oublié : ${base}/mot-de-passe-oublie`,
-      "",
+export function emailCompteExistant(base: string): Email {
+  return email("Tu as déjà un compte TCIF", {
+    titre: "Tu as déjà un compte",
+    paragraphes: [
+      "Quelqu'un, sans doute toi, a voulu créer un compte TCIF avec cette adresse. Elle en a déjà un : connecte-toi simplement.",
+    ],
+    bouton: { libelle: "Me connecter", url: `${base}/login` },
+    apres: [
+      `Mot de passe oublié ? Choisis-en un nouveau ici : ${base}/mot-de-passe-oublie`,
       "Si ce n'était pas toi, ignore cet email : rien n'a changé.",
-      "",
-      "-",
-      "TCIF",
-    ].join("\n"),
-  };
+    ],
+    raison: "quelqu'un a voulu créer un compte TCIF avec cette adresse.",
+  });
 }
 
 // Compte à supprimer par la tâche du matin : jamais confirmé, créé il y a

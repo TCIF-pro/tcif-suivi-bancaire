@@ -70,7 +70,8 @@ describe("emailRappel", () => {
     expect(e.subject).toBe("Ça fait 9 jours... tes dépenses t'attendent sur TCIF");
     expect(e.text).toContain("Ça fait 9 jours que t'as rien noté sur TCIF.");
     expect(e.text).toContain("au lieu d'être dans la merde en fin de mois.");
-    expect(e.text).toContain(`👉 ${liens.lienAjout}`);
+    expect(e.text).toContain(`Noter mes dépenses : ${liens.lienAjout}`);
+    expect(e.html).toContain(">Noter mes dépenses</a>");
     expect(e.text).toContain(`Pour les couper : Réglages → Alertes, ${liens.lienReglages}`);
     expect(e.text).not.toContain("dernier rappel");
   });
@@ -84,6 +85,6 @@ describe("emailRappel", () => {
   it("tirets courts uniquement", () => {
     const e = emailRappel({ joursSansSaisie: 21, numero: 3, ...liens });
     expect(e.subject + e.text).not.toContain("—");
-    expect(e.text).toContain("\n-\nTCIF");
+    expect(e.text).toContain("\n--\nTCIF");
   });
 });

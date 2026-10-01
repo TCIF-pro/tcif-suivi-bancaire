@@ -1,4 +1,5 @@
 import { daysBetween } from "@/lib/dates";
+import { email, type Email } from "@/lib/email/gabarit";
 import type { NotificationPush } from "@/lib/push/contenu";
 
 // Rappel « tu n'as rien saisi depuis un moment » : la règle de décision et le
@@ -59,22 +60,16 @@ export function emailRappel({
   numero: number;
   lienAjout: string;
   lienReglages: string;
-}): { subject: string; text: string } {
-  return {
-    subject: `Ça fait ${joursSansSaisie} jours... tes dépenses t'attendent sur TCIF`,
-    text: [
-      "Salut !",
-      "",
+}): Email {
+  return email(`Ça fait ${joursSansSaisie} jours... tes dépenses t'attendent sur TCIF`, {
+    titre: "Tes dépenses t'attendent",
+    paragraphes: [
       `Ça fait ${joursSansSaisie} jours que t'as rien noté sur TCIF. Deux minutes pour rentrer tes dépenses, et tu sais exactement où t'en es, au lieu d'être dans la merde en fin de mois.`,
-      "",
-      `👉 ${lienAjout}`,
-      ...(numero >= RAPPELS_MAX ? ["", "C'est le dernier rappel : après, on te laisse tranquille."] : []),
-      "",
-      "-",
-      "TCIF",
-      `Tu reçois cet email parce que les rappels de saisie sont activés. Pour les couper : Réglages → Alertes, ${lienReglages}`,
-    ].join("\n"),
-  };
+    ],
+    bouton: { libelle: "Noter mes dépenses", url: lienAjout },
+    apres: numero >= RAPPELS_MAX ? ["C'est le dernier rappel : après, on te laisse tranquille."] : [],
+    raison: `les rappels de saisie sont activés. Pour les couper : Réglages → Alertes, ${lienReglages}`,
+  });
 }
 
 // Version notification push du rappel, même ton en plus court.
