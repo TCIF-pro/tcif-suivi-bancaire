@@ -1,4 +1,5 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
+import { addDaysToDateString } from "@/lib/dates";
 
 // Règles de l'abonnement TCIF (V3, phase 3), sans appel réseau : testées
 // dans regles.test.ts.
@@ -54,4 +55,55 @@ export function signatureValide(corps: string, signature: string | null, secret:
   const attendue = Buffer.from(createHmac("sha256", secret).update(corps).digest("hex"));
   const recue = Buffer.from(signature);
   return attendue.length === recue.length && timingSafeEqual(attendue, recue);
+}
+
+// ---------------------------------------------------------------------------
+// Impayés (migration 0027)
+// ---------------------------------------------------------------------------
+
+/** Délai de grâce après le premier impayé, avant la suspension de l'accès. */
+export const JOURS_DE_GRACE = 7;
+/** L'email de rappel part ce nombre de jours avant la suspension (J+5). */
+export const JOURS_RAPPEL_AVANT_BLOCAGE = 2;
+
+/**
+ * Jour où l'accès est suspendu : 7 jours après le premier impayé, mais jamais
+ * avant le 1er décembre 2026, puisque l'app est gratuite jusque-là (un mandat
+ * qui meurt en octobre ne doit pas bloquer qui que ce soit en octobre).
+ */
+export function jourDeBlocage(impayeDepuis: string): string {
+  const apresGrace = addDaysToDateString(impayeDepuis, JOURS_DE_GRACE);
+  return apresGrace > DEBUT_FACTURATION ? apresGrace : DEBUT_FACTURATION;
+}
+
+/** Ce que la tâche du matin doit faire pour un abonnement en impayé. */
+export function decisionImpaye(
+  impayeDepuis: string,
+  rappelDejaEnvoye: boolean,
+  aujourdhui: string,
+): "bloquer" | "rappeler" | null {
+  const blocage = jourDeBlocage(impayeDepuis);
+  if (aujourdhui >= blocage) return "bloquer";
+  if (!rappelDejaEnvoye && aujourdhui >= addDaysToDateString(blocage, -JOURS_RAPPEL_AVANT_BLOCAGE)) {
+    return "rappeler";
+  }
+  return null;
+}
+
+/**
+ * Situation à signaler à l'utilisateur (bandeau, écran de blocage) :
+ * - « paiement » : le dernier prélèvement a échoué, le mandat est valable,
+ *   on peut le relancer ;
+ * - « mandat » : le mandat n'est plus valable (compte clôturé, opposition),
+ *   il faut en signer un nouveau.
+ * Un abonnement résilié par la personne elle-même n'est pas un impayé.
+ */
+export function situationImpaye(ligne: {
+  statut: StatutAbonnement;
+  impaye_depuis: string | null;
+} | null): "paiement" | "mandat" | null {
+  if (!ligne?.impaye_depuis) return null;
+  if (ligne.statut === "en_retard") return "paiement";
+  if (ligne.statut === "annule") return "mandat";
+  return null;
 }

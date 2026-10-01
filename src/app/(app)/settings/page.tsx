@@ -50,7 +50,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
   // l'instant), jamais pour le compte démo.
   const avecAbonnement = gocardlessConfigure() && Boolean(user) && !estDemo(user);
   const { data: ligneAbonnement } = avecAbonnement
-    ? await supabase.from("abonnements").select("statut").maybeSingle()
+    ? await supabase.from("abonnements").select("statut, impaye_depuis").maybeSingle()
     : { data: null };
 
   const [
@@ -157,6 +157,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
         <AbonnementSection
           gratuitAVie={estGratuitAVie(user)}
           statut={(ligneAbonnement?.statut as StatutAbonnement | undefined) ?? null}
+          mandatInvalide={ligneAbonnement?.statut === "annule" && Boolean(ligneAbonnement?.impaye_depuis)}
           vientDeSigner={abonnement === "signe"}
         />
       )}

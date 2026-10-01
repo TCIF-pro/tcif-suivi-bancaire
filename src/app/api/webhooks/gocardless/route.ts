@@ -1,7 +1,14 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { ErreurGoCardless, gocardless } from "@/lib/abonnement/gocardless";
-import { dateDebut, PRIX_CENTIMES, signatureValide, statutApres } from "@/lib/abonnement/regles";
+import { dateDebut, jourDeBlocage, PRIX_CENTIMES, signatureValide, statutApres } from "@/lib/abonnement/regles";
+import { changerSuspension } from "@/lib/abonnement/suspension";
+import { emailImpaye } from "@/lib/abonnement/emails";
+import { envoyerEmail } from "@/lib/email/envoyer";
+import { jamaisSuspendu } from "@/lib/auth/roles";
+import { peutRecevoirEmails } from "@/lib/alertes/destinataires";
+import { adresseDeLApp } from "@/lib/app-url";
+import { todayDateString } from "@/lib/dates";
 
 // Webhook GoCardless (V3, phase 3). Hors du proxy (`/api/` n'y passe pas) :
 // pas de session ici, l'authenticité vient de la signature du corps.
@@ -14,6 +21,7 @@ type Evenement = {
   resource_type: string;
   action: string;
   links: Record<string, string>;
+  details?: { cause?: string };
 };
 
 export async function POST(request: Request) {
@@ -44,32 +52,86 @@ async function traiter(evenement: Evenement) {
   const statut = statutApres(evenement);
   if (!statut) return;
 
-  // Retrouver l'abonné : par le mandat, par l'abonnement, ou, pour un
-  // paiement, par l'abonnement qui l'a créé.
-  let colonne: "gc_mandate" | "gc_subscription";
+  // Abonnement résilié PARCE QUE son mandat est mort : c'est l'événement du
+  // mandat qui s'en charge (impayé « mandat »). Sans ce filtre, s'il arrivait
+  // en premier, il ferait passer l'abonnement pour résilié volontairement.
+  if (evenement.resource_type === "subscriptions" && evenement.details?.cause?.startsWith("mandate_")) {
+    return;
+  }
+
+  // Retrouver l'abonné : par l'abonnement, ou par le mandat (un paiement
+  // porte toujours son mandat).
+  const admin = createAdminClient();
+  let colonne: "gc_mandate" | "gc_subscription" = "gc_mandate";
   let valeur: string | undefined;
-  if (evenement.resource_type === "mandates") {
-    colonne = "gc_mandate";
-    valeur = evenement.links.mandate;
-  } else if (evenement.resource_type === "subscriptions") {
+  if (evenement.resource_type === "subscriptions") {
     colonne = "gc_subscription";
     valeur = evenement.links.subscription;
+  } else if (evenement.resource_type === "mandates") {
+    valeur = evenement.links.mandate;
   } else {
-    const { payments } = await gocardless<{ payments: { links: { subscription?: string } } }>(
+    const { payments } = await gocardless<{ payments: { links: { mandate: string } } }>(
       `/payments/${evenement.links.payment}`,
     );
-    colonne = "gc_subscription";
-    valeur = payments.links.subscription;
+    valeur = payments.links.mandate;
   }
   if (!valeur) return;
 
-  let requete = createAdminClient().from("abonnements").update({ statut }).eq(colonne, valeur);
-  // Un paiement ne ressuscite jamais un abonnement résilié : un « confirmed »
-  // arrivé en retard ne doit pas le repasser en actif.
-  if (evenement.resource_type === "payments") requete = requete.neq("statut", "annule");
-  const { error } = await requete;
+  const { data: ligne, error } = await admin
+    .from("abonnements")
+    .select("user_id, statut, impaye_depuis")
+    .eq(colonne, valeur)
+    .maybeSingle();
   if (error) throw error;
-  console.log(`[gocardless] ${nom} ${valeur} -> ${statut}`);
+  // Compte supprimé, ou mandat qui n'est plus celui de l'abonné : rien à faire.
+  if (!ligne) return;
+
+  const aujourdhui = todayDateString();
+  let modification: Record<string, unknown>;
+  let premierImpaye: "paiement" | "mandat" | null = null;
+
+  if (evenement.resource_type === "subscriptions") {
+    modification = { statut };
+  } else if (ligne.statut === "annule") {
+    // Un abonnement résilié ne revit pas avec un paiement arrivé en retard,
+    // et la mort d'un mandat dont on n'a plus besoin n'est pas un impayé.
+    return;
+  } else if (statut === "actif") {
+    modification = { statut, impaye_depuis: null, gc_paiement_impaye: null, rappel_impaye_envoye_le: null };
+  } else {
+    // Prélèvement échoué (en_retard) ou mandat mort (annule). La date du
+    // PREMIER impayé est gardée : une relance qui échoue ne prolonge pas la
+    // période de grâce.
+    modification = { statut, impaye_depuis: ligne.impaye_depuis ?? aujourdhui };
+    if (evenement.resource_type === "payments") modification.gc_paiement_impaye = evenement.links.payment;
+    if (!ligne.impaye_depuis) premierImpaye = statut === "en_retard" ? "paiement" : "mandat";
+  }
+
+  const { error: erreurMaj } = await admin.from("abonnements").update(modification).eq("user_id", ligne.user_id);
+  if (erreurMaj) throw erreurMaj;
+  console.log(`[gocardless] ${nom} ${valeur} -> ${statut} (utilisateur ${ligne.user_id})`);
+
+  // Sans condition sur l'impayé : si une première tentative avait échoué
+  // après la mise à jour de la ligne, le renvoi par GoCardless lève quand même
+  // la suspension.
+  if (statut === "actif") await changerSuspension(admin, ligne.user_id, false);
+  if (premierImpaye) await prevenirImpaye(admin, ligne.user_id, premierImpaye, modification.impaye_depuis as string);
+}
+
+// Email du premier impayé. Un échec d'envoi ne fait pas échouer le webhook :
+// le bandeau dans l'app prévient de toute façon.
+async function prevenirImpaye(
+  admin: ReturnType<typeof createAdminClient>,
+  userId: string,
+  situation: "paiement" | "mandat",
+  impayeDepuis: string,
+) {
+  const { data } = await admin.auth.admin.getUserById(userId);
+  const user = data?.user;
+  if (!user || jamaisSuspendu(user) || !peutRecevoirEmails(user)) return;
+  const email = emailImpaye(situation, `${adresseDeLApp()}/abonnement-impaye`, jourDeBlocage(impayeDepuis));
+  const envoye = await envoyerEmail({ to: user.email as string, ...email });
+  console.log(`[gocardless] email d'impayé (${situation}) ${envoye ? "envoyé" : "NON envoyé"} à ${userId}`);
 }
 
 // Mandat signé : on crée l'abonnement à 3,99 € par mois. Ici et non au retour
@@ -121,13 +183,19 @@ async function activer(idDemande: string) {
     idAbonnement = existant;
   }
 
-  const { error } = await createAdminClient().from("abonnements").upsert({
+  // Nouveau mandat après un impayé : l'impayé est effacé et l'accès revient.
+  const admin = createAdminClient();
+  const { error } = await admin.from("abonnements").upsert({
     user_id: userId,
     statut: "actif",
     gc_customer: demande.links.customer,
     gc_mandate: mandat,
     gc_subscription: idAbonnement,
+    impaye_depuis: null,
+    gc_paiement_impaye: null,
+    rappel_impaye_envoye_le: null,
   });
   if (error) throw error;
+  await changerSuspension(admin, userId, false);
   console.log(`[gocardless] abonnement ${idAbonnement} actif pour ${userId}`);
 }

@@ -12,7 +12,7 @@ import type { User } from "@supabase/supabase-js";
 // jamais sur `getSession()`, qui se contente de relire le cookie.
 
 /** Le compte administrateur, qui gère les comptes depuis /admin. */
-export function estAdmin(user: User | null): boolean {
+export function estAdmin(user: Pick<User, "app_metadata"> | null): boolean {
   return user?.app_metadata?.role === "admin";
 }
 
@@ -48,4 +48,21 @@ export function estDemo(user: Pick<User, "app_metadata"> | null): boolean {
  */
 export function estGratuitAVie(user: Pick<User, "app_metadata"> | null): boolean {
   return user?.app_metadata?.gratuit_a_vie === true;
+}
+
+/**
+ * Accès suspendu pour impayé (V3) : posé par la tâche du matin après le délai
+ * de grâce, retiré par le webhook GoCardless dès qu'un paiement passe ou
+ * qu'un nouveau mandat est signé. Le proxy envoie alors toutes les pages vers
+ * /abonnement-impaye. Lu sur `getUser()`, qui interroge Supabase Auth à
+ * chaque requête : la suspension et sa levée s'appliquent dès la page
+ * suivante, sans attendre le renouvellement du jeton de session.
+ */
+export function estAccesSuspendu(user: Pick<User, "app_metadata"> | null): boolean {
+  return user?.app_metadata?.acces_suspendu === true && !jamaisSuspendu(user);
+}
+
+/** Comptes qui ne sont jamais suspendus, quoi qu'il arrive côté paiement. */
+export function jamaisSuspendu(user: Pick<User, "app_metadata"> | null): boolean {
+  return estGratuitAVie(user) || estAdmin(user) || estDemo(user);
 }

@@ -1,6 +1,6 @@
 import { createHmac } from "node:crypto";
 import { describe, expect, it } from "vitest";
-import { dateDebut, signatureValide, statutApres } from "./regles";
+import { dateDebut, decisionImpaye, jourDeBlocage, signatureValide, situationImpaye, statutApres } from "./regles";
 
 describe("dateDebut : premier prélèvement", () => {
   it("signé avant le 1er décembre 2026 : le 1er décembre", () => {
@@ -51,5 +51,59 @@ describe("signatureValide : webhook", () => {
     expect(signatureValide(corps, null, secret)).toBe(false);
     expect(signatureValide(corps, "abc", secret)).toBe(false);
     expect(signatureValide(corps, bonne, "")).toBe(false);
+  });
+});
+
+describe("jourDeBlocage : 7 jours de grâce, jamais avant le 1er décembre 2026", () => {
+  it("impayé en décembre : 7 jours après", () => {
+    expect(jourDeBlocage("2026-12-03")).toBe("2026-12-10");
+    expect(jourDeBlocage("2027-01-28")).toBe("2027-02-04");
+  });
+
+  it("mandat mort en octobre : pas de blocage avant le 1er décembre", () => {
+    expect(jourDeBlocage("2026-10-05")).toBe("2026-12-01");
+    expect(jourDeBlocage("2026-11-24")).toBe("2026-12-01");
+    expect(jourDeBlocage("2026-11-25")).toBe("2026-12-02");
+  });
+});
+
+describe("decisionImpaye : tâche du matin", () => {
+  it("rien les 4 premiers jours", () => {
+    for (const jour of ["2026-12-03", "2026-12-05", "2026-12-07"]) {
+      expect(decisionImpaye("2026-12-03", false, jour)).toBeNull();
+    }
+  });
+
+  it("rappel à J+5 (2 jours avant), une seule fois", () => {
+    expect(decisionImpaye("2026-12-03", false, "2026-12-08")).toBe("rappeler");
+    expect(decisionImpaye("2026-12-03", false, "2026-12-09")).toBe("rappeler");
+    expect(decisionImpaye("2026-12-03", true, "2026-12-08")).toBeNull();
+  });
+
+  it("blocage à J+7, rappel envoyé ou non", () => {
+    expect(decisionImpaye("2026-12-03", true, "2026-12-10")).toBe("bloquer");
+    expect(decisionImpaye("2026-12-03", false, "2026-12-15")).toBe("bloquer");
+  });
+
+  it("mandat mort en octobre : rappel le 29 novembre, blocage le 1er décembre", () => {
+    expect(decisionImpaye("2026-10-05", false, "2026-10-12")).toBeNull();
+    expect(decisionImpaye("2026-10-05", false, "2026-11-29")).toBe("rappeler");
+    expect(decisionImpaye("2026-10-05", true, "2026-12-01")).toBe("bloquer");
+  });
+});
+
+describe("situationImpaye : bandeau et écran de blocage", () => {
+  it("prélèvement échoué : relancer", () => {
+    expect(situationImpaye({ statut: "en_retard", impaye_depuis: "2026-12-03" })).toBe("paiement");
+  });
+
+  it("mandat mort : signer un nouveau mandat", () => {
+    expect(situationImpaye({ statut: "annule", impaye_depuis: "2026-12-03" })).toBe("mandat");
+  });
+
+  it("résilié par la personne, actif, ou pas d'abonnement : rien", () => {
+    expect(situationImpaye({ statut: "annule", impaye_depuis: null })).toBeNull();
+    expect(situationImpaye({ statut: "actif", impaye_depuis: null })).toBeNull();
+    expect(situationImpaye(null)).toBeNull();
   });
 });
