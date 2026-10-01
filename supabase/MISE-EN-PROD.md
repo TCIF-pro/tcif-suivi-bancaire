@@ -123,11 +123,28 @@ avec les environnements où elle existe (Production, Preview, Development).
 - [ ] **Modèles d'email en français** : Authentication → Emails → Templates.
       Un fichier par modèle dans `supabase/templates/`, avec en tête l'objet à
       saisir (Subject) ; coller tout le fichier dans « Message body ».
-      - Confirm signup : `confirmation.html`
-      - Reset Password : `reset-password.html`
-      - Magic Link : `magic-link.html`
-      - Change Email Address : `changement-email.html`
+      Onglet des emails d'authentification :
+      - Confirm sign up : `confirmation.html`
       - Invite user : `invitation.html`
+      - Magic link or OTP : `magic-link.html`
+      - Change email address : `changement-email.html`
+      - Reset password : `reset-password.html`
+      - Reauthentication : `reauthentification.html`
+
+      Notifications de sécurité (chacune a son interrupteur : l'activer après
+      avoir collé le modèle, sinon elle ne part pas) :
+      - Password changed : `mot-de-passe-modifie.html`
+      - Email address changed : `adresse-modifiee.html`
+      - Phone number changed : `telephone-modifie.html`
+      - Sign-in method linked : `methode-connexion-ajoutee.html`
+      - Sign-in method removed : `methode-connexion-retiree.html`
+      - Verification method added : `verification-ajoutee.html`
+      - Verification method removed : `verification-retiree.html`
+
+      Utiles dès aujourd'hui : Reset password, Password changed et Email
+      address changed. Les autres concernent des fonctions que l'app
+      n'utilise pas encore (téléphone, Google, vérification en deux étapes) :
+      à coller quand même, pour qu'aucun email anglais par défaut ne parte.
 
       Ces fichiers sont GÉNÉRÉS par `src/lib/email/modeles-supabase.ts` (même
       mise en page que les emails de l'app) : ne pas les modifier à la main.

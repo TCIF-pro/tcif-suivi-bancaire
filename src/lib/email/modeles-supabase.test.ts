@@ -8,6 +8,11 @@ import { fichierModele, MODELES_SUPABASE } from "./modeles-supabase";
 const DOSSIER = path.join(process.cwd(), "supabase", "templates");
 
 describe("modèles d'email Supabase", () => {
+  it("les 13 modèles du dashboard, chacun une seule fois", () => {
+    expect(new Set(MODELES_SUPABASE.map((m) => m.modele)).size).toBe(13);
+    expect(new Set(MODELES_SUPABASE.map((m) => m.fichier)).size).toBe(13);
+  });
+
   for (const m of MODELES_SUPABASE) {
     it(`${m.fichier} à jour`, () => {
       const attendu = fichierModele(m);
@@ -16,8 +21,15 @@ describe("modèles d'email Supabase", () => {
       expect(readFileSync(chemin, "utf8")).toBe(attendu);
     });
 
-    it(`${m.fichier} : lien par token_hash, variables Supabase, pas de tiret cadratin`, () => {
-      expect(m.html).toContain("{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&amp;type=");
+    it(`${m.fichier} : liens par token_hash, jamais de lien brut, pas de tiret cadratin`, () => {
+      // Les modèles à lien de connexion passent par token_hash ; les autres
+      // (code, notifications de sécurité) n'ont aucun lien à jeton.
+      const liensAJeton = m.html.match(/auth\/confirm\?token_hash=/g) ?? [];
+      if (liensAJeton.length) {
+        expect(m.html).toContain("{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&amp;type=");
+      }
+      expect(liensAJeton.length).toBeLessThanOrEqual(1); // seulement dans le bouton
+      expect(m.html).not.toContain("Le bouton ne marche pas");
       expect(m.html).not.toContain("ConfirmationURL");
       expect(m.objet + m.html).not.toContain("—");
     });
