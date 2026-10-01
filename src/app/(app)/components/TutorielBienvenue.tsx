@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import { marquerTutorielVu } from "../actions";
 import { NavIcon, PlusIcon } from "./NavIcon";
+import { EtapesInstallation } from "./installation/EtapesInstallation";
+import { useEnvironnement } from "./installation/environnement";
 
 // Tutoriel de bienvenue : une carte par-dessus l'app, qui présente les grandes
 // fonctions en quatre étapes. Le layout ne l'affiche qu'une fois par compte,
@@ -37,9 +39,37 @@ const ETAPES = [
     texte:
       "Importe le PDF d'une facture : le montant, la date et le fournisseur se remplissent automatiquement. Tu n'as plus qu'à vérifier.",
   },
-] as const;
+];
+
+// 5e carte, sur téléphone seulement et si TCIF n'est pas déjà installée :
+// les étapes du système détecté (voir lib/pwa/installation.ts).
+function IconeTelephone() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+      <rect x="6" y="2.5" width="12" height="19" rx="2.5" />
+      <path d="M10.5 18.5h3" />
+    </svg>
+  );
+}
 
 export function TutorielBienvenue() {
+  const environnement = useEnvironnement();
+  const etapes: { icone: React.ReactNode; titre: string; texte: React.ReactNode }[] =
+    environnement?.systeme && !environnement.installee
+      ? [
+          ...ETAPES,
+          {
+            icone: <IconeTelephone />,
+            titre: "Installe TCIF sur ton téléphone",
+            texte: (
+              <>
+                <span className="mb-3 block">Elle s&apos;ouvrira en plein écran, comme une vraie app.</span>
+                <EtapesInstallation systeme={environnement.systeme} />
+              </>
+            ),
+          },
+        ]
+      : ETAPES;
   const dialogue = useRef<HTMLDialogElement>(null);
   const [etape, setEtape] = useState(0);
   const [, demarrer] = useTransition();
@@ -58,8 +88,8 @@ export function TutorielBienvenue() {
     demarrer(() => marquerTutorielVu());
   }
 
-  const derniere = etape === ETAPES.length - 1;
-  const { icone, titre, texte } = ETAPES[etape];
+  const derniere = etape === etapes.length - 1;
+  const { icone, titre, texte } = etapes[etape];
 
   return (
     <dialog
@@ -90,14 +120,14 @@ export function TutorielBienvenue() {
           <h2 id="tutoriel-titre" className="font-display text-xl font-bold tracking-tight">
             {titre}
           </h2>
-          <p id="tutoriel-texte" className="mt-2 text-[0.9375rem] leading-relaxed text-muted">
+          <div id="tutoriel-texte" className="mt-2 text-[0.9375rem] leading-relaxed text-muted">
             {texte}
-          </p>
+          </div>
         </div>
 
         <div className="flex items-center justify-between">
           <div aria-hidden="true" className="flex gap-1.5">
-            {ETAPES.map((_, i) => (
+            {etapes.map((_, i) => (
               <span
                 key={i}
                 className={`h-1.5 rounded-full transition-all ${i === etape ? "w-5 bg-accent" : "w-1.5 bg-border"}`}
@@ -105,7 +135,7 @@ export function TutorielBienvenue() {
             ))}
           </div>
           <span className="tabular font-mono text-xs text-muted">
-            {etape + 1} / {ETAPES.length}
+            {etape + 1} / {etapes.length}
           </span>
         </div>
 
