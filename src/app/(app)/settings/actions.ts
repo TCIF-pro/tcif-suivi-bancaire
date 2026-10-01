@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { creerCompteEpargne } from "@/lib/accounts/create";
-import { isAccentColorId } from "@/lib/accent-colors";
+import { estChoixAccent, teinteValide } from "@/lib/accent-colors";
 
 export async function updateAccountBalance(accountId: string, formData: FormData) {
   const supabase = await createClient();
@@ -55,12 +55,19 @@ export async function updateAccentColor(formData: FormData) {
   if (!user) return;
 
   const accentColor = String(formData.get("accent_color"));
-  if (!isAccentColorId(accentColor)) return;
+  if (!estChoixAccent(accentColor)) return;
 
-  await supabase
-    .from("user_settings")
-    .update({ accent_color: accentColor })
-    .eq("user_id", user.id);
+  // Personnalisée : la teinte (0 à 360) accompagne le choix. On garde la
+  // dernière teinte quand on repasse à une couleur prédéfinie, pour la
+  // retrouver si on revient à « Personnalisée ».
+  const changement: { accent_color: string; accent_teinte?: number } = { accent_color: accentColor };
+  if (accentColor === "custom") {
+    const teinte = Number(formData.get("accent_teinte"));
+    if (!teinteValide(teinte)) return;
+    changement.accent_teinte = teinte;
+  }
+
+  await supabase.from("user_settings").update(changement).eq("user_id", user.id);
 
   // Le layout racine injecte --accent-light/--accent-dark à partir de ce
   // même réglage.
