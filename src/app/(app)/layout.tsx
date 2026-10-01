@@ -18,6 +18,7 @@ import {
 import { todayDateString } from "@/lib/dates";
 import { formatDateLong } from "@/lib/format";
 import { TutorielBienvenue } from "./components/TutorielBienvenue";
+import { BandeauInstallation } from "./components/installation/BandeauInstallation";
 import { signOut } from "./actions";
 
 // Deuxième vérification de session, en plus du middleware : même si le
@@ -116,6 +117,9 @@ export default async function AppLayout({
             <SignOutButton compact />
           </div>
         </header>
+
+        {/* Téléphone seulement, tant que TCIF n'est pas installée. */}
+        <BandeauInstallation />
 
         {/* Bandeau permanent du compte démo : le visiteur sait que ce qu'il
             voit est fictif et partagé, et qu'il peut en sortir. */}

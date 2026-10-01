@@ -17,6 +17,7 @@ import { DashboardCardsSection } from "./components/DashboardCardsSection";
 import { AlertesSection } from "./components/AlertesSection";
 import { AbonnementSection } from "./components/AbonnementSection";
 import { SupprimerMonCompte } from "./components/SupprimerMonCompte";
+import { InstallationSection } from "./components/InstallationSection";
 
 const MESSAGES_ERREUR: Record<string, string> = {
   "categorie-vide": "Le nom ne peut pas être vide.",
@@ -435,6 +436,8 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
           </button>
         </form>
       </section>
+      <InstallationSection />
+
       {/* Pas pour l'admin (seul accès à /admin) ni pour la démo (partagée). */}
       {user && !administrateur && !estDemo(user) && (
         <section className="max-w-md rounded-2xl border border-border bg-surface p-5 shadow-card sm:p-6">
