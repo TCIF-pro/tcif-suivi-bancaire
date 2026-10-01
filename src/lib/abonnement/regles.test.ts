@@ -1,6 +1,6 @@
 import { createHmac } from "node:crypto";
 import { describe, expect, it } from "vitest";
-import { dateDebut, decisionImpaye, jourDeBlocage, signatureValide, situationImpaye, statutApres } from "./regles";
+import { dateDebut, decisionImpaye, doitSouscrire, finDAcces, jourDeBlocage, signatureValide, situationImpaye, statutApres } from "./regles";
 
 describe("dateDebut : premier prélèvement", () => {
   it("signé avant le 1er décembre 2026 : le 1er décembre", () => {
@@ -105,5 +105,70 @@ describe("situationImpaye : bandeau et écran de blocage", () => {
     expect(situationImpaye({ statut: "annule", impaye_depuis: null })).toBeNull();
     expect(situationImpaye({ statut: "actif", impaye_depuis: null })).toBeNull();
     expect(situationImpaye(null)).toBeNull();
+  });
+});
+
+describe("doitSouscrire : écran « Choisis ton abonnement »", () => {
+  const ok = { configure: true, exempte: false, aujourdhui: "2026-12-15" };
+  const ligne = (statut: "actif" | "en_retard" | "annule", extra = {}) => ({
+    statut,
+    impaye_depuis: null,
+    acces_jusqu_au: null,
+    ...extra,
+  });
+
+  it("sans abonnement : oui", () => {
+    expect(doitSouscrire(null, ok)).toBe(true);
+  });
+
+  it("actif ou en retard : non", () => {
+    expect(doitSouscrire(ligne("actif"), ok)).toBe(false);
+    expect(doitSouscrire(ligne("en_retard", { impaye_depuis: "2026-12-03" }), ok)).toBe(false);
+  });
+
+  it("résilié sans période payée : oui", () => {
+    expect(doitSouscrire(ligne("annule"), ok)).toBe(true);
+  });
+
+  it("résilié : non jusqu'à la fin de la période payée (incluse), oui le lendemain", () => {
+    const resilie = ligne("annule", { acces_jusqu_au: "2026-12-31" });
+    expect(doitSouscrire(resilie, ok)).toBe(false);
+    expect(doitSouscrire(resilie, { ...ok, aujourdhui: "2026-12-31" })).toBe(false);
+    expect(doitSouscrire(resilie, { ...ok, aujourdhui: "2027-01-01" })).toBe(true);
+  });
+
+  it("mandat mort : délai de grâce de l'impayé, pas l'écran de souscription", () => {
+    expect(doitSouscrire(ligne("annule", { impaye_depuis: "2026-12-10" }), ok)).toBe(false);
+  });
+
+  it("gratuit à vie, admin ou démo (exemptés) : jamais", () => {
+    expect(doitSouscrire(null, { ...ok, exempte: true })).toBe(false);
+    expect(doitSouscrire(ligne("annule"), { ...ok, exempte: true })).toBe(false);
+  });
+
+  it("GoCardless non configuré : jamais", () => {
+    expect(doitSouscrire(null, { ...ok, configure: false })).toBe(false);
+  });
+});
+
+describe("finDAcces : période payée après résiliation", () => {
+  it("veille de l'échéance suivant le dernier prélèvement passé", () => {
+    expect(
+      finDAcces([
+        { charge_date: "2026-12-01", status: "paid_out" },
+        { charge_date: "2027-01-01", status: "confirmed" },
+        { charge_date: "2027-02-01", status: "cancelled" },
+      ]),
+    ).toBe("2027-01-31");
+  });
+
+  it("un prélèvement en cours de présentation compte", () => {
+    expect(finDAcces([{ charge_date: "2026-12-01", status: "submitted" }])).toBe("2026-12-31");
+  });
+
+  it("rien de prélevé (avant le 1er décembre, échec) : pas de période", () => {
+    expect(finDAcces([])).toBeNull();
+    expect(finDAcces([{ charge_date: "2026-12-01", status: "pending_submission" }])).toBeNull();
+    expect(finDAcces([{ charge_date: "2026-12-01", status: "failed" }])).toBeNull();
   });
 });

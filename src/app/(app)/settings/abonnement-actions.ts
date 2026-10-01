@@ -1,5 +1,6 @@
 "use server";
 
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
@@ -7,16 +8,20 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { estDemo, estGratuitAVie } from "@/lib/auth/roles";
 import { adresseDeLApp } from "@/lib/app-url";
 import { ErreurGoCardless, gocardless, gocardlessConfigure } from "@/lib/abonnement/gocardless";
-import { resilierChezGoCardless } from "@/lib/abonnement/resilier";
+import { noterFinDAcces, resilierChezGoCardless } from "@/lib/abonnement/resilier";
+import { COOKIE_DEMANDE_GC } from "@/lib/abonnement/activer";
 
 // Bouton « S'abonner » : prépare la signature d'un mandat SEPA chez
-// GoCardless et y envoie la personne. L'abonnement lui-même est créé par le
-// webhook quand GoCardless confirme la signature (billing_requests.fulfilled).
-// `depuis` : la page où revenir après la signature (Réglages, ou l'écran
-// d'impayé quand il s'agit de signer un nouveau mandat).
+// GoCardless et y envoie la personne. Au retour, /abonnement/retour active
+// l'abonnement tout de suite ; le webhook (billing_requests.fulfilled) le
+// fait aussi, au cas où la personne fermerait l'onglet après avoir signé.
+// `depuis` : la page d'où vient la demande (écran d'abonnement, Réglages, ou
+// écran d'impayé pour un nouveau mandat), où revenir en cas d'abandon.
+const PAGES_DE_DEPART = ["/abonnement", "/settings", "/abonnement-impaye"];
+
 export async function sAbonner(demande: string) {
-  // Argument venu du navigateur : seules ces deux pages sont acceptées.
-  const depuis = demande === "/abonnement-impaye" ? "/abonnement-impaye" : "/settings";
+  // Argument venu du navigateur : seules ces pages sont acceptées.
+  const depuis = PAGES_DE_DEPART.includes(demande) ? demande : "/settings";
   const supabase = await createClient();
   const {
     data: { user },
@@ -45,13 +50,21 @@ export async function sAbonner(demande: string) {
         },
       },
     );
+    // Retrouvée au retour pour activer l'abonnement sans attendre le webhook.
+    (await cookies()).set(COOKIE_DEMANDE_GC, billing_requests.id, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax", // envoyé au retour depuis GoCardless (navigation simple)
+      maxAge: 60 * 60,
+      path: "/",
+    });
     const retour = `${adresseDeLApp()}${depuis}`;
     const { billing_request_flows } = await gocardless<{
       billing_request_flows: { authorisation_url: string };
     }>("/billing_request_flows", {
       corps: {
         billing_request_flows: {
-          redirect_uri: `${retour}?abonnement=signe`,
+          redirect_uri: `${adresseDeLApp()}/abonnement/retour?depuis=${depuis}`,
           exit_uri: retour,
           prefilled_customer: { email: user.email },
           language: "fr",
@@ -90,11 +103,14 @@ export async function resilier() {
   }
 
   // Le webhook subscriptions.cancelled le fera aussi ; on n'attend pas pour
-  // que la page affiche tout de suite « résilié ».
-  await createAdminClient()
-    .from("abonnements")
-    .update({ statut: "annule" })
-    .eq("user_id", user.id);
+  // que la page affiche tout de suite « résilié », avec la date de fin
+  // d'accès (sans elle, l'écran d'abonnement s'afficherait le temps que le
+  // webhook arrive, même pour qui a déjà payé le mois en cours).
+  const admin = createAdminClient();
+  await admin.from("abonnements").update({ statut: "annule" }).eq("user_id", user.id);
+  await noterFinDAcces(admin, user.id, abonnement.gc_subscription).catch((erreur) =>
+    console.error("[gocardless] fin d'accès non calculée (le webhook réessaiera)", erreur),
+  );
   revalidatePath("/settings");
 }
 

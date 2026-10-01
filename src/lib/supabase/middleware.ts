@@ -97,7 +97,14 @@ export async function updateSession(request: NextRequest) {
   // d'impayé (les pages publiques restent lisibles). `user` vient de
   // getUser() ci-dessus, qui interroge Supabase Auth à CHAQUE requête : la
   // suspension et sa levée par le webhook comptent dès la page suivante.
-  if (user && estAccesSuspendu(user) && !estPublique && !chemin.startsWith(PAGE_IMPAYE)) {
+  // Le retour de GoCardless (nouveau mandat signé) doit passer aussi.
+  if (
+    user &&
+    estAccesSuspendu(user) &&
+    !estPublique &&
+    !chemin.startsWith(PAGE_IMPAYE) &&
+    !chemin.startsWith("/abonnement/retour")
+  ) {
     return versPage(PAGE_IMPAYE);
   }
 

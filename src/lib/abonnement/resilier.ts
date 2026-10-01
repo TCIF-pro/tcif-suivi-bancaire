@@ -1,5 +1,7 @@
 import "server-only";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { ErreurGoCardless, gocardless, gocardlessConfigure } from "./gocardless";
+import { finDAcces } from "./regles";
 
 // Résiliation chez GoCardless, rejouable : un abonnement déjà résilié ou un
 // mandat déjà annulé ne provoque pas d'erreur. Utilisée par le bouton
@@ -35,4 +37,20 @@ export async function resilierChezGoCardless(
   if (!gocardlessConfigure()) throw new Error("GoCardless n'est pas configuré sur cet environnement");
   if (ligne.gc_subscription) await annulerSiActif("subscriptions", ligne.gc_subscription, ABONNEMENT_TERMINE);
   if (mandat && ligne.gc_mandate) await annulerSiActif("mandates", ligne.gc_mandate, MANDAT_TERMINE);
+}
+
+/**
+ * Après une résiliation : retient jusqu'à quand la période déjà payée court
+ * (voir `finDAcces`). Rejouable : la date ne dépend que des paiements.
+ */
+export async function noterFinDAcces(admin: SupabaseClient, userId: string, gcSubscription: string) {
+  const { payments } = await gocardless<{ payments: { charge_date: string; status: string }[] }>(
+    `/payments?subscription=${gcSubscription}&limit=100`,
+  );
+  const { error } = await admin
+    .from("abonnements")
+    .update({ acces_jusqu_au: finDAcces(payments) })
+    .eq("user_id", userId)
+    .eq("gc_subscription", gcSubscription);
+  if (error) throw error;
 }

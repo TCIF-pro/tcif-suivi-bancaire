@@ -8,7 +8,14 @@ import { ThemeToggle } from "./components/ThemeToggle";
 import { NavIcon } from "./components/NavIcon";
 import { doitChangerMotDePasse, estAdmin, estDemo, jamaisSuspendu } from "@/lib/auth/roles";
 import { gocardlessConfigure } from "@/lib/abonnement/gocardless";
-import { jourDeBlocage, situationImpaye, type StatutAbonnement } from "@/lib/abonnement/regles";
+import {
+  doitSouscrire,
+  jourDeBlocage,
+  situationImpaye,
+  type LigneAbonnement,
+  type StatutAbonnement,
+} from "@/lib/abonnement/regles";
+import { todayDateString } from "@/lib/dates";
 import { formatDateLong } from "@/lib/format";
 import { TutorielBienvenue } from "./components/TutorielBienvenue";
 import { signOut } from "./actions";
@@ -36,12 +43,28 @@ export default async function AppLayout({
   // source de vérité, juste une deuxième lecture du même réglage.
   // Lues en parallèle. L'abonnement seulement là où GoCardless est configuré,
   // et jamais pour les comptes qui ne sont jamais suspendus.
-  const [{ data: settings }, { data: abonnement }] = await Promise.all([
+  const avecAbonnement = gocardlessConfigure() && !jamaisSuspendu(user);
+  const [{ data: settings }, { data: abonnement, error: erreurAbonnement }] = await Promise.all([
     supabase.from("user_settings").select("theme, tutoriel_vu_le").single(),
-    gocardlessConfigure() && !jamaisSuspendu(user)
-      ? supabase.from("abonnements").select("statut, impaye_depuis").maybeSingle()
-      : Promise.resolve({ data: null }),
+    avecAbonnement
+      ? supabase.from("abonnements").select("statut, impaye_depuis, acces_jusqu_au").maybeSingle()
+      : Promise.resolve({ data: null, error: null }),
   ]);
+
+  // Abonnement obligatoire : sans abonnement en cours, l'écran « Choisis ton
+  // abonnement » remplace l'app. Si la lecture échoue (migration 0030
+  // absente, panne), on laisse passer plutôt que de bloquer tout le monde.
+  if (erreurAbonnement) {
+    console.error("[abonnement] lecture impossible, accès laissé ouvert", erreurAbonnement);
+  } else if (
+    doitSouscrire(abonnement as LigneAbonnement | null, {
+      configure: avecAbonnement,
+      exempte: false, // déjà exclus par `avecAbonnement`
+      aujourdhui: todayDateString(),
+    })
+  ) {
+    redirect("/abonnement");
+  }
   const impaye = situationImpaye(
     abonnement ? { statut: abonnement.statut as StatutAbonnement, impaye_depuis: abonnement.impaye_depuis } : null,
   );

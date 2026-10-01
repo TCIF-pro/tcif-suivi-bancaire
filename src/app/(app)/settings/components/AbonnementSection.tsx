@@ -1,6 +1,7 @@
 import { resilier, sAbonner } from "../abonnement-actions";
 import type { StatutAbonnement } from "@/lib/abonnement/regles";
 import { BoutonRelance } from "./BoutonRelance";
+import { formatDateLong } from "@/lib/format";
 
 const BOUTON =
   "inline-flex h-12 items-center justify-center self-start rounded-xl bg-accent px-5 font-bold text-on-accent transition-opacity hover:opacity-90";
@@ -12,12 +13,15 @@ export function AbonnementSection({
   gratuitAVie,
   statut,
   mandatInvalide,
+  accesJusquAu,
   vientDeSigner,
 }: {
   gratuitAVie: boolean;
   statut: StatutAbonnement | null;
   /** Mandat annulé ou refusé par la banque (impayé « mandat »). */
   mandatInvalide: boolean;
+  /** Après une résiliation : dernier jour de la période déjà payée. */
+  accesJusquAu: string | null;
   vientDeSigner: boolean;
 }) {
   return (
@@ -68,7 +72,9 @@ export function AbonnementSection({
             {statut === "annule" &&
               (mandatInvalide
                 ? "Ta banque a annulé ou refusé ton mandat de prélèvement : signe un nouveau mandat pour continuer. "
-                : "Ton abonnement est résilié. ")}
+                : accesJusquAu
+                  ? `Ton abonnement est résilié : tu gardes l'accès jusqu'au ${formatDateLong(accesJusquAu)}. `
+                  : "Ton abonnement est résilié. ")}
             3,99&nbsp;€ par mois, sans engagement, par prélèvement SEPA. Gratuit jusqu&apos;au 30
             novembre 2026 : le premier prélèvement a lieu au plus tôt le 1er décembre.
           </p>
