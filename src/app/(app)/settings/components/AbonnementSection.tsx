@@ -1,5 +1,6 @@
 import { resilier, sAbonner } from "../abonnement-actions";
 import type { StatutAbonnement } from "@/lib/abonnement/regles";
+import { BoutonRelance } from "./BoutonRelance";
 
 const BOUTON =
   "inline-flex h-12 items-center justify-center self-start rounded-xl bg-accent px-5 font-bold text-on-accent transition-opacity hover:opacity-90";
@@ -10,10 +11,13 @@ const BOUTON =
 export function AbonnementSection({
   gratuitAVie,
   statut,
+  mandatInvalide,
   vientDeSigner,
 }: {
   gratuitAVie: boolean;
   statut: StatutAbonnement | null;
+  /** Mandat annulé ou refusé par la banque (impayé « mandat »). */
+  mandatInvalide: boolean;
   vientDeSigner: boolean;
 }) {
   return (
@@ -30,10 +34,13 @@ export function AbonnementSection({
               avant le 1er décembre 2026.
             </p>
           ) : (
-            <p role="alert" className="mt-3 rounded-xl bg-danger-bg px-4 py-3 text-sm font-medium text-danger">
-              Le dernier prélèvement n&apos;est pas passé. Vérifie que ton compte est approvisionné,
-              et écris au support si besoin.
-            </p>
+            <div className="mt-3 flex flex-col gap-4">
+              <p role="alert" className="rounded-xl bg-danger-bg px-4 py-3 text-sm font-medium text-danger">
+                Le dernier prélèvement n&apos;est pas passé. Vérifie que ton compte est approvisionné,
+                puis relance-le.
+              </p>
+              <BoutonRelance />
+            </div>
           )}
           <details className="mt-4 text-sm">
             <summary className="cursor-pointer font-semibold text-foreground">Résilier</summary>
@@ -58,13 +65,16 @@ export function AbonnementSection({
       ) : (
         <>
           <p className="mt-1 text-sm text-muted">
-            {statut === "annule" && "Ton abonnement est résilié. "}
+            {statut === "annule" &&
+              (mandatInvalide
+                ? "Ta banque a annulé ou refusé ton mandat de prélèvement : signe un nouveau mandat pour continuer. "
+                : "Ton abonnement est résilié. ")}
             3,99&nbsp;€ par mois, sans engagement, par prélèvement SEPA. Gratuit jusqu&apos;au 30
             novembre 2026 : le premier prélèvement a lieu au plus tôt le 1er décembre.
           </p>
-          <form action={sAbonner} className="mt-4 flex flex-col">
+          <form action={sAbonner.bind(null, "/settings")} className="mt-4 flex flex-col">
             <button type="submit" className={BOUTON}>
-              S&apos;abonner
+              {mandatInvalide ? "Signer un nouveau mandat" : "S'abonner"}
             </button>
           </form>
         </>

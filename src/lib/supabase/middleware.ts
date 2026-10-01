@@ -1,6 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { doitChangerMotDePasse, estDemo, estDesactive } from "@/lib/auth/roles";
+import { doitChangerMotDePasse, estAccesSuspendu, estDemo, estDesactive } from "@/lib/auth/roles";
 
 // Pages accessibles sans être connecté. La page de retour du lien de
 // réinitialisation en fait partie : c'est elle qui ouvre la session.
@@ -20,6 +20,7 @@ const PAGES_PUBLIQUES = [
 const PAGES_PUBLIQUES_EXACTES = ["/"];
 
 const PAGE_CHANGEMENT = "/changer-mot-de-passe";
+const PAGE_IMPAYE = "/abonnement-impaye";
 
 // Appelé par le middleware racine à chaque requête : rafraîchit le cookie de
 // session Supabase et redirige vers /login si aucun utilisateur n'est connecté
@@ -90,6 +91,14 @@ export async function updateSession(request: NextRequest) {
   // ci-dessus), l'y renvoyer aussi créerait une boucle de redirections.
   if (user && !estDemo(user) && doitChangerMotDePasse(user) && !chemin.startsWith(PAGE_CHANGEMENT)) {
     return versPage(PAGE_CHANGEMENT);
+  }
+
+  // Accès suspendu pour impayé : toutes les pages de l'app mènent à l'écran
+  // d'impayé (les pages publiques restent lisibles). `user` vient de
+  // getUser() ci-dessus, qui interroge Supabase Auth à CHAQUE requête : la
+  // suspension et sa levée par le webhook comptent dès la page suivante.
+  if (user && estAccesSuspendu(user) && !estPublique && !chemin.startsWith(PAGE_IMPAYE)) {
+    return versPage(PAGE_IMPAYE);
   }
 
   return supabaseResponse;

@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { exigerAdmin } from "@/lib/auth/admin-guard";
 import { genererMotDePasseProvisoire } from "@/lib/auth/mot-de-passe";
 import { estDemo } from "@/lib/auth/roles";
+import { resilierChezGoCardless } from "@/lib/abonnement/resilier";
 
 // Toutes ces actions tournent avec la clé service_role (création de compte,
 // bannissement...) : chacune commence par `exigerAdmin()`, sans exception.
@@ -95,22 +96,99 @@ export async function regenererMotDePasse(userId: string): Promise<EtatMotDePass
   return { email: cible.user.email, motDePasse };
 }
 
-export async function changerActivation(userId: string, activer: boolean) {
+export interface EtatAction {
+  erreur?: string;
+}
+
+async function ligneAbonnement(userId: string) {
+  const { data, error } = await createAdminClient()
+    .from("abonnements")
+    .select("statut, gc_subscription, gc_mandate")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+export async function changerActivation(userId: string, activer: boolean): Promise<EtatAction> {
   const admin = await exigerAdmin();
-  if (!admin) return;
+  if (!admin) return { erreur: "Action réservée à l'administrateur." };
 
   // Se désactiver soi-même fermerait l'unique accès à l'administration.
-  if (userId === admin.id) return;
+  if (userId === admin.id) return {};
 
   // Bannir n'efface rien : transactions, abonnements et factures restent en
   // base et réapparaissent intacts à la réactivation. La personne ne peut
   // simplement plus se connecter ni prolonger une session déjà ouverte.
-  const { error } = await createAdminClient().auth.admin.updateUserById(userId, {
-    ban_duration: activer ? "none" : DUREE_DESACTIVATION,
-  });
-  if (error) console.error("[admin] changement d'activation refusé", error);
+  const client = createAdminClient();
+  const bannir = (actif: boolean) =>
+    client.auth.admin.updateUserById(userId, { ban_duration: actif ? "none" : DUREE_DESACTIVATION });
+
+  const { error } = await bannir(activer);
+  if (error) {
+    console.error("[admin] changement d'activation refusé", error);
+    return { erreur: "Supabase a refusé le changement. Réessaie dans un instant." };
+  }
+
+  // Désactivation d'un compte abonné : son abonnement GoCardless est résilié
+  // (pas de prélèvement pour un accès coupé). APRÈS le bannissement, parce
+  // qu'un bannissement se défait facilement, une résiliation non : si
+  // GoCardless refuse, on réactive le compte et rien n'a changé.
+  if (!activer) {
+    try {
+      const ligne = await ligneAbonnement(userId);
+      if (ligne && ligne.statut !== "annule") {
+        await resilierChezGoCardless(ligne, { mandat: false });
+        await client.from("abonnements").update({ statut: "annule" }).eq("user_id", userId);
+      }
+    } catch (erreur) {
+      console.error("[admin] résiliation GoCardless en échec, désactivation annulée", erreur);
+      const { error: erreurRetour } = await bannir(true);
+      if (erreurRetour) console.error("[admin] ATTENTION : réactivation après échec impossible", userId, erreurRetour);
+      revalidatePath("/admin");
+      return {
+        erreur: erreurRetour
+          ? "La résiliation GoCardless a échoué ET le compte n'a pas pu être réactivé : réactive-le à la main."
+          : "La résiliation GoCardless a échoué : le compte n'a pas été désactivé. Réessaie dans un instant.",
+      };
+    }
+  }
 
   revalidatePath("/admin");
+  return {};
+}
+
+// Suppression définitive d'un compte et de toutes ses données (cascade en
+// base). Son abonnement GoCardless est résilié et son mandat annulé AVANT :
+// si GoCardless refuse, rien n'est supprimé (un compte supprimé avec un
+// abonnement actif continuerait d'être prélevé, sans moyen de le retrouver).
+export async function supprimerCompte(userId: string): Promise<EtatAction> {
+  const admin = await exigerAdmin();
+  if (!admin) return { erreur: "Action réservée à l'administrateur." };
+  if (userId === admin.id) return { erreur: "Impossible de supprimer ton propre compte." };
+
+  const client = createAdminClient();
+  const { data: cible } = await client.auth.admin.getUserById(userId);
+  if (cible?.user && estDemo(cible.user)) return { erreur: "Le compte démo ne se supprime pas." };
+
+  try {
+    const ligne = await ligneAbonnement(userId);
+    if (ligne) await resilierChezGoCardless(ligne, { mandat: true });
+  } catch (erreur) {
+    console.error("[admin] résiliation GoCardless en échec, suppression annulée", erreur);
+    return {
+      erreur: "La résiliation GoCardless a échoué : le compte n'a pas été supprimé. Réessaie dans un instant.",
+    };
+  }
+
+  const { error } = await client.auth.admin.deleteUser(userId);
+  if (error) {
+    console.error("[admin] suppression refusée", error);
+    return { erreur: "Supabase a refusé la suppression (l'abonnement GoCardless, lui, est bien résilié)." };
+  }
+  console.log(`[admin] compte ${userId} supprimé`);
+  revalidatePath("/admin");
+  return {};
 }
 
 // Marquer un message du support comme traité, ou le rouvrir.

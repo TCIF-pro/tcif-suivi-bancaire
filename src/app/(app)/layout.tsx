@@ -6,7 +6,10 @@ import { SideNav } from "./components/SideNav";
 import { SignOutButton } from "./components/SignOutButton";
 import { ThemeToggle } from "./components/ThemeToggle";
 import { NavIcon } from "./components/NavIcon";
-import { doitChangerMotDePasse, estAdmin, estDemo } from "@/lib/auth/roles";
+import { doitChangerMotDePasse, estAdmin, estDemo, jamaisSuspendu } from "@/lib/auth/roles";
+import { gocardlessConfigure } from "@/lib/abonnement/gocardless";
+import { jourDeBlocage, situationImpaye, type StatutAbonnement } from "@/lib/abonnement/regles";
+import { formatDateLong } from "@/lib/format";
 import { TutorielBienvenue } from "./components/TutorielBienvenue";
 import { signOut } from "./actions";
 
@@ -31,10 +34,17 @@ export default async function AppLayout({
   // proposer au toggle — le layout racine (src/app/layout.tsx) fait la même
   // requête pour poser la classe `dark` sur <html>, donc pas de nouvelle
   // source de vérité, juste une deuxième lecture du même réglage.
-  const { data: settings } = await supabase
-    .from("user_settings")
-    .select("theme, tutoriel_vu_le")
-    .single();
+  // Lues en parallèle. L'abonnement seulement là où GoCardless est configuré,
+  // et jamais pour les comptes qui ne sont jamais suspendus.
+  const [{ data: settings }, { data: abonnement }] = await Promise.all([
+    supabase.from("user_settings").select("theme, tutoriel_vu_le").single(),
+    gocardlessConfigure() && !jamaisSuspendu(user)
+      ? supabase.from("abonnements").select("statut, impaye_depuis").maybeSingle()
+      : Promise.resolve({ data: null }),
+  ]);
+  const impaye = situationImpaye(
+    abonnement ? { statut: abonnement.statut as StatutAbonnement, impaye_depuis: abonnement.impaye_depuis } : null,
+  );
   const theme: "light" | "dark" = settings?.theme === "dark" ? "dark" : "light";
 
   // Tutoriel de bienvenue : une seule fois par compte, à la première vraie
@@ -96,6 +106,27 @@ export default async function AppLayout({
                 Quitter la démo
               </button>
             </form>
+          </div>
+        )}
+
+        {/* Bandeau d'impayé, jusqu'à la suspension (ensuite le proxy envoie
+            directement sur l'écran d'impayé). Disparaît dès que le paiement
+            passe ou qu'un nouveau mandat est signé. */}
+        {impaye && (
+          <div
+            role="alert"
+            className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 border-b border-danger/30 bg-danger-bg px-4 py-2 text-center text-xs font-medium text-danger"
+          >
+            <span>
+              {impaye === "paiement"
+                ? "Ton dernier prélèvement n'est pas passé."
+                : "Ton mandat de prélèvement n'est plus valable."}{" "}
+              Accès suspendu le {formatDateLong(jourDeBlocage(abonnement!.impaye_depuis as string))} sans
+              régularisation.
+            </span>
+            <Link href="/abonnement-impaye" className="font-semibold underline underline-offset-2">
+              Régulariser
+            </Link>
           </div>
         )}
 

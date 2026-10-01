@@ -405,3 +405,32 @@ Effet immédiat : Réglages relit l'utilisateur auprès de Supabase Auth
 Passage en live (phase 5), plus tard : `0026` sur la prod, jeton live et
 webhook live (`https://app.tcif-pro.fr/api/webhooks/gocardless`) en
 Production, `GOCARDLESS_ENVIRONMENT=live`.
+
+### Phase 3 bis : impayés et suppression de compte
+
+Impayé (prélèvement échoué, contesté, ou mandat annulé par la banque) :
+email immédiat, bandeau « Régulariser » dans l'app, email de rappel à J+5,
+accès suspendu à J+7 (jamais avant le 1er décembre 2026) via le marqueur
+`acces_suspendu` des app_metadata : toutes les pages mènent alors à
+`/abonnement-impaye` (relancer le prélèvement, ou signer un nouveau mandat).
+La suspension est levée par le webhook dès qu'un paiement passe ou qu'un
+nouveau mandat est signé. Jamais de suspension pour l'admin, la démo et les
+comptes `gratuit_a_vie`.
+
+/admin : « Supprimer » (résilie l'abonnement ET annule le mandat GoCardless
+avant de supprimer ; si GoCardless refuse, rien n'est supprimé), et
+« Désactiver » résilie l'abonnement d'un compte abonné (si GoCardless refuse,
+le compte est réactivé).
+
+- [ ] `0027_impayes.sql` sur TEST, puis sur la prod **avant** de pousser
+      `main` (le webhook, le bandeau et la tâche du matin lisent ses colonnes).
+- [ ] **Ne jamais supprimer un compte abonné depuis le dashboard Supabase**
+      (Authentication → Users) : la ligne `abonnements` disparaît mais
+      GoCardless continue de prélever. Toujours passer par /admin. Filet de
+      sécurité : l'étape `abonnementsOrphelins` de la tâche du matin envoie
+      chaque jour un email à `SUPPORT_EMAIL_TO` tant qu'un abonnement
+      GoCardless actif n'a plus de compte (identifiants dans les logs
+      Vercel, `[cron] abonnement GoCardless sans compte`).
+- [ ] Les emails d'impayé sont en texte brut, rédigés dans
+      `src/lib/abonnement/emails.ts` : à brancher sur la mise en page HTML
+      des emails quand elle existera.

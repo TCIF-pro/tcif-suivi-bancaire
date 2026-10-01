@@ -17,7 +17,7 @@ export default async function AdminPage() {
   // Liste de tous les comptes : seule la clé service_role y a accès, d'où le
   // client admin — derrière la vérification ci-dessus.
   const admin = createAdminClient();
-  const [{ data, error }, { data: messages, error: erreurMessages }, { data: inscriptions }] = await Promise.all([
+  const [{ data, error }, { data: messages, error: erreurMessages }, { data: inscriptions }, { data: abonnements }] = await Promise.all([
     admin.auth.admin.listUsers({ perPage: 200 }),
     // Les messages non traités d'abord, puis du plus récent au plus ancien.
     admin
@@ -30,7 +30,11 @@ export default async function AdminPage() {
     // conditions à l'inscription (migration 0025). Sans la migration, la
     // lecture échoue et aucune étiquette ne s'affiche, sans autre effet.
     admin.from("user_settings").select("user_id").not("conditions_acceptees_le", "is", null),
+    // Abonnés GoCardless en cours : la désactivation et la suppression
+    // préviennent qu'elles résilient l'abonnement.
+    admin.from("abonnements").select("user_id").neq("statut", "annule"),
   ]);
+  const abonnes = new Set((abonnements ?? []).map((r) => r.user_id as string));
   const inscritsSeuls = new Set((inscriptions ?? []).map((r) => r.user_id as string));
   const aTraiter = (messages ?? []).filter((m) => !m.traite).length;
   const comptes = [...(data?.users ?? [])].sort((a, b) =>
@@ -185,6 +189,7 @@ export default async function AdminPage() {
                     // fermer au public. Un mot de passe, en revanche, ne lui
                     // sert à rien.
                     motDePasse={!estDemo(compte)}
+                    abonne={abonnes.has(compte.id)}
                   />
                 )}
               </li>
