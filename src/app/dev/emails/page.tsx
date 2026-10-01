@@ -24,7 +24,13 @@ function exemple(html: string) {
     .replaceAll("{{ .SiteURL }}", APP)
     .replaceAll("{{ .TokenHash }}", "exemple123")
     .replaceAll("{{ .Email }}", "camille@exemple.fr")
-    .replaceAll("{{ .NewEmail }}", "camille.nouvelle@exemple.fr");
+    .replaceAll("{{ .NewEmail }}", "camille.nouvelle@exemple.fr")
+    .replaceAll("{{ .OldEmail }}", "camille.ancienne@exemple.fr")
+    .replaceAll("{{ .Token }}", "482 913")
+    .replaceAll("{{ .OldPhone }}", "06 12 34 56 78")
+    .replaceAll("{{ .Phone }}", "06 98 76 54 32")
+    .replaceAll("{{ .Provider }}", "Google")
+    .replaceAll("{{ .FactorType }}", "totp");
 }
 
 export default function ApercuEmails() {
