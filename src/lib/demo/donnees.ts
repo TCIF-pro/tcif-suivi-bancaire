@@ -166,7 +166,7 @@ export function genererDonneesDemo(aujourdhui: string): DonneesDemo {
         type: "income",
         amount: [1450, 0, 980, 1760][i],
         occurred_on: le(20),
-        label: `Virement client — ${CLIENTS[i]}`,
+        label: `Virement client - ${CLIENTS[i]}`,
         compte: "pro",
         categorie: "pro",
       });
@@ -213,7 +213,7 @@ export function genererDonneesDemo(aujourdhui: string): DonneesDemo {
   // prévision. Toujours dans le futur, quel que soit le jour d'exécution. ---
   transactions.push(
     { type: "income", amount: 1980, occurred_on: prochaineOccurrence(aujourdhui, 28), label: "Salaire", compte: "perso", categorie: "perso" },
-    { type: "income", amount: 890, occurred_on: addDaysToDateString(aujourdhui, 6), label: "Virement client — Studio Arc-en-ciel", compte: "pro", categorie: "pro" },
+    { type: "income", amount: 890, occurred_on: addDaysToDateString(aujourdhui, 6), label: "Virement client - Studio Arc-en-ciel", compte: "pro", categorie: "pro" },
   );
 
   return {

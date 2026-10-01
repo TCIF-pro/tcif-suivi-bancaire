@@ -64,7 +64,7 @@ export function CategoriesSection({ categories }: { categories: CategoryRow[] })
                 <p className="text-xs font-medium text-muted">
                   {categorie.usages === 0
                     ? "Inutilisée"
-                    : `${categorie.usages} élément${categorie.usages > 1 ? "s" : ""} — à réaffecter à :`}
+                    : `${categorie.usages} élément${categorie.usages > 1 ? "s" : ""}, à réaffecter à :`}
                 </p>
 
                 {categorie.usages > 0 && (

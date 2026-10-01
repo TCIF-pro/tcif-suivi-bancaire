@@ -30,7 +30,7 @@ export function QuickLabelsSection({
       </h2>
       <p className="mt-1 text-sm text-muted">
         Les boutons proposés lors de l&apos;ajout d&apos;une transaction. Ils
-        remplissent le libellé, le type et la catégorie — jamais le montant.
+        remplissent le libellé, le type et la catégorie, jamais le montant.
       </p>
 
       <ul className="mt-5 flex flex-col divide-y divide-border">

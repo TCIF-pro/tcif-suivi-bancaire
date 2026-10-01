@@ -126,7 +126,7 @@ export default async function AppLayout({
         {estDemo(user) && (
           <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 border-b border-accent/30 bg-accent/10 px-4 py-2 text-center text-xs font-medium text-foreground">
             <span>
-              Compte de démonstration — données fictives, remises à zéro chaque nuit.
+              Compte de démonstration : données fictives, remises à zéro chaque nuit.
             </span>
             <form action={signOut}>
               <button type="submit" className="font-semibold text-accent underline underline-offset-2">

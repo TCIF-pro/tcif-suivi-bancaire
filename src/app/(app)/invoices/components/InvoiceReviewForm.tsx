@@ -39,12 +39,12 @@ export function InvoiceReviewForm({
     <div className="mx-auto flex w-full max-w-xl flex-col gap-4 rounded-2xl border border-border bg-surface p-5 shadow-card sm:p-7">
       {extractionConfidence === "failed" ? (
         <p className="rounded-xl border border-accent/60 bg-accent/5 px-3 py-2 text-sm text-muted">
-          Extraction impossible sur ce PDF (probablement scanné) — remplis les
+          Extraction impossible sur ce PDF (probablement scanné) : remplis les
           champs ci-dessous à la main.
         </p>
       ) : (
         <p className="text-sm text-muted">
-          Champs pré-remplis automatiquement — vérifie-les avant de confirmer.
+          Champs pré-remplis automatiquement : vérifie-les avant de confirmer.
         </p>
       )}
 

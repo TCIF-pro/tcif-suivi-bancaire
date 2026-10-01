@@ -49,7 +49,7 @@ export default async function AdminPage() {
 
       <section className="max-w-2xl rounded-2xl border border-border bg-surface p-5 shadow-card sm:p-6">
         <h2 className="font-display text-base font-bold text-foreground">
-          Messages du support{aTraiter > 0 ? ` — ${aTraiter} à traiter` : ""}
+          Messages du support{aTraiter > 0 ? ` : ${aTraiter} à traiter` : ""}
         </h2>
 
         {erreurMessages && (
