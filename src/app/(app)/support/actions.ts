@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { envoyerEmail } from "@/lib/email/envoyer";
+import { emailSupport } from "./email";
 import { estDemo } from "@/lib/auth/roles";
 import { LONGUEUR_MAX_MESSAGE, LONGUEUR_MAX_SUJET } from "./limites";
 
@@ -77,17 +78,7 @@ export async function envoyerMessageSupport(
       to: destinataire,
       // L'expéditeur est l'app ; « Répondre » écrit directement à l'utilisateur.
       replyTo: user.email,
-      subject: `[Support TCIF] ${sujet}`,
-      text: [
-        `Nouveau message de ${user.email}`,
-        `Sujet : ${sujet}`,
-        "",
-        message,
-        "",
-        "—",
-        `Réponds directement à cet email pour écrire à ${user.email}.`,
-        `Tous les messages : ${protocole}://${hote}/admin`,
-      ].join("\n"),
+      ...emailSupport({ de: user.email, sujet, message, lienAdmin: `${protocole}://${hote}/admin` }),
     });
 
     if (envoye) {

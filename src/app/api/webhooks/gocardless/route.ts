@@ -3,7 +3,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { ErreurGoCardless, gocardless } from "@/lib/abonnement/gocardless";
 import { dateDebut, jourDeBlocage, PRIX_CENTIMES, signatureValide, statutApres } from "@/lib/abonnement/regles";
 import { changerSuspension } from "@/lib/abonnement/suspension";
-import { emailImpaye } from "@/lib/abonnement/emails";
+import { emailAbonnementConfirme, emailAbonnementResilie, emailImpaye } from "@/lib/abonnement/emails";
+import type { Email } from "@/lib/email/gabarit";
 import { envoyerEmail } from "@/lib/email/envoyer";
 import { jamaisSuspendu } from "@/lib/auth/roles";
 import { peutRecevoirEmails } from "@/lib/alertes/destinataires";
@@ -116,6 +117,41 @@ async function traiter(evenement: Evenement) {
   // la suspension.
   if (statut === "actif") await changerSuspension(admin, ligne.user_id, false);
   if (premierImpaye) await prevenirImpaye(admin, ligne.user_id, premierImpaye, modification.impaye_depuis as string);
+
+  // Résiliation (par la personne depuis l'app, par l'admin, ou dans
+  // GoCardless) : un email de confirmation. Pas pour une résiliation causée
+  // par un mandat mort, filtrée plus haut : c'est l'email d'impayé qui part.
+  if (nom === "subscriptions.cancelled") {
+    await notifierUneFois(admin, ligne.user_id, "email_resiliation_pour", valeur, emailAbonnementResilie(`${adresseDeLApp()}/settings`));
+  }
+}
+
+// Envoie un email AU PLUS UNE FOIS par abonnement GoCardless. La colonne est
+// remplie d'abord, par une seule requête conditionnelle : si GoCardless
+// renvoie l'événement, même au même moment, la seconde requête ne trouve plus
+// de ligne à modifier et rien ne part. Un échec d'envoi n'est pas retenté
+// (l'app affiche de toute façon l'état de l'abonnement dans Réglages).
+async function notifierUneFois(
+  admin: ReturnType<typeof createAdminClient>,
+  userId: string,
+  colonne: "email_confirmation_pour" | "email_resiliation_pour",
+  idAbonnement: string,
+  message: Email,
+) {
+  const { data, error } = await admin
+    .from("abonnements")
+    .update({ [colonne]: idAbonnement })
+    .eq("user_id", userId)
+    .or(`${colonne}.is.null,${colonne}.neq.${idAbonnement}`)
+    .select("user_id");
+  if (error) throw error;
+  if (!data?.length) return; // déjà envoyé pour cet abonnement
+
+  const { data: trouve } = await admin.auth.admin.getUserById(userId);
+  const user = trouve?.user;
+  if (!user || !peutRecevoirEmails(user)) return;
+  const envoye = await envoyerEmail({ to: user.email as string, ...message });
+  console.log(`[gocardless] email ${colonne === "email_confirmation_pour" ? "abonnement confirmé" : "abonnement résilié"} ${envoye ? "envoyé" : "NON envoyé"} à ${userId}`);
 }
 
 // Email du premier impayé. Un échec d'envoi ne fait pas échouer le webhook :
@@ -198,4 +234,15 @@ async function activer(idDemande: string) {
   if (error) throw error;
   await changerSuspension(admin, userId, false);
   console.log(`[gocardless] abonnement ${idAbonnement} actif pour ${userId}`);
+
+  const { subscriptions: abonnement } = await gocardless<{
+    subscriptions: { upcoming_payments?: { charge_date: string }[] };
+  }>(`/subscriptions/${idAbonnement}`);
+  await notifierUneFois(
+    admin,
+    userId,
+    "email_confirmation_pour",
+    idAbonnement,
+    emailAbonnementConfirme(abonnement.upcoming_payments?.[0]?.charge_date ?? null, `${adresseDeLApp()}/dashboard`),
+  );
 }

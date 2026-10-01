@@ -1,6 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { envoyerEmail } from "@/lib/email/envoyer";
+import type { Email } from "@/lib/email/gabarit";
 import { envoyerPush } from "@/lib/push/envoyer";
 import { emailEnSecours, type NotificationPush } from "@/lib/push/contenu";
 
@@ -13,7 +14,7 @@ export type Canal = "push" | "email" | "echec";
 export async function prevenir(
   admin: SupabaseClient,
   destinataire: { userId: string; email: string },
-  message: { push: NotificationPush; email: { subject: string; text: string } },
+  message: { push: NotificationPush; email: Email },
 ): Promise<Canal> {
   const bilanPush = await envoyerPush(admin, destinataire.userId, message.push);
   if (!emailEnSecours(bilanPush)) return "push";

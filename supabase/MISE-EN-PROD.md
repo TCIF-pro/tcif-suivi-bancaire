@@ -120,10 +120,17 @@ avec les environnements où elle existe (Production, Preview, Development).
       Sans ce réglage, Supabase n'envoie les emails de réinitialisation qu'aux
       membres de ton équipe Supabase : tes utilisateurs ne recevraient rien.
       **Ne pas ouvrir l'app à quelqu'un d'autre avant que ce point soit fait.**
-- [ ] **Modèle d'email en français** : Authentication → Emails → Templates →
-      Reset Password.
-      - Subject : `Choisis un nouveau mot de passe TCIF`
-      - Body : tout le contenu de `supabase/templates/reset-password.html`
+- [ ] **Modèles d'email en français** : Authentication → Emails → Templates.
+      Un fichier par modèle dans `supabase/templates/`, avec en tête l'objet à
+      saisir (Subject) ; coller tout le fichier dans « Message body ».
+      - Confirm signup : `confirmation.html`
+      - Reset Password : `reset-password.html`
+      - Magic Link : `magic-link.html`
+      - Change Email Address : `changement-email.html`
+      - Invite user : `invitation.html`
+
+      Ces fichiers sont GÉNÉRÉS par `src/lib/email/modeles-supabase.ts` (même
+      mise en page que les emails de l'app) : ne pas les modifier à la main.
 
       Même texte que sur la base de test, à l'identique. Le modèle par défaut de
       Supabase fonctionnerait, mais son lien échoue quand l'email est ouvert

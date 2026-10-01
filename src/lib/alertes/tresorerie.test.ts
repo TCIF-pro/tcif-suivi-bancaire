@@ -70,11 +70,12 @@ describe("emailAlerte", () => {
     expect(e.subject).toBe("⚠️ Plus que 8 jours de trésorerie sur ton compte Perso");
     expect(e.text).toContain("Si rien ne rentre d'ici là, ton compte Perso sera à zéro le 5 octobre 2026 (dans 8 jours)");
     expect(e.text).toMatch(/Solde actuel : 123,45\s€/);
-    expect(e.text).toContain(liens.lienTableauDeBord);
+    expect(e.text).toContain(`Voir mon tableau de bord : ${liens.lienTableauDeBord}`);
     expect(e.text).toContain("Pour la couper : Réglages → Alertes, https://app.tcif-pro.fr/settings");
+    expect(e.html).toContain(">Voir mon tableau de bord</a>");
     // Consigne de style : tirets courts, jamais de tiret cadratin dans les textes de l'app.
     expect(e.subject + e.text).not.toContain("—");
-    expect(e.text).toContain("\n-\nTCIF");
+    expect(e.text).toContain("\n--\nTCIF");
   });
 
   it("singulier à 1 jour", () => {
