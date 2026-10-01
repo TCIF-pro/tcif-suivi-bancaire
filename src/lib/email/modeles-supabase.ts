@@ -31,7 +31,7 @@ export const MODELES_SUPABASE = [
       paragraphes: [
         "Bienvenue sur TCIF ! Il reste une étape pour activer ton compte : confirmer que cette adresse est bien la tienne.",
       ],
-      bouton: { libelle: "Confirmer mon adresse", url: lien("signup", "/dashboard"), lienDeSecours: true },
+      bouton: { libelle: "Confirmer mon adresse", url: lien("signup", "/dashboard") },
       apres: [EXPIRATION, "Tu n'as pas créé de compte ? Ignore cet email : rien ne sera activé."],
       raison: "quelqu'un a créé un compte TCIF avec cette adresse.",
     }),
@@ -48,7 +48,6 @@ export const MODELES_SUPABASE = [
       bouton: {
         libelle: "Choisir mon mot de passe",
         url: lien("recovery", "/changer-mot-de-passe"),
-        lienDeSecours: true,
       },
       apres: [
         EXPIRATION,
@@ -66,7 +65,7 @@ export const MODELES_SUPABASE = [
       titre: "Ton lien de connexion",
       apercu: "Connecte-toi à TCIF en un clic.",
       paragraphes: ["Clique sur le bouton pour te connecter à ton compte TCIF, sans mot de passe."],
-      bouton: { libelle: "Me connecter", url: lien("magiclink", "/dashboard"), lienDeSecours: true },
+      bouton: { libelle: "Me connecter", url: lien("magiclink", "/dashboard") },
       apres: [EXPIRATION, "Tu n'as rien demandé ? Ignore cet email : personne ne pourra se connecter sans ce lien."],
       raison: "une connexion à ton compte TCIF a été demandée.",
     }),
@@ -82,7 +81,7 @@ export const MODELES_SUPABASE = [
       paragraphes: [
         "Tu as demandé à remplacer {{ .Email }} par {{ .NewEmail }} pour ton compte TCIF. Confirme le changement :",
       ],
-      bouton: { libelle: "Confirmer le changement", url: lien("email_change", "/settings"), lienDeSecours: true },
+      bouton: { libelle: "Confirmer le changement", url: lien("email_change", "/settings") },
       apres: [
         EXPIRATION,
         "Ce n'était pas toi ? Ignore cet email : ton adresse ne change pas. Et écris-nous à contact@tcif-pro.fr.",
@@ -105,7 +104,6 @@ export const MODELES_SUPABASE = [
       bouton: {
         libelle: "Choisir mon mot de passe",
         url: lien("invite", "/changer-mot-de-passe"),
-        lienDeSecours: true,
       },
       apres: [EXPIRATION, "Tu ne t'attendais pas à cette invitation ? Ignore cet email."],
       raison: "un compte TCIF a été créé pour toi.",

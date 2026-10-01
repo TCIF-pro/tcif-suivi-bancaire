@@ -33,7 +33,9 @@ export interface ContenuEmail {
   paragraphes: string[];
   /** Lignes « libellé : valeur » mises en valeur (ex. solde actuel). */
   details?: [string, string][];
-  bouton?: { libelle: string; url: string; lienDeSecours?: boolean };
+  /** Le lien n'apparaît en clair que dans la version texte : dans le HTML, un
+   * long lien plein de jetons fait suspect, le bouton suffit. */
+  bouton?: { libelle: string; url: string };
   /** Paragraphes en petit après le bouton (expiration, « ce n'était pas toi »...). */
   apres?: string[];
   /** Fin de la phrase « Tu reçois cet email car ... ». */
@@ -74,7 +76,7 @@ function paragraphe(texte: string, petit = false): string {
   return `<p class="${petit ? "discret" : "texte"}" style="${style}">${avecSautsDeLigne(texte)}</p>`;
 }
 
-function bouton({ libelle, url, lienDeSecours }: NonNullable<ContenuEmail["bouton"]>): string {
+function bouton({ libelle, url }: NonNullable<ContenuEmail["bouton"]>): string {
   const href = echapper(url);
   // Bouton « à l'épreuve d'Outlook » : un tableau dont la cellule porte la
   // couleur. Outlook ignore les coins arrondis, le bouton y reste lisible.
@@ -84,11 +86,7 @@ function bouton({ libelle, url, lienDeSecours }: NonNullable<ContenuEmail["bouto
       <a href="${href}" target="_blank" style="display:inline-block;padding:14px 24px;font-family:${POLICE};font-size:15px;font-weight:700;line-height:1.2;color:${C.surAccent};text-decoration:none;border-radius:12px;">${echapper(libelle)}</a>
     </td>
   </tr>
-</table>${
-    lienDeSecours
-      ? `<p class="discret" style="margin:0 0 20px;font-size:12px;line-height:1.5;color:${C.discret};">Le bouton ne marche pas ? Copie ce lien dans ton navigateur :<br><a class="lien" href="${href}" style="color:${C.accent};word-break:break-all;">${href}</a></p>`
-      : ""
-  }`;
+</table>`;
 }
 
 function details(lignes: [string, string][]): string {

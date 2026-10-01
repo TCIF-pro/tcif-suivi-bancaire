@@ -5,7 +5,7 @@ import { emailAbonnementConfirme, emailAbonnementResilie } from "@/lib/abonnemen
 const base = {
   titre: "Confirme ton adresse",
   paragraphes: ["Bienvenue sur TCIF !"],
-  bouton: { libelle: "Confirmer mon adresse", url: "https://app.tcif-pro.fr/auth/confirm?a=1&b=2", lienDeSecours: true },
+  bouton: { libelle: "Confirmer mon adresse", url: "https://app.tcif-pro.fr/auth/confirm?a=1&b=2" },
   apres: ["Ce lien est valable une heure."],
   raison: "quelqu'un a créé un compte avec cette adresse.",
 };
@@ -21,11 +21,13 @@ describe("gabaritEmail", () => {
     expect(html).not.toMatch(/<script|<link|@import|fonts\.googleapis/i);
   });
 
-  it("bouton, lien de secours et pied de page", () => {
+  it("bouton sans lien brut, et pied de page", () => {
     const { html } = gabaritEmail(base);
     expect(html).toContain('href="https://app.tcif-pro.fr/auth/confirm?a=1&amp;b=2"');
     expect(html).toContain(">Confirmer mon adresse</a>");
-    expect(html).toContain("Le bouton ne marche pas ? Copie ce lien");
+    // Le lien n'apparaît qu'une fois, dans le bouton : jamais en clair.
+    expect(html.match(/auth\/confirm\?a=1/g)).toHaveLength(1);
+    expect(html).not.toContain("Le bouton ne marche pas");
     expect(html).toContain("Tu reçois cet email car quelqu&#39;un a créé un compte avec cette adresse.");
     expect(html).toContain("mailto:contact@tcif-pro.fr");
     expect(html).toContain("https://app.tcif-pro.fr/conditions");

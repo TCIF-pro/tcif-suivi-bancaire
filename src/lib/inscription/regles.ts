@@ -95,7 +95,7 @@ export function emailConfirmation(lien: string): Email {
     paragraphes: [
       "Bienvenue sur TCIF ! Il reste une étape pour activer ton compte : confirmer que cette adresse est bien la tienne.",
     ],
-    bouton: { libelle: "Confirmer mon adresse", url: lien, lienDeSecours: true },
+    bouton: { libelle: "Confirmer mon adresse", url: lien },
     apres: [
       "Ce lien est valable une heure et ne sert qu'une fois. S'il a expiré, tu pourras en demander un nouveau depuis la page qui s'ouvrira.",
       "Tu n'as pas créé de compte ? Ignore cet email : rien ne sera activé.",
