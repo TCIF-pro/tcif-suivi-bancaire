@@ -64,7 +64,7 @@ export function emailRappel({
   return email(`Ça fait ${joursSansSaisie} jours... tes dépenses t'attendent sur TCIF`, {
     titre: "Tes dépenses t'attendent",
     paragraphes: [
-      `Ça fait ${joursSansSaisie} jours que t'as rien noté sur TCIF. Deux minutes pour rentrer tes dépenses, et tu sais exactement où t'en es, au lieu d'être dans la merde en fin de mois.`,
+      `Ça fait ${joursSansSaisie} jours que t'as rien noté sur TCIF. Deux minutes pour rentrer tes dépenses, et tu sais exactement où t'en es, pour éviter les mauvaises surprises en fin de mois.`,
     ],
     bouton: { libelle: "Noter mes dépenses", url: lienAjout },
     apres: numero >= RAPPELS_MAX ? ["C'est le dernier rappel : après, on te laisse tranquille."] : [],

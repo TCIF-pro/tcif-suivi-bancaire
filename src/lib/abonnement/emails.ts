@@ -75,3 +75,37 @@ export function emailAbonnementsOrphelins(
     raison: "tu es l'administrateur de TCIF (vérification quotidienne des abonnements).",
   });
 }
+
+/** Abonnement en place, juste après la signature du mandat. */
+export function emailAbonnementConfirme(premierPrelevement: string | null, lienApp: string): Email {
+  return email("Ton abonnement TCIF est actif", {
+    titre: "Ton abonnement est actif",
+    apercu: "Merci ! Ton abonnement TCIF est en place.",
+    paragraphes: ["Merci ! Ton abonnement TCIF est en place. Les prélèvements passent par GoCardless, notre prestataire de paiement."],
+    details: [
+      ["Formule", "3,99 € par mois"],
+      ...(premierPrelevement ? ([["Premier prélèvement", formatDateLong(premierPrelevement)]] as [string, string][]) : []),
+    ],
+    bouton: { libelle: "Ouvrir TCIF", url: lienApp },
+    apres: [
+      "Sans engagement : tu peux résilier à tout moment depuis Réglages, Abonnement.",
+      "GoCardless t'envoie aussi un email pour confirmer le mandat de prélèvement : c'est normal.",
+    ],
+    raison: "tu viens de t'abonner à TCIF.",
+  });
+}
+
+/** Abonnement résilié (par la personne, depuis l'app ou par GoCardless). */
+export function emailAbonnementResilie(lienReglages: string): Email {
+  return email("Ton abonnement TCIF est résilié", {
+    titre: "Ton abonnement est résilié",
+    apercu: "C'est noté : plus aucun prélèvement.",
+    paragraphes: ["C'est noté : ton abonnement TCIF est résilié. Plus aucun prélèvement ne sera fait."],
+    bouton: { libelle: "Me réabonner", url: lienReglages },
+    apres: [
+      "Tu peux te réabonner quand tu veux depuis Réglages, Abonnement.",
+      "Ce n'était pas toi ? Écris-nous tout de suite à contact@tcif-pro.fr.",
+    ],
+    raison: "ton abonnement TCIF vient d'être résilié.",
+  });
+}

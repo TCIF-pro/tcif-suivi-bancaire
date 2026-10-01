@@ -2,7 +2,13 @@ import { notFound } from "next/navigation";
 import { emailCompteExistant, emailConfirmation } from "@/lib/inscription/regles";
 import { emailAlerte } from "@/lib/alertes/tresorerie";
 import { emailRappel } from "@/lib/alertes/rappel";
-import { emailAbonnementsOrphelins, emailImpaye, emailRappelBlocage } from "@/lib/abonnement/emails";
+import {
+  emailAbonnementConfirme,
+  emailAbonnementResilie,
+  emailAbonnementsOrphelins,
+  emailImpaye,
+  emailRappelBlocage,
+} from "@/lib/abonnement/emails";
 import { emailSupport } from "../../(app)/support/email";
 import { MODELES_SUPABASE } from "@/lib/email/modeles-supabase";
 
@@ -38,6 +44,8 @@ export default function ApercuEmails() {
       }),
     },
     { groupe: "Alertes", nom: "Rappel de saisie (3e et dernier)", ...emailRappel({ joursSansSaisie: 21, numero: 3, lienAjout: `${APP}/transactions/new`, lienReglages: `${APP}/settings` }) },
+    { groupe: "Abonnement", nom: "Abonnement confirmé", ...emailAbonnementConfirme("2026-12-01", `${APP}/dashboard`) },
+    { groupe: "Abonnement", nom: "Abonnement résilié", ...emailAbonnementResilie(`${APP}/settings`) },
     { groupe: "Abonnement", nom: "Prélèvement échoué", ...emailImpaye("paiement", `${APP}/abonnement-impaye`, "2026-12-10") },
     { groupe: "Abonnement", nom: "Mandat plus valable", ...emailImpaye("mandat", `${APP}/abonnement-impaye`, "2026-12-10") },
     { groupe: "Abonnement", nom: "Rappel avant suspension", ...emailRappelBlocage("paiement", `${APP}/abonnement-impaye`, "2026-12-10") },

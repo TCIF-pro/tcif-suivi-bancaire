@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { email, gabaritEmail } from "./gabarit";
+import { emailAbonnementConfirme, emailAbonnementResilie } from "@/lib/abonnement/emails";
 
 const base = {
   titre: "Confirme ton adresse",
@@ -55,6 +56,28 @@ describe("gabaritEmail", () => {
 
   it("pas de tiret cadratin", () => {
     const e = email("Objet", base);
+    expect(e.subject + e.text + e.html).not.toContain("—");
+  });
+});
+
+describe("emails d'abonnement", () => {
+  it("confirmé : formule, premier prélèvement, bouton", () => {
+    const e = emailAbonnementConfirme("2026-12-01", "https://app.tcif-pro.fr/dashboard");
+    expect(e.subject).toBe("Ton abonnement TCIF est actif");
+    expect(e.text).toMatch(/Formule : 3,99\s€ par mois/);
+    expect(e.text).toContain("Premier prélèvement : 1 décembre 2026");
+    expect(e.html).toContain(">Ouvrir TCIF</a>");
+  });
+
+  it("confirmé sans date connue : pas de ligne vide", () => {
+    expect(emailAbonnementConfirme(null, "x").text).not.toContain("Premier prélèvement");
+  });
+
+  it("résilié : plus de prélèvement, se réabonner", () => {
+    const e = emailAbonnementResilie("https://app.tcif-pro.fr/settings");
+    expect(e.subject).toBe("Ton abonnement TCIF est résilié");
+    expect(e.text).toContain("Plus aucun prélèvement ne sera fait.");
+    expect(e.text).toContain("Me réabonner : https://app.tcif-pro.fr/settings");
     expect(e.subject + e.text + e.html).not.toContain("—");
   });
 });
