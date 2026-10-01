@@ -458,3 +458,20 @@ le compte est réactivé).
 - [ ] Les emails d'impayé sont en texte brut, rédigés dans
       `src/lib/abonnement/emails.ts` : à brancher sur la mise en page HTML
       des emails quand elle existera.
+
+### Phase 3 ter : abonnement obligatoire
+
+Tout compte sans abonnement en cours (et ni gratuit à vie, ni admin, ni
+démo) voit l'écran « Choisis ton abonnement » (`/abonnement`) à la place de
+l'app : 0 € aujourd'hui, premier prélèvement le 1er décembre 2026, 3,99 € par
+mois. Au retour de GoCardless, `/abonnement/retour` active l'abonnement tout
+de suite. Après une résiliation, l'accès reste ouvert jusqu'à la fin de la
+période payée. « Supprimer mon compte » est accessible depuis cet écran et
+depuis Réglages (abonnement résilié, PDF et données effacés).
+
+- [ ] `0030_fin_acces.sql` sur TEST, puis sur la prod **avant** de pousser
+      `main`. Sans elle, le layout ne peut pas lire l'abonnement et laisse
+      tout le monde passer (aucun blocage, rien de cassé).
+- [ ] **Avant la fusion** : lister les comptes existants (requête en lecture
+      seule) et poser `gratuit_a_vie` sur ceux qui doivent rester libres :
+      tous les autres seront bloqués dès le déploiement.

@@ -16,6 +16,7 @@ import { CategoriesSection } from "./components/CategoriesSection";
 import { DashboardCardsSection } from "./components/DashboardCardsSection";
 import { AlertesSection } from "./components/AlertesSection";
 import { AbonnementSection } from "./components/AbonnementSection";
+import { SupprimerMonCompte } from "./components/SupprimerMonCompte";
 
 const MESSAGES_ERREUR: Record<string, string> = {
   "categorie-vide": "Le nom ne peut pas être vide.",
@@ -50,7 +51,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
   // l'instant), jamais pour le compte démo.
   const avecAbonnement = gocardlessConfigure() && Boolean(user) && !estDemo(user);
   const { data: ligneAbonnement } = avecAbonnement
-    ? await supabase.from("abonnements").select("statut, impaye_depuis").maybeSingle()
+    ? await supabase.from("abonnements").select("statut, impaye_depuis, acces_jusqu_au").maybeSingle()
     : { data: null };
 
   const [
@@ -158,6 +159,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
           gratuitAVie={estGratuitAVie(user)}
           statut={(ligneAbonnement?.statut as StatutAbonnement | undefined) ?? null}
           mandatInvalide={ligneAbonnement?.statut === "annule" && Boolean(ligneAbonnement?.impaye_depuis)}
+          accesJusquAu={ligneAbonnement?.statut === "annule" ? (ligneAbonnement?.acces_jusqu_au ?? null) : null}
           vientDeSigner={abonnement === "signe"}
         />
       )}
@@ -433,6 +435,15 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
           </button>
         </form>
       </section>
+      {/* Pas pour l'admin (seul accès à /admin) ni pour la démo (partagée). */}
+      {user && !administrateur && !estDemo(user) && (
+        <section className="max-w-md rounded-2xl border border-border bg-surface p-5 shadow-card sm:p-6">
+          <h2 className="font-display text-base font-bold text-foreground">Mon compte</h2>
+          <div className="mt-3">
+            <SupprimerMonCompte />
+          </div>
+        </section>
+      )}
     </div>
   );
 }

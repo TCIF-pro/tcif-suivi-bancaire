@@ -1,5 +1,5 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
-import { addDaysToDateString } from "@/lib/dates";
+import { addDaysToDateString, addMonthsToDateString } from "@/lib/dates";
 
 // Règles de l'abonnement TCIF (V3, phase 3), sans appel réseau : testées
 // dans regles.test.ts.
@@ -106,4 +106,47 @@ export function situationImpaye(ligne: {
   if (ligne.statut === "en_retard") return "paiement";
   if (ligne.statut === "annule") return "mandat";
   return null;
+}
+
+// ---------------------------------------------------------------------------
+// Abonnement obligatoire (migration 0030)
+// ---------------------------------------------------------------------------
+
+export interface LigneAbonnement {
+  statut: StatutAbonnement;
+  impaye_depuis: string | null;
+  acces_jusqu_au: string | null;
+}
+
+/**
+ * Faut-il afficher l'écran « Choisis ton abonnement » à la place de l'app ?
+ * - jamais si GoCardless n'est pas configuré (personne ne pourrait payer),
+ *   ni pour les comptes exemptés (gratuit à vie, admin, démo) ;
+ * - oui sans abonnement ;
+ * - non si actif ou en retard (l'impayé a son propre parcours) ;
+ * - résilié : non tant qu'un mandat mort est en délai de grâce (parcours
+ *   d'impayé), ni jusqu'à la fin de la période payée ; oui ensuite.
+ */
+export function doitSouscrire(
+  ligne: LigneAbonnement | null,
+  { configure, exempte, aujourdhui }: { configure: boolean; exempte: boolean; aujourdhui: string },
+): boolean {
+  if (!configure || exempte) return false;
+  if (!ligne) return true;
+  if (ligne.statut !== "annule") return false;
+  if (ligne.impaye_depuis) return false;
+  return !(ligne.acces_jusqu_au && aujourdhui <= ligne.acces_jusqu_au);
+}
+
+const PAIEMENT_PASSE = ["submitted", "confirmed", "paid_out"];
+
+/**
+ * Dernier jour d'accès après une résiliation : la veille de l'échéance qui
+ * suit le dernier prélèvement passé (ou en cours). `null` si rien n'a été
+ * prélevé : il n'y a pas de période payée à honorer.
+ */
+export function finDAcces(paiements: { charge_date: string; status: string }[]): string | null {
+  const dates = paiements.filter((p) => PAIEMENT_PASSE.includes(p.status)).map((p) => p.charge_date).sort();
+  const dernier = dates.at(-1);
+  return dernier ? addDaysToDateString(addMonthsToDateString(dernier, 1), -1) : null;
 }

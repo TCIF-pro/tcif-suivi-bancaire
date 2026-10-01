@@ -6,6 +6,7 @@ import { exigerAdmin } from "@/lib/auth/admin-guard";
 import { genererMotDePasseProvisoire } from "@/lib/auth/mot-de-passe";
 import { estDemo } from "@/lib/auth/roles";
 import { resilierChezGoCardless } from "@/lib/abonnement/resilier";
+import { supprimerCompteEtDonnees } from "@/lib/auth/supprimer-compte";
 
 // Toutes ces actions tournent avec la clé service_role (création de compte,
 // bannissement...) : chacune commence par `exigerAdmin()`, sans exception.
@@ -158,10 +159,8 @@ export async function changerActivation(userId: string, activer: boolean): Promi
   return {};
 }
 
-// Suppression définitive d'un compte et de toutes ses données (cascade en
-// base). Son abonnement GoCardless est résilié et son mandat annulé AVANT :
-// si GoCardless refuse, rien n'est supprimé (un compte supprimé avec un
-// abonnement actif continuerait d'être prélevé, sans moyen de le retrouver).
+// Suppression définitive d'un compte et de toutes ses données : voir
+// supprimerCompteEtDonnees (abonnement résilié d'abord, puis PDF, puis compte).
 export async function supprimerCompte(userId: string): Promise<EtatAction> {
   const admin = await exigerAdmin();
   if (!admin) return { erreur: "Action réservée à l'administrateur." };
@@ -171,22 +170,8 @@ export async function supprimerCompte(userId: string): Promise<EtatAction> {
   const { data: cible } = await client.auth.admin.getUserById(userId);
   if (cible?.user && estDemo(cible.user)) return { erreur: "Le compte démo ne se supprime pas." };
 
-  try {
-    const ligne = await ligneAbonnement(userId);
-    if (ligne) await resilierChezGoCardless(ligne, { mandat: true });
-  } catch (erreur) {
-    console.error("[admin] résiliation GoCardless en échec, suppression annulée", erreur);
-    return {
-      erreur: "La résiliation GoCardless a échoué : le compte n'a pas été supprimé. Réessaie dans un instant.",
-    };
-  }
-
-  const { error } = await client.auth.admin.deleteUser(userId);
-  if (error) {
-    console.error("[admin] suppression refusée", error);
-    return { erreur: "Supabase a refusé la suppression (l'abonnement GoCardless, lui, est bien résilié)." };
-  }
-  console.log(`[admin] compte ${userId} supprimé`);
+  const erreur = await supprimerCompteEtDonnees(userId);
+  if (erreur) return { erreur };
   revalidatePath("/admin");
   return {};
 }
