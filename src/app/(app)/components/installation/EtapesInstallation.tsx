@@ -1,7 +1,9 @@
 import type { SystemeMobile } from "@/lib/pwa/installation";
+import { ETAPES_INSTALLATION } from "@/lib/pwa/etapes";
 
-// Les étapes pour installer TCIF sur l'écran d'accueil, par système.
-// Utilisées dans la visite guidée, dans Réglages et derrière le bandeau.
+// Affichage des étapes pour installer TCIF sur l'écran d'accueil (texte
+// défini dans lib/pwa/etapes.ts). Utilisé dans la visite guidée, dans
+// Réglages (sections Installer et Notifications).
 
 function IconePartager() {
   return (
@@ -22,33 +24,10 @@ function IconeMenu() {
   );
 }
 
-const ETAPES: Record<SystemeMobile, { nom: string; etapes: React.ReactNode[] }> = {
-  ios: {
-    nom: "iPhone (Safari)",
-    etapes: [
-      <>
-        Touche <strong className="text-foreground">Partager</strong> <IconePartager />, en bas de l&apos;écran.
-      </>,
-      <>
-        Choisis <strong className="text-foreground">Sur l&apos;écran d&apos;accueil</strong>, puis Ajouter.
-      </>,
-    ],
-  },
-  android: {
-    nom: "Android (Chrome)",
-    etapes: [
-      <>
-        Touche le <strong className="text-foreground">menu</strong> <IconeMenu />, en haut à droite.
-      </>,
-      <>
-        Choisis <strong className="text-foreground">Installer l&apos;application</strong>, puis Installer.
-      </>,
-    ],
-  },
-};
+const ICONES = { partager: <IconePartager />, menu: <IconeMenu /> };
 
 export function EtapesInstallation({ systeme, avecNom = false }: { systeme: SystemeMobile; avecNom?: boolean }) {
-  const { nom, etapes } = ETAPES[systeme];
+  const { nom, etapes } = ETAPES_INSTALLATION[systeme];
   return (
     <div>
       {avecNom && <p className="mb-2 text-sm font-semibold text-foreground">{nom}</p>}
@@ -61,7 +40,18 @@ export function EtapesInstallation({ systeme, avecNom = false }: { systeme: Syst
             >
               {i + 1}
             </span>
-            <span className="pt-0.5">{etape}</span>
+            <span className="pt-0.5">
+              {etape.map((m, j) =>
+                typeof m === "string" ? (
+                  m
+                ) : (
+                  <span key={j}>
+                    <strong className="text-foreground">{m.fort}</strong>
+                    {m.icone && <> {ICONES[m.icone]}</>}
+                  </span>
+                ),
+              )}
+            </span>
           </li>
         ))}
       </ol>

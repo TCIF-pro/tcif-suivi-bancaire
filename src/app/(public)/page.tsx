@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { etapesEnTexte } from "@/lib/pwa/etapes";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { BoutonDemo } from "@/components/BoutonDemo";
@@ -56,7 +57,7 @@ const QUESTIONS = [
   {
     question: "Ça marche sur téléphone ?",
     reponse:
-      "Oui. Sur iPhone, ouvre TCIF dans Safari puis Partager, Sur l'écran d'accueil : elle s'installe comme une app, avec les notifications d'alerte.",
+      `Oui : installe-la sur ton écran d'accueil, elle s'ouvre en plein écran comme une app, avec les notifications d'alerte. Sur iPhone, dans Safari : ${etapesEnTexte("ios").join(" ")} Sur Android, dans Chrome : ${etapesEnTexte("android").join(" ")}`,
   },
   {
     question: "Combien ça coûte ?",

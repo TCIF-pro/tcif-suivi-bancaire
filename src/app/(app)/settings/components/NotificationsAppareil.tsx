@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { EtapesInstallation } from "../../components/installation/EtapesInstallation";
 import {
   enregistrerAppareil,
   envoyerNotificationTest,
@@ -157,12 +158,11 @@ export function NotificationsAppareil() {
       )}
 
       {etat === "a-installer" && (
-        <p className="text-sm text-muted">
-          Sur iPhone, les notifications ne marchent qu&apos;avec l&apos;app installée : dans
-          Safari, touche <span className="font-semibold text-foreground">Partager</span>, puis{" "}
-          <span className="font-semibold text-foreground">Sur l&apos;écran d&apos;accueil</span>,
-          et rouvre TCIF depuis son icône.
-        </p>
+        <div className="flex flex-col gap-3 text-sm text-muted">
+          <p>Sur iPhone, les notifications ne marchent qu&apos;avec l&apos;app installée :</p>
+          <EtapesInstallation systeme="ios" />
+          <p>Puis rouvre TCIF depuis son icône.</p>
+        </div>
       )}
 
       {etat === "non-supporte" && (
