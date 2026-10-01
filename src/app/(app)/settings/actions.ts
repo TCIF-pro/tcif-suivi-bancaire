@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { creerCompteEpargne } from "@/lib/accounts/create";
+import { isAccentColorId } from "@/lib/accent-colors";
 
 export async function updateAccountBalance(accountId: string, formData: FormData) {
   const supabase = await createClient();
@@ -54,6 +55,7 @@ export async function updateAccentColor(formData: FormData) {
   if (!user) return;
 
   const accentColor = String(formData.get("accent_color"));
+  if (!isAccentColorId(accentColor)) return;
 
   await supabase
     .from("user_settings")
