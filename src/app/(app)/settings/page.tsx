@@ -383,32 +383,51 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
           </button>
         </form>
 
+        {/* Pastilles d'aperçu : chacune montre la nuance réellement utilisée
+            avec le thème en cours (claire ou sombre), et le texte posé dessus
+            tel qu'il apparaîtra sur les boutons. Les vrais boutons radio
+            restent dans la page (masqués) : clavier et lecteurs d'écran. */}
         <form
           action={updateAccentColor}
-          className="mt-6 flex flex-wrap items-center gap-4 border-t border-border pt-6"
+          className="mt-6 flex flex-col gap-4 border-t border-border pt-6"
         >
-          {Object.entries(ACCENT_COLORS).map(([id, color]) => (
-            <label
-              key={id}
-              className="flex items-center gap-2 text-sm text-foreground"
-            >
-              <input
-                type="radio"
-                name="accent_color"
-                value={id}
-                defaultChecked={currentAccentColor === id}
-              />
-              <span
-                className="h-4 w-4 rounded-full"
-                style={{ background: color.light }}
-              />
-              {color.label}
-            </label>
-          ))}
+          <fieldset>
+            <legend className="text-sm font-medium text-foreground">Couleur d&apos;accentuation</legend>
+            <div className="mt-3 grid grid-cols-3 gap-3 sm:grid-cols-6">
+              {Object.entries(ACCENT_COLORS).map(([id, color]) => {
+                const sombre = settings?.theme === "dark";
+                return (
+                  <label key={id} className="flex cursor-pointer flex-col items-center gap-1.5">
+                    <input
+                      type="radio"
+                      name="accent_color"
+                      value={id}
+                      defaultChecked={currentAccentColor === id}
+                      className="peer sr-only"
+                    />
+                    <span
+                      aria-hidden="true"
+                      className="flex h-12 w-full items-center justify-center rounded-xl text-sm font-bold ring-offset-2 ring-offset-surface transition-shadow peer-checked:ring-2 peer-checked:ring-foreground peer-focus-visible:ring-2 peer-focus-visible:ring-accent"
+                      style={{
+                        background: sombre ? color.dark : color.light,
+                        // Même texte que sur les boutons de l'app pour ce thème.
+                        color: "var(--on-accent)",
+                      }}
+                    >
+                      Aa
+                    </span>
+                    <span className="text-xs text-muted peer-checked:font-semibold peer-checked:text-foreground">
+                      {color.label}
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+          </fieldset>
 
           <button
             type="submit"
-            className="inline-flex h-12 items-center justify-center rounded-xl bg-accent px-5 font-bold text-on-accent transition-opacity hover:opacity-90"
+            className="inline-flex h-12 items-center justify-center self-start rounded-xl bg-accent px-5 font-bold text-on-accent transition-opacity hover:opacity-90"
           >
             Appliquer
           </button>
