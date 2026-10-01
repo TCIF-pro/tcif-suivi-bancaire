@@ -3,11 +3,10 @@ import { createClient } from "@/lib/supabase/server";
 import { estAdmin, estDemo, estGratuitAVie } from "@/lib/auth/roles";
 import { gocardlessConfigure } from "@/lib/abonnement/gocardless";
 import type { StatutAbonnement } from "@/lib/abonnement/regles";
-import { ACCENT_COLORS, isAccentColorId, type AccentColorId } from "@/lib/accent-colors";
+import { estChoixAccent, teinteValide } from "@/lib/accent-colors";
 import {
   updateAccountBalance,
   updateTheme,
-  updateAccentColor,
   setAccountArchived,
   createSavingsAccount,
 } from "./actions";
@@ -18,6 +17,7 @@ import { AlertesSection } from "./components/AlertesSection";
 import { AbonnementSection } from "./components/AbonnementSection";
 import { SupprimerMonCompte } from "./components/SupprimerMonCompte";
 import { InstallationSection } from "./components/InstallationSection";
+import { CouleurAccent } from "./components/CouleurAccent";
 
 const MESSAGES_ERREUR: Record<string, string> = {
   "categorie-vide": "Le nom ne peut pas être vide.",
@@ -62,6 +62,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
     { data: quickLabels },
     { data: alertes },
     { data: rappel },
+    { data: personnalisee },
   ] = await Promise.all([
     supabase
       .from("user_settings")
@@ -89,6 +90,8 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
     supabase.from("user_settings").select("alerte_tresorerie").maybeSingle(),
     // Idem pour la migration 0022 : chaque réglage d'alerte est lu à part.
     supabase.from("user_settings").select("rappel_saisie").maybeSingle(),
+    // Idem pour la teinte de la couleur personnalisée (migration 0031).
+    supabase.from("user_settings").select("accent_teinte").maybeSingle(),
   ]);
 
   // Combien d'éléments utilisent chaque catégorie, dans les quatre tables qui
@@ -114,10 +117,8 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
   const aUnLivret = (accounts ?? []).some((a) => a.kind === "savings");
 
   const rawAccentColor = settings?.accent_color;
-  const currentAccentColor: AccentColorId =
-    typeof rawAccentColor === "string" && isAccentColorId(rawAccentColor)
-      ? rawAccentColor
-      : "brass";
+  const choixAccent =
+    typeof rawAccentColor === "string" && estChoixAccent(rawAccentColor) ? rawAccentColor : "brass";
 
   return (
     <div className="flex flex-col gap-8">
@@ -386,55 +387,11 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
           </button>
         </form>
 
-        {/* Pastilles d'aperçu : chacune montre la nuance réellement utilisée
-            avec le thème en cours (claire ou sombre), et le texte posé dessus
-            tel qu'il apparaîtra sur les boutons. Les vrais boutons radio
-            restent dans la page (masqués) : clavier et lecteurs d'écran. */}
-        <form
-          action={updateAccentColor}
-          className="mt-6 flex flex-col gap-4 border-t border-border pt-6"
-        >
-          <fieldset>
-            <legend className="text-sm font-medium text-foreground">Couleur d&apos;accentuation</legend>
-            <div className="mt-3 grid grid-cols-3 gap-3 sm:grid-cols-6">
-              {Object.entries(ACCENT_COLORS).map(([id, color]) => {
-                const sombre = settings?.theme === "dark";
-                return (
-                  <label key={id} className="flex cursor-pointer flex-col items-center gap-1.5">
-                    <input
-                      type="radio"
-                      name="accent_color"
-                      value={id}
-                      defaultChecked={currentAccentColor === id}
-                      className="peer sr-only"
-                    />
-                    <span
-                      aria-hidden="true"
-                      className="flex h-12 w-full items-center justify-center rounded-xl text-sm font-bold ring-offset-2 ring-offset-surface transition-shadow peer-checked:ring-2 peer-checked:ring-foreground peer-focus-visible:ring-2 peer-focus-visible:ring-accent"
-                      style={{
-                        background: sombre ? color.dark : color.light,
-                        // Même texte que sur les boutons de l'app pour ce thème.
-                        color: "var(--on-accent)",
-                      }}
-                    >
-                      Aa
-                    </span>
-                    <span className="text-xs text-muted peer-checked:font-semibold peer-checked:text-foreground">
-                      {color.label}
-                    </span>
-                  </label>
-                );
-              })}
-            </div>
-          </fieldset>
-
-          <button
-            type="submit"
-            className="inline-flex h-12 items-center justify-center self-start rounded-xl bg-accent px-5 font-bold text-on-accent transition-opacity hover:opacity-90"
-          >
-            Appliquer
-          </button>
-        </form>
+        <CouleurAccent
+          choixActuel={choixAccent}
+          teinteActuelle={teinteValide(personnalisee?.accent_teinte) ? personnalisee.accent_teinte : null}
+          sombre={settings?.theme === "dark"}
+        />
       </section>
       <InstallationSection />
 

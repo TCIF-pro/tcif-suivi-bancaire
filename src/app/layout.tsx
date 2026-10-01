@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Bricolage_Grotesque, Figtree, IBM_Plex_Mono } from "next/font/google";
 import { createClient } from "@/lib/supabase/server";
-import { ACCENT_COLORS, isAccentColorId, type AccentColorId } from "@/lib/accent-colors";
+import { nuancesAccent } from "@/lib/accent-colors";
 import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
 import "./globals.css";
 
@@ -76,7 +76,7 @@ export const viewport: Viewport = {
 // pas de flash de mauvais thème/couleur au chargement.
 async function getAppearance(): Promise<{
   theme: "light" | "dark";
-  accentColorId: AccentColorId;
+  accent: { light: string; dark: string };
 }> {
   const supabase = await createClient();
   const {
@@ -89,22 +89,19 @@ async function getAppearance(): Promise<{
     // c'est celui d'un compte neuf (valeur par défaut posée par la migration
     // 0019), la première connexion s'enchaîne donc sans à-coup, et un écran
     // sombre est plus confortable de nuit sur téléphone.
-    return { theme: "dark", accentColorId: "brass" };
+    return { theme: "dark", accent: nuancesAccent("brass", null) };
   }
 
-  const { data: settings } = await supabase
-    .from("user_settings")
-    .select("theme, accent_color")
-    .single();
+  // La teinte (couleur personnalisée, migration 0031) est lue À PART : si la
+  // colonne manque, seule cette lecture échoue, et le thème comme la couleur
+  // restent ceux de la personne au lieu de retomber sur les valeurs par défaut.
+  const [{ data: settings }, { data: personnalisee }] = await Promise.all([
+    supabase.from("user_settings").select("theme, accent_color").single(),
+    supabase.from("user_settings").select("accent_teinte").maybeSingle(),
+  ]);
 
   const theme = settings?.theme === "dark" ? "dark" : "light";
-  const rawAccentColor = settings?.accent_color;
-  const accentColorId: AccentColorId =
-    typeof rawAccentColor === "string" && isAccentColorId(rawAccentColor)
-      ? rawAccentColor
-      : "brass";
-
-  return { theme, accentColorId };
+  return { theme, accent: nuancesAccent(settings?.accent_color, personnalisee?.accent_teinte) };
 }
 
 export default async function RootLayout({
@@ -112,8 +109,7 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const { theme, accentColorId } = await getAppearance();
-  const accent = ACCENT_COLORS[accentColorId];
+  const { theme, accent } = await getAppearance();
 
   return (
     <html

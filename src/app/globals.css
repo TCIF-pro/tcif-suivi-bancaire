@@ -215,3 +215,27 @@ form:not(:has(input[name="is_savings"]:checked)) .champ-virement-abo {
     animation: none;
   }
 }
+
+/* Barre de teinte (Réglages → couleur personnalisée) : poignée ronde et
+   large, facile à attraper au doigt ; contour visible au clavier. */
+.teinte::-webkit-slider-thumb {
+  appearance: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 9999px;
+  background: #ffffff;
+  border: 3px solid #131823;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+}
+.teinte::-moz-range-thumb {
+  width: 24px;
+  height: 24px;
+  border-radius: 9999px;
+  background: #ffffff;
+  border: 3px solid #131823;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+}
+.teinte:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
