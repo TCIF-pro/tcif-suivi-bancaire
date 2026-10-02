@@ -2,9 +2,9 @@
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 
-// Vidéo de présentation (version verticale), dans le bloc d'accroche de la
+// Vidéo de présentation (version carrée), dans le bloc d'accroche de la
 // page d'accueil publique.
-// - Place réservée par le ratio 9:16 : pas de saut de mise en page.
+// - Place réservée par le ratio 1:1 : pas de saut de mise en page.
 // - Couverture affichée tout de suite ; seules les métadonnées de la vidéo
 //   sont chargées au départ (preload="metadata").
 // - Lecture quand elle est visible à 50 %, pause quand elle sort de l'écran.
@@ -64,11 +64,11 @@ export function VideoAccueil() {
   }, [sonActif]);
 
   return (
-    <div className="relative mx-auto aspect-[9/16] w-full max-w-[22rem] overflow-hidden rounded-3xl border border-border bg-surface shadow-card">
+    <div className="relative mx-auto aspect-square w-full max-w-[22rem] md:max-w-[29rem] overflow-hidden rounded-3xl border border-border bg-surface shadow-card">
       <video
         ref={video}
-        src="/video/tcif-accueil-vertical.mp4"
-        poster="/video/tcif-accueil-vertical-cover-hero.jpg"
+        src="/video/tcif-accueil-carre.mp4"
+        poster="/video/tcif-accueil-carre-cover.jpg"
         muted
         loop
         playsInline

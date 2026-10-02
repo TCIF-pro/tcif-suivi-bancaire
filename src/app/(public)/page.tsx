@@ -78,7 +78,7 @@ export default async function PageAccueil() {
   return (
     <>
       {/* Accroche : la promesse, et la vidéo de présentation. */}
-      <section className="mx-auto grid w-full max-w-6xl items-center gap-14 px-4 pt-14 pb-20 md:grid-cols-[1.1fr_1fr] md:px-8 md:pt-24 md:pb-28">
+      <section className="mx-auto grid w-full max-w-7xl items-center gap-14 px-4 pt-14 pb-20 md:grid-cols-[1.1fr_1fr] md:px-8 md:pt-24 md:pb-28">
         <div className="flex flex-col gap-7">
           <h1 className="font-display text-[2.75rem] leading-[1.02] font-bold tracking-[-0.03em] text-foreground sm:text-6xl lg:text-7xl">
             Vois où tu en es, avant ton banquier.
