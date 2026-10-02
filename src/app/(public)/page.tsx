@@ -3,6 +3,7 @@ import { etapesEnTexte } from "@/lib/pwa/etapes";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { BoutonDemo } from "@/components/BoutonDemo";
+import { VideoAccueil } from "@/components/VideoAccueil";
 import { Button } from "@/components/ui/button";
 import {
   Accordion,
@@ -118,6 +119,11 @@ export default async function PageAccueil() {
             </span>
           </div>
         </div>
+      </section>
+
+      {/* Vidéo de présentation (30 s) : verticale sur téléphone, large sur ordinateur. */}
+      <section className="mx-auto w-full max-w-6xl px-4 pb-20 md:px-8 md:pb-28">
+        <VideoAccueil />
       </section>
 
       {/* Extrait du tableau de bord, avec ses propres composants. */}
