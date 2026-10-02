@@ -2,26 +2,26 @@
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 
-// Vidéo de présentation de la page d'accueil publique.
-// - Une seule vidéo chargée : verticale sur téléphone, large sur ordinateur.
-//   Le format est choisi dans le navigateur ; le serveur n'envoie que l'image
-//   de couverture (<picture>, qui ne charge elle aussi que la bonne image).
-// - Lecture quand elle est à l'écran, pause quand elle en sort.
+// Vidéo de présentation (version verticale), dans le bloc d'accroche de la
+// page d'accueil publique.
+// - Place réservée par le ratio 9:16 : pas de saut de mise en page.
+// - Couverture affichée tout de suite ; seules les métadonnées de la vidéo
+//   sont chargées au départ (preload="metadata").
+// - Lecture quand elle est visible à 50 %, pause quand elle sort de l'écran.
 // - Son coupé au départ (les navigateurs bloquent le son automatique).
 // - « Réduire les animations » : pas de lecture automatique, un bouton lecture.
 
-const LARGE = "(min-width: 768px)";
 const REDUIRE = "(prefers-reduced-motion: reduce)";
 
-function useMedia(requete: string): boolean | null {
+function useReduireAnimations(): boolean | null {
   return useSyncExternalStore(
     (changement) => {
-      const m = window.matchMedia(requete);
+      const m = window.matchMedia(REDUIRE);
       m.addEventListener("change", changement);
       return () => m.removeEventListener("change", changement);
     },
-    () => window.matchMedia(requete).matches,
-    () => null, // inconnu côté serveur
+    () => window.matchMedia(REDUIRE).matches,
+    () => null, // inconnu côté serveur : rien ne part avant de savoir
   );
 }
 
@@ -37,14 +37,10 @@ const ICONE = {
 };
 
 export function VideoAccueil() {
-  const large = useMedia(LARGE);
-  const reduire = useMedia(REDUIRE);
+  const reduire = useReduireAnimations();
   const video = useRef<HTMLVideoElement>(null);
   const [sonActif, setSonActif] = useState(false);
   const [lanceeParLaPersonne, setLanceeParLaPersonne] = useState(false);
-  const [enLecture, setEnLecture] = useState(false);
-
-  const format = large === null ? null : large ? "large" : "vertical";
   const lectureAutorisee = reduire === false || lanceeParLaPersonne;
 
   // Lecture à l'écran, pause hors de l'écran.
@@ -60,46 +56,29 @@ export function VideoAccueil() {
     );
     observateur.observe(v);
     return () => observateur.disconnect();
-  }, [format, lectureAutorisee]);
+  }, [lectureAutorisee]);
 
   // `muted` doit être posé sur l'élément lui-même : l'attribut React seul ne suit pas les changements.
   useEffect(() => {
     if (video.current) video.current.muted = !sonActif;
-  }, [sonActif, format]);
+  }, [sonActif]);
 
   return (
-    <div className="relative mx-auto aspect-[9/16] w-full max-w-[22rem] overflow-hidden rounded-3xl border border-border bg-surface shadow-card md:aspect-video md:max-w-4xl">
-      {/* Couverture, affichée tout de suite (et seule si la lecture n'a pas commencé) */}
-      <picture>
-        <source media={LARGE} srcSet="/video/tcif-accueil-large-cover.jpg" />
-        <img
-          src="/video/tcif-accueil-vertical-cover.jpg"
-          alt=""
-          decoding="async"
-          loading="lazy"
-          className="absolute inset-0 h-full w-full object-cover"
-        />
-      </picture>
-
-      {format && (
-        <video
-          key={format}
-          ref={video}
-          src={`/video/tcif-accueil-${format}.mp4`}
-          poster={`/video/tcif-accueil-${format}-cover.jpg`}
-          muted
-          loop
-          playsInline
-          preload="metadata"
-          aria-label="Présentation de TCIF en 30 secondes"
-          onPlay={() => setEnLecture(true)}
-          onPause={() => setEnLecture(false)}
-          className="absolute inset-0 h-full w-full object-cover"
-        />
-      )}
+    <div className="relative mx-auto aspect-[9/16] w-full max-w-[22rem] overflow-hidden rounded-3xl border border-border bg-surface shadow-card">
+      <video
+        ref={video}
+        src="/video/tcif-accueil-vertical.mp4"
+        poster="/video/tcif-accueil-vertical-cover-hero.jpg"
+        muted
+        loop
+        playsInline
+        preload="metadata"
+        aria-label="Présentation de TCIF en 30 secondes"
+        className="absolute inset-0 h-full w-full object-cover"
+      />
 
       {/* Réduire les animations : rien ne part tout seul, la personne lance la vidéo */}
-      {format && reduire && !lanceeParLaPersonne && (
+      {reduire && !lanceeParLaPersonne && (
         <button
           type="button"
           onClick={() => {
@@ -115,7 +94,7 @@ export function VideoAccueil() {
         </button>
       )}
 
-      {format && (enLecture || lanceeParLaPersonne || reduire === false) && (
+      {lectureAutorisee && (
         <button
           type="button"
           onClick={() => setSonActif((actif) => !actif)}
