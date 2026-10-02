@@ -82,7 +82,7 @@ export function InvoiceList({ rows }: { rows: InvoiceRow[] }) {
                 {row.amount !== null ? (
                   <Montant value={row.amount} ton="neutral" taille="sm" />
                 ) : (
-                  <span className="text-sm text-muted">—</span>
+                  <span className="text-sm text-muted">-</span>
                 )}
               </div>
             </Link>

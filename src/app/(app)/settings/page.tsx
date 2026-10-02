@@ -142,7 +142,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
           href="/admin"
           className="flex max-w-md items-center justify-between rounded-2xl border border-accent/40 bg-accent/10 px-5 py-4 text-sm font-semibold text-foreground transition-colors hover:border-accent"
         >
-          Administration — gérer les comptes
+          Administration : gérer les comptes
           <span aria-hidden="true">→</span>
         </Link>
       )}

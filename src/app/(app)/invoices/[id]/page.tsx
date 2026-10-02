@@ -83,7 +83,7 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
     <div className="flex flex-col gap-6">
       <div>
         <h1 className="font-display text-2xl font-bold tracking-tight text-foreground">
-          {DOC_TYPE_LABELS[invoice.doc_type] ?? invoice.doc_type} —{" "}
+          {DOC_TYPE_LABELS[invoice.doc_type] ?? invoice.doc_type} -{" "}
           {invoice.party_name ?? invoice.file_name}
         </h1>
         <p className="mt-2 flex flex-wrap items-center gap-2 text-sm text-muted">
