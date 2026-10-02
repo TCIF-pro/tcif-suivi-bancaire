@@ -64,7 +64,7 @@ export function VideoAccueil() {
   }, [sonActif]);
 
   return (
-    <div className="relative mx-auto aspect-square w-full max-w-[22rem] md:max-w-[29rem] overflow-hidden rounded-3xl border border-border bg-surface shadow-card">
+    <div className="relative mx-auto aspect-square w-full max-w-[22rem] md:mr-0 md:max-w-[29rem] overflow-hidden rounded-3xl border border-border bg-surface shadow-card">
       <video
         ref={video}
         src="/video/tcif-accueil-carre.mp4"
