@@ -15,6 +15,7 @@ export const config = {
     // accessibles sans session (favicon visible sur /login, page de secours
     // utilisable hors-ligne). L'image d'aperçu (opengraph-image) aussi : sans
     // elle, un lien partagé sur WhatsApp afficherait la page de connexion.
-    "/((?!_next/static|_next/image|favicon.ico|manifest.json|sw.js|offline.html|icon.png|apple-icon.png|opengraph-image|icons/|api/).*)",
+    // La vidéo de présentation de l'accueil (public/video) est vue sans compte.
+    "/((?!_next/static|_next/image|favicon.ico|manifest.json|sw.js|offline.html|icon.png|apple-icon.png|opengraph-image|icons/|video/|api/).*)",
   ],
 };

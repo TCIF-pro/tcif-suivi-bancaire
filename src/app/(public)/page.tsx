@@ -3,6 +3,7 @@ import { etapesEnTexte } from "@/lib/pwa/etapes";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { BoutonDemo } from "@/components/BoutonDemo";
+import { VideoAccueil } from "@/components/VideoAccueil";
 import { Button } from "@/components/ui/button";
 import {
   Accordion,
@@ -76,9 +77,8 @@ export default async function PageAccueil() {
 
   return (
     <>
-      {/* Accroche : la promesse, et la carte de solde telle qu'elle apparaît
-          dans l'app. */}
-      <section className="mx-auto grid w-full max-w-6xl items-center gap-14 px-4 pt-14 pb-20 md:grid-cols-[1.1fr_1fr] md:px-8 md:pt-24 md:pb-28">
+      {/* Accroche : la promesse, et la vidéo de présentation. */}
+      <section className="mx-auto grid w-full max-w-7xl items-center gap-14 px-4 pt-14 pb-20 md:grid-cols-[1.1fr_1fr] md:px-8 md:pt-24 md:pb-28">
         <div className="flex flex-col gap-7">
           <h1 className="font-display text-[2.75rem] leading-[1.02] font-bold tracking-[-0.03em] text-foreground sm:text-6xl lg:text-7xl">
             Vois où tu en es, avant ton banquier.
@@ -95,29 +95,9 @@ export default async function PageAccueil() {
           </div>
         </div>
 
-        {/* Décorative : le texte ci-contre dit déjà la même chose. */}
-        <div aria-hidden="true" className="relative mx-auto w-full max-w-md">
-          {/* Marge basse : la notification déborde sur le bas de la carte sans
-              cacher le nombre de jours. */}
-          <div className="rounded-3xl border border-border bg-surface p-6 pb-20 shadow-card sm:p-8 sm:pb-20">
-            <p className="text-sm font-medium text-muted">Solde disponible · Perso</p>
-            <Montant value={2480} ton="solde" taille="hero" className="mt-2 block" />
-            <p className="mt-3 text-sm font-medium text-muted">
-              <Montant value={1395.35} ton="income" taille="sm" /> ce mois-ci
-            </p>
-            <div className="mt-6 border-t border-border pt-5">
-              <p className="font-display text-3xl font-bold tracking-tight text-foreground">372 jours</p>
-              <p className="text-sm text-muted">de trésorerie devant toi</p>
-            </div>
-          </div>
-          <div className="absolute -right-2 -bottom-6 flex max-w-[16rem] items-start gap-3 rounded-2xl border border-border bg-surface p-3 shadow-card sm:-right-8">
-            <span className="text-lg">⚠️</span>
-            <span className="text-sm">
-              <span className="block font-semibold text-foreground">Plus que 8 jours sur Pro</span>
-              <span className="text-muted">À zéro le 5 octobre si rien ne rentre.</span>
-            </span>
-          </div>
-        </div>
+        {/* Vidéo de présentation (30 s), visible dès l'arrivée : à droite du
+            titre sur ordinateur, sous les boutons sur téléphone. */}
+        <VideoAccueil />
       </section>
 
       {/* Extrait du tableau de bord, avec ses propres composants. */}
