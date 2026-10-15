@@ -8,7 +8,7 @@ export const metadata: Metadata = { title: "Conditions générales - TCIF" };
 // avant la mise en production (voir MISE-EN-PROD.md).
 export default function Conditions() {
   return (
-    <PageLegale titre="Conditions générales d'utilisation et de vente" miseAJour="30 septembre 2026">
+    <PageLegale titre="Conditions générales d'utilisation et de vente" miseAJour="15 octobre 2026">
       <Section titre="1. Objet">
         <p>
           Les présentes conditions encadrent l&apos;utilisation de l&apos;application TCIF (le
@@ -47,15 +47,18 @@ export default function Conditions() {
 
       <Section titre="4. Abonnement et prix">
         <p>
-          Le Service est <strong>gratuit pour tous jusqu&apos;au 30 novembre 2026 inclus</strong>,
-          quelle que soit la date d&apos;inscription. À partir du 1er décembre 2026, son
-          utilisation nécessite un abonnement payant. Les utilisateurs inscrits en sont informés
-          par email avant cette date, et aucun prélèvement n&apos;a lieu sans qu&apos;ils aient
-          souscrit.
+          Chaque nouvel utilisateur bénéficie d&apos;un <strong>essai gratuit de 30 jours</strong> à
+          compter de la création de son compte. Pour les comptes créés jusqu&apos;au 1er novembre
+          2026 inclus, l&apos;essai gratuit dure jusqu&apos;au 1er décembre 2026.
+          L&apos;utilisateur souscrit l&apos;abonnement dès son inscription en signant un mandat
+          de prélèvement SEPA, mais <strong>aucun prélèvement n&apos;a lieu pendant
+          l&apos;essai</strong>. Le premier prélèvement a lieu à la fin de l&apos;essai, à la date
+          indiquée avant la signature du mandat et confirmée par email. Si cette date tombe un 29,
+          30 ou 31, il a lieu le 1er du mois suivant.
         </p>
         <p>
-          L&apos;abonnement TCIF est disponible en une seule formule : 3,99 € par mois, sans
-          engagement, résiliable à tout moment.
+          L&apos;abonnement TCIF est disponible en une seule formule : 3,99 € par mois après
+          l&apos;essai gratuit, sans engagement, résiliable à tout moment.
         </p>
         <p>
           Les prix sont indiqués en euros. TVA non applicable, article 293 B du Code général des
@@ -66,6 +69,12 @@ export default function Conditions() {
       </Section>
 
       <Section titre="5. Droit de rétractation">
+        <p>
+          Pendant l&apos;essai gratuit, l&apos;abonnement peut être résilié à tout moment depuis
+          les réglages de l&apos;application, <strong>sans aucun frais</strong> : aucun
+          prélèvement n&apos;a lieu. La résiliation pendant l&apos;essai met fin à l&apos;accès au
+          Service immédiatement.
+        </p>
         {/* Texte fourni par Tom le 30/09/2026. */}
         <p>
           Conformément aux articles L221-18 et suivants du Code de la consommation, vous disposez
@@ -91,7 +100,8 @@ export default function Conditions() {
         <p>
           L&apos;abonnement se résilie à tout moment depuis les réglages de l&apos;application.
           La résiliation prend effet à la fin de la période en cours ; aucun prélèvement
-          n&apos;a lieu ensuite.
+          n&apos;a lieu ensuite. Pendant l&apos;essai gratuit, rien n&apos;ayant été payé, la
+          résiliation met fin à l&apos;accès immédiatement.
         </p>
         <p>
           L&apos;utilisateur peut aussi supprimer son compte : ses données et ses fichiers sont
