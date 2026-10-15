@@ -20,11 +20,10 @@ describe("finEssai : 30 jours offerts, jamais avant le 1er décembre 2026", () =
     expect(finEssai("2027-01-15T10:00:00Z")).toBe("2027-02-14");
   });
 
-  it("fin d'essai un 29, 30 ou 31 : 1er du mois suivant", () => {
-    expect(finEssai("2026-11-29T10:00:00Z")).toBe("2027-01-01"); // 29 déc.
-    expect(finEssai("2026-12-01T10:00:00Z")).toBe("2027-01-01"); // 31 déc.
-    expect(finEssai("2027-01-31T10:00:00Z")).toBe("2027-03-02"); // 2 mars : inchangé
-    expect(finEssai("2027-03-31T10:00:00Z")).toBe("2027-05-01"); // 30 avril
+  it("fin d'essai un 29, 30 ou 31 : gardée telle quelle (acceptée par GoCardless)", () => {
+    expect(finEssai("2026-11-29T10:00:00Z")).toBe("2026-12-29");
+    expect(finEssai("2026-12-01T10:00:00Z")).toBe("2026-12-31");
+    expect(finEssai("2027-03-31T10:00:00Z")).toBe("2027-04-30");
   });
 
   it("heure de Paris, pas UTC", () => {

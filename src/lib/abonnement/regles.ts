@@ -1,5 +1,5 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
-import { addDaysToDateString, addMonthsToDateString, ajouterMoisJourFixe, jourAParis } from "@/lib/dates";
+import { addDaysToDateString, addMonthsToDateString, jourAParis } from "@/lib/dates";
 
 // Règles de l'abonnement TCIF (V3, phase 3), sans appel réseau : testées
 // dans regles.test.ts.
@@ -18,13 +18,12 @@ export type StatutAbonnement = "actif" | "en_retard" | "annule";
 /**
  * Fin de l'essai = premier prélèvement : inscription + 30 jours (jour de
  * Paris), jamais avant le 1er décembre 2026. `inscription` : `created_at` du
- * compte. Une fin d'essai un 29, 30 ou 31 passe au 1er du mois suivant
- * (GoCardless ne prélève en mensuel que du 1er au 28, ou le dernier jour).
+ * compte. Un 29, 30 ou 31 est accepté par GoCardless (vérifié en sandbox le
+ * 15/10/2026) : les mois plus courts, il prélève le dernier jour ouvré.
  */
 export function finEssai(inscription: string | Date): string {
   const fin = addDaysToDateString(jourAParis(inscription), JOURS_ESSAI);
-  const date = fin > DEBUT_FACTURATION ? fin : DEBUT_FACTURATION;
-  return Number(date.slice(8)) > 28 ? ajouterMoisJourFixe(date, 1, 1) : date;
+  return fin > DEBUT_FACTURATION ? fin : DEBUT_FACTURATION;
 }
 
 /**

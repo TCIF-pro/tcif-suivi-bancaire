@@ -53,8 +53,7 @@ export default function Conditions() {
           L&apos;utilisateur souscrit l&apos;abonnement dès son inscription en signant un mandat
           de prélèvement SEPA, mais <strong>aucun prélèvement n&apos;a lieu pendant
           l&apos;essai</strong>. Le premier prélèvement a lieu à la fin de l&apos;essai, à la date
-          indiquée avant la signature du mandat et confirmée par email. Si cette date tombe un 29,
-          30 ou 31, il a lieu le 1er du mois suivant.
+          indiquée avant la signature du mandat et confirmée par email.
         </p>
         <p>
           L&apos;abonnement TCIF est disponible en une seule formule : 3,99 € par mois après
