@@ -58,3 +58,12 @@ export function addDaysToDateString(date: string, days: number): string {
     .toISOString()
     .slice(0, 10);
 }
+
+const formatJourParis = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Paris" });
+
+// Jour calendaire à Paris ("aaaa-mm-jj") d'un instant : une inscription le
+// 1er novembre à 0h30 heure de Paris (23h30 UTC la veille) tombe bien le
+// 1er novembre. Sans argument : aujourd'hui à Paris.
+export function jourAParis(instant: string | Date = new Date()): string {
+  return formatJourParis.format(new Date(instant));
+}

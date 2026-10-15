@@ -1,5 +1,5 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
-import { addDaysToDateString, addMonthsToDateString } from "@/lib/dates";
+import { addDaysToDateString, addMonthsToDateString, ajouterMoisJourFixe, jourAParis } from "@/lib/dates";
 
 // Règles de l'abonnement TCIF (V3, phase 3), sans appel réseau : testées
 // dans regles.test.ts.
@@ -10,17 +10,51 @@ export const PRIX_CENTIMES = 399;
 /** Personne ne paie avant cette date, quelle que soit la date d'inscription. */
 export const DEBUT_FACTURATION = "2026-12-01";
 
+/** Essai offert, compté depuis la création du compte. */
+export const JOURS_ESSAI = 30;
+
 export type StatutAbonnement = "actif" | "en_retard" | "annule";
+
+/**
+ * Fin de l'essai = premier prélèvement : inscription + 30 jours (jour de
+ * Paris), jamais avant le 1er décembre 2026. `inscription` : `created_at` du
+ * compte. Une fin d'essai un 29, 30 ou 31 passe au 1er du mois suivant
+ * (GoCardless ne prélève en mensuel que du 1er au 28, ou le dernier jour).
+ */
+export function finEssai(inscription: string | Date): string {
+  const fin = addDaysToDateString(jourAParis(inscription), JOURS_ESSAI);
+  const date = fin > DEBUT_FACTURATION ? fin : DEBUT_FACTURATION;
+  return Number(date.slice(8)) > 28 ? ajouterMoisJourFixe(date, 1, 1) : date;
+}
 
 /**
  * Date du premier prélèvement à demander à GoCardless. `prochainePossible`
  * est la `next_possible_charge_date` du mandat (quelques jours ouvrés après
- * la signature). Avant le 1er décembre 2026 : le 1er décembre. Si le mandat
- * ne permet pas de prélever avant une date plus tardive : `undefined`, et
- * GoCardless prélève dès que possible.
+ * la signature) : la fin de l'essai si elle est encore possible. Sinon
+ * (réabonnement après l'essai) : `undefined`, et GoCardless prélève dès que
+ * possible. L'essai ne se renouvelle pas.
  */
-export function dateDebut(prochainePossible: string): string | undefined {
-  return prochainePossible <= DEBUT_FACTURATION ? DEBUT_FACTURATION : undefined;
+export function dateDebut(prochainePossible: string, inscription: string): string | undefined {
+  const fin = finEssai(inscription);
+  return prochainePossible <= fin ? fin : undefined;
+}
+
+/**
+ * Premier prélèvement à annoncer avant la signature du mandat, ou `null` si
+ * l'essai est (presque) fini : GoCardless prélèvera alors dès que possible.
+ * ponytail: marge fixe de 7 jours pour le préavis du mandat (quelques jours
+ * ouvrés) ; la date exacte vient de toute façon dans l'email de confirmation.
+ */
+export function premierPrelevementPrevu(inscription: string, aujourdhui: string): string | null {
+  const fin = finEssai(inscription);
+  return fin >= addDaysToDateString(aujourdhui, 7) ? fin : null;
+}
+
+/** Ligne de prix de l'accueil, exacte pour qui s'inscrit ce jour-là. */
+export function phrasePrix(maintenant: string | Date = new Date()): string {
+  return finEssai(maintenant) === DEBUT_FACTURATION
+    ? "Gratuit jusqu'au 1er décembre 2026, puis 3,99 € par mois, sans engagement."
+    : "30 jours offerts, puis 3,99 € par mois, sans engagement.";
 }
 
 // Événements GoCardless qui changent le statut. Les autres sont ignorés.

@@ -1,16 +1,76 @@
 import { createHmac } from "node:crypto";
 import { describe, expect, it } from "vitest";
-import { dateDebut, decisionImpaye, doitSouscrire, finDAcces, jourDeBlocage, signatureValide, situationImpaye, statutApres } from "./regles";
+import { dateDebut, decisionImpaye, finEssai, phrasePrix, premierPrelevementPrevu, doitSouscrire, finDAcces, jourDeBlocage, signatureValide, situationImpaye, statutApres } from "./regles";
 
-describe("dateDebut : premier prélèvement", () => {
-  it("signé avant le 1er décembre 2026 : le 1er décembre", () => {
-    expect(dateDebut("2026-10-06")).toBe("2026-12-01");
-    expect(dateDebut("2026-12-01")).toBe("2026-12-01");
+// Instants en UTC, comme `created_at` : heure de Paris = UTC+1 en hiver,
+// UTC+2 en été (jusqu'au 25 octobre 2026).
+describe("finEssai : 30 jours offerts, jamais avant le 1er décembre 2026", () => {
+  it("inscription avant le 1er novembre : le 1er décembre", () => {
+    expect(finEssai("2026-10-06T10:00:00Z")).toBe("2026-12-01");
+    expect(finEssai("2026-10-15T08:00:00Z")).toBe("2026-12-01");
+    expect(finEssai("2026-11-01T10:00:00Z")).toBe("2026-12-01");
   });
 
-  it("mandat prélevable plus tard seulement : dès que possible", () => {
-    expect(dateDebut("2026-12-02")).toBeUndefined();
-    expect(dateDebut("2027-03-15")).toBeUndefined();
+  it("inscription en novembre : inscription + 30 jours", () => {
+    expect(finEssai("2026-11-02T10:00:00Z")).toBe("2026-12-02");
+    expect(finEssai("2026-11-28T10:00:00Z")).toBe("2026-12-28");
+  });
+
+  it("inscription en janvier : inscription + 30 jours", () => {
+    expect(finEssai("2027-01-15T10:00:00Z")).toBe("2027-02-14");
+  });
+
+  it("fin d'essai un 29, 30 ou 31 : 1er du mois suivant", () => {
+    expect(finEssai("2026-11-29T10:00:00Z")).toBe("2027-01-01"); // 29 déc.
+    expect(finEssai("2026-12-01T10:00:00Z")).toBe("2027-01-01"); // 31 déc.
+    expect(finEssai("2027-01-31T10:00:00Z")).toBe("2027-03-02"); // 2 mars : inchangé
+    expect(finEssai("2027-03-31T10:00:00Z")).toBe("2027-05-01"); // 30 avril
+  });
+
+  it("heure de Paris, pas UTC", () => {
+    // 31 octobre, 23h30 à Paris (22h30 UTC) : le 31 octobre.
+    expect(finEssai("2026-10-31T22:30:00Z")).toBe("2026-12-01");
+    // 2 novembre, 0h30 à Paris (1er novembre, 23h30 UTC) : le 2 novembre.
+    expect(finEssai("2026-11-01T23:30:00Z")).toBe("2026-12-02");
+    // 27 novembre, 23h30 à Paris : le 27, pas le 28.
+    expect(finEssai("2026-11-27T22:30:00Z")).toBe("2026-12-27");
+  });
+});
+
+describe("dateDebut : premier prélèvement demandé à GoCardless", () => {
+  it("pendant l'essai : la fin de l'essai", () => {
+    expect(dateDebut("2026-10-20", "2026-10-15T08:00:00Z")).toBe("2026-12-01");
+    expect(dateDebut("2026-12-01", "2026-10-15T08:00:00Z")).toBe("2026-12-01");
+    expect(dateDebut("2027-01-20", "2027-01-15T10:00:00Z")).toBe("2027-02-14");
+  });
+
+  it("réabonnement après l'essai : dès que possible", () => {
+    expect(dateDebut("2026-12-02", "2026-10-15T08:00:00Z")).toBeUndefined();
+    expect(dateDebut("2027-03-15", "2027-01-15T10:00:00Z")).toBeUndefined();
+  });
+});
+
+describe("premierPrelevementPrevu : date annoncée avant la signature", () => {
+  it("essai en cours : la fin de l'essai", () => {
+    expect(premierPrelevementPrevu("2026-10-15T08:00:00Z", "2026-10-15")).toBe("2026-12-01");
+    expect(premierPrelevementPrevu("2027-01-15T10:00:00Z", "2027-02-07")).toBe("2027-02-14");
+  });
+
+  it("essai fini ou presque : rien d'annoncé", () => {
+    expect(premierPrelevementPrevu("2027-01-15T10:00:00Z", "2027-02-08")).toBeNull();
+    expect(premierPrelevementPrevu("2026-10-15T08:00:00Z", "2027-03-01")).toBeNull();
+  });
+});
+
+describe("phrasePrix : ligne de l'accueil", () => {
+  it("jusqu'au 1er novembre (Paris) : gratuit jusqu'au 1er décembre", () => {
+    expect(phrasePrix("2026-10-15T08:00:00Z")).toMatch(/^Gratuit jusqu'au 1er décembre 2026/);
+    expect(phrasePrix("2026-11-01T22:30:00Z")).toMatch(/^Gratuit jusqu'au 1er décembre 2026/);
+  });
+
+  it("à partir du 2 novembre (Paris) : 30 jours offerts", () => {
+    expect(phrasePrix("2026-11-01T23:30:00Z")).toMatch(/^30 jours offerts/);
+    expect(phrasePrix("2027-01-15T10:00:00Z")).toMatch(/^30 jours offerts/);
   });
 });
 

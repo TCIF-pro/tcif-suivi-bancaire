@@ -3,8 +3,9 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { jamaisSuspendu } from "@/lib/auth/roles";
 import { gocardlessConfigure } from "@/lib/abonnement/gocardless";
-import { doitSouscrire, type LigneAbonnement } from "@/lib/abonnement/regles";
-import { todayDateString } from "@/lib/dates";
+import { doitSouscrire, premierPrelevementPrevu, type LigneAbonnement } from "@/lib/abonnement/regles";
+import { jourAParis, todayDateString } from "@/lib/dates";
+import { formatDateLong } from "@/lib/format";
 import { signOut } from "../../(app)/actions";
 import { sAbonner } from "../../(app)/settings/abonnement-actions";
 import { SupprimerMonCompte } from "../../(app)/settings/components/SupprimerMonCompte";
@@ -41,6 +42,7 @@ export default async function ChoisisTonAbonnement({
   if (!bloque) redirect("/dashboard");
 
   const signe = abonnement === "signe";
+  const premierPrelevement = premierPrelevementPrevu(user.created_at, jourAParis());
 
   return (
     <div className="w-full max-w-md rounded-2xl border border-border bg-surface p-7 shadow-card sm:p-8">
@@ -66,9 +68,16 @@ export default async function ChoisisTonAbonnement({
             <li>
               <strong>0&nbsp;€ aujourd&apos;hui</strong>
             </li>
-            <li>Premier prélèvement le 1er décembre 2026</li>
-            <li>Ensuite 3,99&nbsp;€ par mois, par prélèvement SEPA</li>
-            <li>Résiliation à tout moment, depuis Réglages</li>
+            {premierPrelevement ? (
+              <>
+                <li>Aucun prélèvement pendant l&apos;essai</li>
+                <li>Premier prélèvement le {formatDateLong(premierPrelevement)}</li>
+                <li>Ensuite 3,99&nbsp;€ par mois, par prélèvement SEPA</li>
+              </>
+            ) : (
+              <li>3,99&nbsp;€ par mois, par prélèvement SEPA, dès la signature du mandat (sous quelques jours ouvrés)</li>
+            )}
+            <li>Résiliable à tout moment, depuis Réglages</li>
           </ul>
 
           {erreur === "abonnement" && (

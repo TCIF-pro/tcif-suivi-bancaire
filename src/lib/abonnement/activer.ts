@@ -66,6 +66,13 @@ export async function activer(idDemande: string): Promise<string | null> {
   const { mandates } = await gocardless<{ mandates: { next_possible_charge_date: string } }>(
     `/mandates/${mandat}`,
   );
+  // L'essai se compte depuis la création du compte TCIF.
+  const admin = createAdminClient();
+  const { data: compte } = await admin.auth.admin.getUserById(userId);
+  if (!compte?.user) {
+    console.warn(`[gocardless] demande ${idDemande} : compte ${userId} introuvable, ignorée`);
+    return null;
+  }
 
   let idAbonnement: string;
   try {
@@ -76,7 +83,7 @@ export async function activer(idDemande: string): Promise<string | null> {
           currency: "EUR",
           interval_unit: "monthly",
           name: "TCIF",
-          start_date: dateDebut(mandates.next_possible_charge_date),
+          start_date: dateDebut(mandates.next_possible_charge_date, compte.user.created_at),
           metadata: { user_id: userId },
           links: { mandate: mandat },
         },
@@ -96,7 +103,6 @@ export async function activer(idDemande: string): Promise<string | null> {
   }
 
   // Nouveau mandat après un impayé : l'impayé est effacé et l'accès revient.
-  const admin = createAdminClient();
   const { error } = await admin.from("abonnements").upsert({
     user_id: userId,
     statut: "actif",
