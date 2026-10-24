@@ -50,10 +50,16 @@ export default function Conditions() {
           Chaque nouvel utilisateur bénéficie d&apos;un <strong>essai gratuit de 30 jours</strong> à
           compter de la création de son compte. Pour les comptes créés jusqu&apos;au 1er novembre
           2026 inclus, l&apos;essai gratuit dure jusqu&apos;au 1er décembre 2026.
-          L&apos;utilisateur souscrit l&apos;abonnement dès son inscription en signant un mandat
-          de prélèvement SEPA, mais <strong>aucun prélèvement n&apos;a lieu pendant
-          l&apos;essai</strong>. Le premier prélèvement a lieu à la fin de l&apos;essai, à la date
-          indiquée avant la signature du mandat et confirmée par email.
+          <strong>Aucun RIB n&apos;est demandé à l&apos;inscription.</strong> Pour continuer
+          après l&apos;essai, l&apos;utilisateur souscrit l&apos;abonnement quand il le souhaite
+          pendant l&apos;essai, en signant un mandat de prélèvement SEPA ; <strong>aucun
+          prélèvement n&apos;a lieu pendant l&apos;essai</strong>. Le premier prélèvement a lieu à
+          la fin de l&apos;essai, ou le 1er du mois suivant si l&apos;essai se termine après le 24,
+          à la date indiquée avant la signature du mandat et confirmée par email. Les
+          prélèvements suivants ont lieu le même jour chaque mois, jamais deux fois dans le même
+          mois. Sans abonnement à la fin de l&apos;essai, l&apos;accès au Service est suspendu ;
+          les données de l&apos;utilisateur sont conservées et l&apos;accès revient dès la
+          souscription.
         </p>
         <p>
           L&apos;abonnement TCIF est disponible en une seule formule : 3,99 € par mois après

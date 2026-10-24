@@ -109,3 +109,25 @@ export function emailAbonnementResilie(lienReglages: string): Email {
     raison: "ton abonnement TCIF vient d'être résilié.",
   });
 }
+
+/** Rappel avant la fin de l'essai sans RIB (J-7, puis J-2). */
+export function emailFinEssai(finEssai: string, lien: string): Email {
+  const date = formatDateLong(finEssai);
+  return email(`Ton essai gratuit TCIF se termine le ${date}`, {
+    titre: "Ton essai gratuit se termine bientôt",
+    paragraphes: [
+      `Ton essai gratuit de TCIF se termine le ${date}.`,
+      "Pour continuer, ajoute ton RIB : 2 minutes, sur la page sécurisée de GoCardless, notre prestataire de paiement.",
+    ],
+    details: [
+      ["Formule", "3,99 € par mois, sans engagement"],
+      ["Premier prélèvement", date],
+    ],
+    bouton: { libelle: "Ajouter mon RIB", url: lien },
+    apres: [
+      `Sans RIB, ton accès sera suspendu le ${date}. Tes données sont conservées : tout revient dès que tu ajoutes ton RIB.`,
+      "TCIF est une petite app indépendante, sans publicité et sans revente de tes données : ton abonnement paie son fonctionnement.",
+    ],
+    raison: "tu as créé un compte TCIF et ton essai gratuit se termine bientôt.",
+  });
+}

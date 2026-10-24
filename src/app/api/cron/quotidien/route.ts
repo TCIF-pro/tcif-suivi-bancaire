@@ -6,6 +6,7 @@ import { envoyerAlertesTresorerie } from "@/lib/alertes/tresorerie-envoi";
 import { envoyerRappelsSaisie } from "@/lib/alertes/rappel-envoi";
 import { purgerComptesNonConfirmes } from "@/lib/cron/purge-non-confirmes";
 import { traiterImpayes, verifierAbonnementsOrphelins } from "@/lib/cron/impayes";
+import { envoyerRappelsEssai } from "@/lib/cron/rappels-essai";
 
 // La tâche planifiée du matin (vercel.json), qui regroupe plusieurs étapes :
 // le plan gratuit de Vercel n'autorise que 2 tâches planifiées, et l'autre est
@@ -22,6 +23,7 @@ const ETAPES = [
   { nom: "rappelsSaisie", lancer: envoyerRappelsSaisie },
   { nom: "comptesNonConfirmes", lancer: purgerComptesNonConfirmes },
   { nom: "impayes", lancer: traiterImpayes },
+  { nom: "rappelsEssai", lancer: envoyerRappelsEssai },
   { nom: "abonnementsOrphelins", lancer: verifierAbonnementsOrphelins },
 ] as const;
 

@@ -10,6 +10,15 @@ import { adresseDeLApp } from "@/lib/app-url";
 import { ErreurGoCardless, gocardless, gocardlessConfigure } from "@/lib/abonnement/gocardless";
 import { noterFinDAcces, resilierChezGoCardless } from "@/lib/abonnement/resilier";
 import { COOKIE_DEMANDE_GC } from "@/lib/abonnement/activer";
+import { premierPrelevementPrevu } from "@/lib/abonnement/regles";
+import { jourAParis } from "@/lib/dates";
+import { formatDateLong } from "@/lib/format";
+
+function descriptionMandat(premierPrelevement: string | null): string {
+  return premierPrelevement
+    ? `Abonnement TCIF : 3,99 € par mois, sans engagement. Essai gratuit : premier prélèvement le ${formatDateLong(premierPrelevement)}.`
+    : "Abonnement TCIF : 3,99 € par mois, sans engagement, résiliable à tout moment.";
+}
 
 // Bouton « S'abonner » : prépare la signature d'un mandat SEPA chez
 // GoCardless et y envoie la personne. Au retour, /abonnement/retour active
@@ -43,7 +52,13 @@ export async function sAbonner(demande: string) {
       {
         corps: {
           billing_requests: {
-            mandate_request: { scheme: "sepa_core", currency: "EUR" },
+            mandate_request: {
+              scheme: "sepa_core",
+              currency: "EUR",
+              // Affichée par GoCardless au moment de saisir le RIB : ce que
+              // la personne paie, et quand.
+              description: descriptionMandat(premierPrelevementPrevu(user.created_at, jourAParis())),
+            },
             // Seul lien entre le mandat et le compte TCIF, relu par le webhook.
             metadata: { user_id: user.id },
           },
