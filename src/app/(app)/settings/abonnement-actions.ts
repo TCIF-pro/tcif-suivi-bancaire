@@ -9,7 +9,8 @@ import { estDemo, estGratuitAVie } from "@/lib/auth/roles";
 import { adresseDeLApp } from "@/lib/app-url";
 import { ErreurGoCardless, gocardless, gocardlessConfigure } from "@/lib/abonnement/gocardless";
 import { noterFinDAcces, resilierChezGoCardless } from "@/lib/abonnement/resilier";
-import { COOKIE_DEMANDE_GC } from "@/lib/abonnement/activer";
+import { COOKIE_DEMANDE_GC, notifierUneFois } from "@/lib/abonnement/activer";
+import { emailAbonnementResilie } from "@/lib/abonnement/emails";
 import { premierPrelevementPrevu } from "@/lib/abonnement/regles";
 import { jourAParis } from "@/lib/dates";
 import { formatDateLong } from "@/lib/format";
@@ -126,6 +127,15 @@ export async function resilier() {
   await noterFinDAcces(admin, user.id, abonnement.gc_subscription).catch((erreur) =>
     console.error("[gocardless] fin d'accès non calculée (le webhook réessaiera)", erreur),
   );
+  // Email envoyé ici aussi, sans attendre le webhook (qui ne le renverra pas :
+  // notifierUneFois n'envoie qu'une fois par abonnement).
+  await notifierUneFois(
+    admin,
+    user.id,
+    "email_resiliation_pour",
+    abonnement.gc_subscription,
+    emailAbonnementResilie(`${adresseDeLApp()}/settings`),
+  ).catch((erreur) => console.error("[gocardless] email de résiliation non envoyé", erreur));
   revalidatePath("/settings");
 }
 
