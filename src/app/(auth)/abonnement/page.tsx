@@ -3,8 +3,9 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { jamaisSuspendu } from "@/lib/auth/roles";
 import { gocardlessConfigure } from "@/lib/abonnement/gocardless";
-import { doitSouscrire, type LigneAbonnement } from "@/lib/abonnement/regles";
-import { todayDateString } from "@/lib/dates";
+import { doitSouscrire, premierPrelevementPrevu, type LigneAbonnement } from "@/lib/abonnement/regles";
+import { jourAParis } from "@/lib/dates";
+import { formatDateLong } from "@/lib/format";
 import { signOut } from "../../(app)/actions";
 import { sAbonner } from "../../(app)/settings/abonnement-actions";
 import { SupprimerMonCompte } from "../../(app)/settings/components/SupprimerMonCompte";
@@ -35,17 +36,21 @@ export default async function ChoisisTonAbonnement({
   const bloque = doitSouscrire(ligne as LigneAbonnement | null, {
     configure: gocardlessConfigure(),
     exempte: jamaisSuspendu(user),
-    aujourdhui: todayDateString(),
+    aujourdhui: jourAParis(),
+    inscription: user.created_at,
   });
-  // Rien à souscrire (déjà abonné, exempté) : direction l'app.
-  if (!bloque) redirect("/dashboard");
+  // Essai sans RIB en cours : la page reste ouverte (bandeau « Ajouter mon
+  // RIB »). Rien à souscrire (déjà abonné, exempté) : direction l'app.
+  const essai = !ligne && gocardlessConfigure() && !jamaisSuspendu(user) && !bloque;
+  if (!bloque && !essai) redirect("/dashboard");
 
   const signe = abonnement === "signe";
+  const premierPrelevement = premierPrelevementPrevu(user.created_at, jourAParis());
 
   return (
     <div className="w-full max-w-md rounded-2xl border border-border bg-surface p-7 shadow-card sm:p-8">
       <h1 className="font-display text-2xl font-bold tracking-tight text-foreground">
-        {ligne ? "Ton abonnement est terminé" : "Choisis ton abonnement"}
+        {essai ? "Ajoute ton RIB" : ligne ? "Ton abonnement est terminé" : "Ton essai gratuit est terminé"}
       </h1>
 
       {signe ? (
@@ -59,16 +64,29 @@ export default async function ChoisisTonAbonnement({
       ) : (
         <>
           <p className="mt-3 text-sm text-muted">
-            Pour utiliser TCIF, abonne-toi. Une seule formule, sans engagement.
+            {essai
+              ? "Pour continuer après ton essai gratuit. Une seule formule, sans engagement."
+              : "Pour continuer à utiliser TCIF, abonne-toi. Tes données sont conservées. Une seule formule, sans engagement."}
+          </p>
+          <p className="mt-2 text-sm text-muted">
+            TCIF est une petite app indépendante, sans publicité et sans revente de tes données :
+            ton abonnement paie son fonctionnement.
           </p>
 
           <ul className="mt-5 flex flex-col gap-2 rounded-xl bg-background p-4 text-sm text-foreground">
             <li>
               <strong>0&nbsp;€ aujourd&apos;hui</strong>
             </li>
-            <li>Premier prélèvement le 1er décembre 2026</li>
-            <li>Ensuite 3,99&nbsp;€ par mois, par prélèvement SEPA</li>
-            <li>Résiliation à tout moment, depuis Réglages</li>
+            {premierPrelevement ? (
+              <>
+                <li>Aucun prélèvement pendant l&apos;essai</li>
+                <li>Premier prélèvement le {formatDateLong(premierPrelevement)}</li>
+                <li>Ensuite 3,99&nbsp;€ par mois, par prélèvement SEPA</li>
+              </>
+            ) : (
+              <li>3,99&nbsp;€ par mois, par prélèvement SEPA, dès la signature du mandat (sous quelques jours ouvrés)</li>
+            )}
+            <li>Résiliable à tout moment, depuis Réglages</li>
           </ul>
 
           {erreur === "abonnement" && (
@@ -93,6 +111,11 @@ export default async function ChoisisTonAbonnement({
       )}
 
       <div className="mt-8 flex flex-col gap-4 border-t border-border pt-5">
+        {essai && (
+          <Link href="/dashboard" className="text-sm font-semibold text-accent hover:underline">
+            Plus tard, revenir à l&apos;app
+          </Link>
+        )}
         <p className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
           <Link href="/conditions" className="font-medium text-muted hover:text-foreground">
             Conditions

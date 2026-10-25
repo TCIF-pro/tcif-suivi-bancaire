@@ -15,6 +15,7 @@ export function AbonnementSection({
   mandatInvalide,
   accesJusquAu,
   vientDeSigner,
+  premierPrelevement,
 }: {
   gratuitAVie: boolean;
   statut: StatutAbonnement | null;
@@ -23,6 +24,8 @@ export function AbonnementSection({
   /** Après une résiliation : dernier jour de la période déjà payée. */
   accesJusquAu: string | null;
   vientDeSigner: boolean;
+  /** Fin de l'essai encore à venir (voir premierPrelevementPrevu), sinon null. */
+  premierPrelevement: string | null;
 }) {
   return (
     <section className="max-w-md rounded-2xl border border-border bg-surface p-5 shadow-card sm:p-6">
@@ -34,8 +37,9 @@ export function AbonnementSection({
         <>
           {statut === "actif" ? (
             <p className="mt-1 text-sm text-muted">
-              Abonnement actif : 3,99&nbsp;€ par mois, prélevés via GoCardless. Aucun prélèvement
-              avant le 1er décembre 2026.
+              Abonnement actif : 3,99&nbsp;€ par mois, prélevés via GoCardless.
+              {premierPrelevement &&
+                ` Aucun prélèvement pendant l'essai : le premier a lieu le ${formatDateLong(premierPrelevement)}.`}
             </p>
           ) : (
             <div className="mt-3 flex flex-col gap-4">
@@ -75,8 +79,9 @@ export function AbonnementSection({
                 : accesJusquAu
                   ? `Ton abonnement est résilié : tu gardes l'accès jusqu'au ${formatDateLong(accesJusquAu)}. `
                   : "Ton abonnement est résilié. ")}
-            3,99&nbsp;€ par mois, sans engagement, par prélèvement SEPA. Gratuit jusqu&apos;au 30
-            novembre 2026 : le premier prélèvement a lieu au plus tôt le 1er décembre.
+            3,99&nbsp;€ par mois, sans engagement, par prélèvement SEPA.
+            {premierPrelevement &&
+              ` Aucun prélèvement pendant l'essai : le premier a lieu le ${formatDateLong(premierPrelevement)}.`}
           </p>
           <form action={sAbonner.bind(null, "/settings")} className="mt-4 flex flex-col">
             <button type="submit" className={BOUTON}>

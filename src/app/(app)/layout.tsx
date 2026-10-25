@@ -10,12 +10,14 @@ import { doitChangerMotDePasse, estAdmin, estDemo, jamaisSuspendu } from "@/lib/
 import { gocardlessConfigure } from "@/lib/abonnement/gocardless";
 import {
   doitSouscrire,
+  enEssai,
+  finEssai,
   jourDeBlocage,
   situationImpaye,
   type LigneAbonnement,
   type StatutAbonnement,
 } from "@/lib/abonnement/regles";
-import { todayDateString } from "@/lib/dates";
+import { daysBetween, jourAParis } from "@/lib/dates";
 import { formatDateLong } from "@/lib/format";
 import { TutorielBienvenue } from "./components/TutorielBienvenue";
 import { BandeauInstallation } from "./components/installation/BandeauInstallation";
@@ -61,7 +63,8 @@ export default async function AppLayout({
     doitSouscrire(abonnement as LigneAbonnement | null, {
       configure: avecAbonnement,
       exempte: false, // déjà exclus par `avecAbonnement`
-      aujourdhui: todayDateString(),
+      aujourdhui: jourAParis(),
+      inscription: user.created_at,
     })
   ) {
     redirect("/abonnement");
@@ -69,6 +72,11 @@ export default async function AppLayout({
   const impaye = situationImpaye(
     abonnement ? { statut: abonnement.statut as StatutAbonnement, impaye_depuis: abonnement.impaye_depuis } : null,
   );
+  // Essai sans RIB : jours restants pour le bandeau « Ajouter mon RIB ».
+  const joursEssai =
+    avecAbonnement && !erreurAbonnement && !abonnement && enEssai(user.created_at, jourAParis())
+      ? daysBetween(jourAParis(), finEssai(user.created_at))
+      : null;
   const theme: "light" | "dark" = settings?.theme === "dark" ? "dark" : "light";
 
   // Tutoriel de bienvenue : une seule fois par compte, à la première vraie
@@ -133,6 +141,17 @@ export default async function AppLayout({
                 Quitter la démo
               </button>
             </form>
+          </div>
+        )}
+
+        {joursEssai !== null && (
+          <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 border-b border-accent/30 bg-accent/10 px-4 py-2 text-center text-xs font-medium text-foreground">
+            <span>
+              Essai gratuit : encore {joursEssai} jour{joursEssai > 1 ? "s" : ""}.
+            </span>
+            <Link href="/abonnement" className="font-semibold text-accent underline underline-offset-2">
+              Ajouter mon RIB
+            </Link>
           </div>
         )}
 

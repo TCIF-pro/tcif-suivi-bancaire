@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { phrasePrix } from "@/lib/abonnement/regles";
 import { BoutonDemo } from "@/components/BoutonDemo";
 import { inscriptionsOuvertes } from "./actions";
 import { FormulaireInscription, FormulaireRenvoi } from "./Formulaires";
@@ -69,7 +70,7 @@ export default async function PageInscription({ searchParams }: PageInscriptionP
             Créer un compte
           </h1>
           <p className="mt-3 text-muted">
-            Gratuit jusqu&apos;au 1er décembre 2026, quelle que soit ta date d&apos;inscription.
+            {phrasePrix()}
           </p>
           <div className="mt-8">
             <FormulaireInscription />

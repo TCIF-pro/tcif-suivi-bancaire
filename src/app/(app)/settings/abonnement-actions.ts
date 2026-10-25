@@ -9,7 +9,17 @@ import { estDemo, estGratuitAVie } from "@/lib/auth/roles";
 import { adresseDeLApp } from "@/lib/app-url";
 import { ErreurGoCardless, gocardless, gocardlessConfigure } from "@/lib/abonnement/gocardless";
 import { noterFinDAcces, resilierChezGoCardless } from "@/lib/abonnement/resilier";
-import { COOKIE_DEMANDE_GC } from "@/lib/abonnement/activer";
+import { COOKIE_DEMANDE_GC, notifierUneFois } from "@/lib/abonnement/activer";
+import { emailAbonnementResilie } from "@/lib/abonnement/emails";
+import { premierPrelevementPrevu } from "@/lib/abonnement/regles";
+import { jourAParis } from "@/lib/dates";
+import { formatDateLong } from "@/lib/format";
+
+function descriptionMandat(premierPrelevement: string | null): string {
+  return premierPrelevement
+    ? `Abonnement TCIF : 3,99 € par mois, sans engagement. Essai gratuit : premier prélèvement le ${formatDateLong(premierPrelevement)}.`
+    : "Abonnement TCIF : 3,99 € par mois, sans engagement, résiliable à tout moment.";
+}
 
 // Bouton « S'abonner » : prépare la signature d'un mandat SEPA chez
 // GoCardless et y envoie la personne. Au retour, /abonnement/retour active
@@ -43,7 +53,13 @@ export async function sAbonner(demande: string) {
       {
         corps: {
           billing_requests: {
-            mandate_request: { scheme: "sepa_core", currency: "EUR" },
+            mandate_request: {
+              scheme: "sepa_core",
+              currency: "EUR",
+              // Affichée par GoCardless au moment de saisir le RIB : ce que
+              // la personne paie, et quand.
+              description: descriptionMandat(premierPrelevementPrevu(user.created_at, jourAParis())),
+            },
             // Seul lien entre le mandat et le compte TCIF, relu par le webhook.
             metadata: { user_id: user.id },
           },
@@ -111,6 +127,15 @@ export async function resilier() {
   await noterFinDAcces(admin, user.id, abonnement.gc_subscription).catch((erreur) =>
     console.error("[gocardless] fin d'accès non calculée (le webhook réessaiera)", erreur),
   );
+  // Email envoyé ici aussi, sans attendre le webhook (qui ne le renverra pas :
+  // notifierUneFois n'envoie qu'une fois par abonnement).
+  await notifierUneFois(
+    admin,
+    user.id,
+    "email_resiliation_pour",
+    abonnement.gc_subscription,
+    emailAbonnementResilie(`${adresseDeLApp()}/settings`),
+  ).catch((erreur) => console.error("[gocardless] email de résiliation non envoyé", erreur));
   revalidatePath("/settings");
 }
 

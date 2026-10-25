@@ -20,10 +20,14 @@ export function formatCurrency(amount: number): string {
 
 // `date` est une chaîne "aaaa-mm-jj" (plain date) : on force midi UTC pour que
 // l'affichage ne glisse jamais d'un jour selon le fuseau horaire du serveur.
+// Le premier du mois s'écrit « 1er » en français (« 1er décembre »), ce que
+// Intl ne fait pas.
+const premier = (texte: string) => texte.replace(/^1 /, "1er ");
+
 export function formatDateLong(date: string): string {
-  return longDateFormatter.format(new Date(`${date}T00:00:00Z`));
+  return premier(longDateFormatter.format(new Date(`${date}T00:00:00Z`)));
 }
 
 export function formatDateShort(date: string): string {
-  return shortDateFormatter.format(new Date(`${date}T00:00:00Z`));
+  return premier(shortDateFormatter.format(new Date(`${date}T00:00:00Z`)));
 }

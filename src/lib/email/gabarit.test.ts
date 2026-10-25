@@ -67,7 +67,7 @@ describe("emails d'abonnement", () => {
     const e = emailAbonnementConfirme("2026-12-01", "https://app.tcif-pro.fr/dashboard");
     expect(e.subject).toBe("Ton abonnement TCIF est actif");
     expect(e.text).toMatch(/Formule : 3,99\s€ par mois/);
-    expect(e.text).toContain("Premier prélèvement : 1 décembre 2026");
+    expect(e.text).toContain("Premier prélèvement : 1er décembre 2026");
     expect(e.html).toContain(">Ouvrir TCIF</a>");
   });
 

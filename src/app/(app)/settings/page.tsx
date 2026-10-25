@@ -2,7 +2,8 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { estAdmin, estDemo, estGratuitAVie } from "@/lib/auth/roles";
 import { gocardlessConfigure } from "@/lib/abonnement/gocardless";
-import type { StatutAbonnement } from "@/lib/abonnement/regles";
+import { premierPrelevementPrevu, type StatutAbonnement } from "@/lib/abonnement/regles";
+import { jourAParis } from "@/lib/dates";
 import { estChoixAccent, teinteValide } from "@/lib/accent-colors";
 import {
   updateAccountBalance,
@@ -163,6 +164,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
           mandatInvalide={ligneAbonnement?.statut === "annule" && Boolean(ligneAbonnement?.impaye_depuis)}
           accesJusquAu={ligneAbonnement?.statut === "annule" ? (ligneAbonnement?.acces_jusqu_au ?? null) : null}
           vientDeSigner={abonnement === "signe"}
+          premierPrelevement={user ? premierPrelevementPrevu(user.created_at, jourAParis()) : null}
         />
       )}
 

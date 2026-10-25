@@ -8,7 +8,7 @@ export const metadata: Metadata = { title: "Conditions générales - TCIF" };
 // avant la mise en production (voir MISE-EN-PROD.md).
 export default function Conditions() {
   return (
-    <PageLegale titre="Conditions générales d'utilisation et de vente" miseAJour="30 septembre 2026">
+    <PageLegale titre="Conditions générales d'utilisation et de vente" miseAJour="15 octobre 2026">
       <Section titre="1. Objet">
         <p>
           Les présentes conditions encadrent l&apos;utilisation de l&apos;application TCIF (le
@@ -47,15 +47,23 @@ export default function Conditions() {
 
       <Section titre="4. Abonnement et prix">
         <p>
-          Le Service est <strong>gratuit pour tous jusqu&apos;au 30 novembre 2026 inclus</strong>,
-          quelle que soit la date d&apos;inscription. À partir du 1er décembre 2026, son
-          utilisation nécessite un abonnement payant. Les utilisateurs inscrits en sont informés
-          par email avant cette date, et aucun prélèvement n&apos;a lieu sans qu&apos;ils aient
-          souscrit.
+          Chaque nouvel utilisateur bénéficie d&apos;un <strong>essai gratuit de 30 jours</strong> à
+          compter de la création de son compte. Pour les comptes créés jusqu&apos;au 1er novembre
+          2026 inclus, l&apos;essai gratuit dure jusqu&apos;au 1er décembre 2026.
+          <strong>Aucun RIB n&apos;est demandé à l&apos;inscription.</strong> Pour continuer
+          après l&apos;essai, l&apos;utilisateur souscrit l&apos;abonnement quand il le souhaite
+          pendant l&apos;essai, en signant un mandat de prélèvement SEPA ; <strong>aucun
+          prélèvement n&apos;a lieu pendant l&apos;essai</strong>. Le premier prélèvement a lieu à
+          la fin de l&apos;essai, ou le 1er du mois suivant si l&apos;essai se termine après le 24,
+          à la date indiquée avant la signature du mandat et confirmée par email. Les
+          prélèvements suivants ont lieu le même jour chaque mois, jamais deux fois dans le même
+          mois. Sans abonnement à la fin de l&apos;essai, l&apos;accès au Service est suspendu ;
+          les données de l&apos;utilisateur sont conservées et l&apos;accès revient dès la
+          souscription.
         </p>
         <p>
-          L&apos;abonnement TCIF est disponible en une seule formule : 3,99 € par mois, sans
-          engagement, résiliable à tout moment.
+          L&apos;abonnement TCIF est disponible en une seule formule : 3,99 € par mois après
+          l&apos;essai gratuit, sans engagement, résiliable à tout moment.
         </p>
         <p>
           Les prix sont indiqués en euros. TVA non applicable, article 293 B du Code général des
@@ -66,6 +74,12 @@ export default function Conditions() {
       </Section>
 
       <Section titre="5. Droit de rétractation">
+        <p>
+          Pendant l&apos;essai gratuit, l&apos;abonnement peut être résilié à tout moment depuis
+          les réglages de l&apos;application, <strong>sans aucun frais</strong> : aucun
+          prélèvement n&apos;a lieu. La résiliation pendant l&apos;essai met fin à l&apos;accès au
+          Service immédiatement.
+        </p>
         {/* Texte fourni par Tom le 30/09/2026. */}
         <p>
           Conformément aux articles L221-18 et suivants du Code de la consommation, vous disposez
@@ -91,7 +105,8 @@ export default function Conditions() {
         <p>
           L&apos;abonnement se résilie à tout moment depuis les réglages de l&apos;application.
           La résiliation prend effet à la fin de la période en cours ; aucun prélèvement
-          n&apos;a lieu ensuite.
+          n&apos;a lieu ensuite. Pendant l&apos;essai gratuit, rien n&apos;ayant été payé, la
+          résiliation met fin à l&apos;accès immédiatement.
         </p>
         <p>
           L&apos;utilisateur peut aussi supprimer son compte : ses données et ses fichiers sont

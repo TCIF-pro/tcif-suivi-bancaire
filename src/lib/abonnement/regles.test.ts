@@ -1,16 +1,98 @@
 import { createHmac } from "node:crypto";
 import { describe, expect, it } from "vitest";
-import { dateDebut, decisionImpaye, doitSouscrire, finDAcces, jourDeBlocage, signatureValide, situationImpaye, statutApres } from "./regles";
+import { dateDebut, decisionImpaye, enEssai, finEssai, rappelEssai, phrasePrix, premierPrelevementPrevu, doitSouscrire, finDAcces, jourDeBlocage, signatureValide, situationImpaye, statutApres } from "./regles";
 
-describe("dateDebut : premier prélèvement", () => {
-  it("signé avant le 1er décembre 2026 : le 1er décembre", () => {
-    expect(dateDebut("2026-10-06")).toBe("2026-12-01");
-    expect(dateDebut("2026-12-01")).toBe("2026-12-01");
+// Instants en UTC, comme `created_at` : heure de Paris = UTC+1 en hiver,
+// UTC+2 en été (jusqu'au 25 octobre 2026).
+describe("finEssai : 30 jours offerts, jamais avant le 1er décembre 2026", () => {
+  it("inscription jusqu'au 1er novembre : le 1er décembre", () => {
+    expect(finEssai("2026-10-06T10:00:00Z")).toBe("2026-12-01");
+    expect(finEssai("2026-10-15T08:00:00Z")).toBe("2026-12-01");
+    expect(finEssai("2026-11-01T10:00:00Z")).toBe("2026-12-01");
   });
 
-  it("mandat prélevable plus tard seulement : dès que possible", () => {
-    expect(dateDebut("2026-12-02")).toBeUndefined();
-    expect(dateDebut("2027-03-15")).toBeUndefined();
+  it("inscription en novembre ou en janvier : inscription + 30 jours", () => {
+    expect(finEssai("2026-11-02T10:00:00Z")).toBe("2026-12-02");
+    expect(finEssai("2026-11-24T10:00:00Z")).toBe("2026-12-24");
+    expect(finEssai("2027-01-15T10:00:00Z")).toBe("2027-02-14");
+  });
+
+  it("fin d'essai après le 24 : 1er du mois suivant (jamais deux prélèvements le même mois)", () => {
+    expect(finEssai("2026-11-25T10:00:00Z")).toBe("2027-01-01"); // 25 déc.
+    expect(finEssai("2026-11-28T10:00:00Z")).toBe("2027-01-01"); // 28 déc.
+    expect(finEssai("2026-12-01T10:00:00Z")).toBe("2027-01-01"); // 31 déc.
+    expect(finEssai("2027-01-28T10:00:00Z")).toBe("2027-03-01"); // 27 fév.
+    expect(finEssai("2027-03-31T10:00:00Z")).toBe("2027-05-01"); // 30 avril
+  });
+
+  it("heure de Paris, pas UTC", () => {
+    // 31 octobre, 23h30 à Paris (22h30 UTC) : le 31 octobre.
+    expect(finEssai("2026-10-31T22:30:00Z")).toBe("2026-12-01");
+    // 2 novembre, 0h30 à Paris (1er novembre, 23h30 UTC) : le 2 novembre.
+    expect(finEssai("2026-11-01T23:30:00Z")).toBe("2026-12-02");
+    // 23 novembre, 23h30 à Paris : le 23 (fin le 23 déc.), pas le 24.
+    expect(finEssai("2026-11-23T22:30:00Z")).toBe("2026-12-23");
+  });
+});
+
+describe("dateDebut : premier prélèvement demandé à GoCardless", () => {
+  it("pendant l'essai : la fin de l'essai", () => {
+    expect(dateDebut("2026-10-20", "2026-10-15T08:00:00Z")).toBe("2026-12-01");
+    expect(dateDebut("2026-12-01", "2026-10-15T08:00:00Z")).toBe("2026-12-01");
+    expect(dateDebut("2027-01-20", "2027-01-15T10:00:00Z")).toBe("2027-02-14");
+  });
+
+  it("réabonnement après l'essai : dès que possible, sur un jour sûr", () => {
+    expect(dateDebut("2026-12-02", "2026-10-15T08:00:00Z")).toBe("2026-12-02");
+    expect(dateDebut("2027-03-15", "2027-01-15T10:00:00Z")).toBe("2027-03-15");
+    expect(dateDebut("2027-03-26", "2027-01-15T10:00:00Z")).toBe("2027-04-01");
+  });
+});
+
+describe("enEssai et rappelEssai : essai sans RIB", () => {
+  const inscription = "2027-01-15T10:00:00Z"; // fin d'essai le 14 février
+
+  it("app ouverte jusqu'à la veille du premier prélèvement", () => {
+    expect(enEssai(inscription, "2027-02-13")).toBe(true);
+    expect(enEssai(inscription, "2027-02-14")).toBe(false);
+  });
+
+  it("rappels à J-7 puis J-2, une fois chacun", () => {
+    expect(rappelEssai(inscription, null, "2027-02-06")).toBeNull();
+    expect(rappelEssai(inscription, null, "2027-02-07")).toBe("J-7");
+    expect(rappelEssai(inscription, "2027-02-07", "2027-02-08")).toBeNull();
+    expect(rappelEssai(inscription, "2027-02-07", "2027-02-12")).toBe("J-2");
+    expect(rappelEssai(inscription, "2027-02-12", "2027-02-13")).toBeNull();
+    expect(rappelEssai(inscription, null, "2027-02-14")).toBeNull();
+  });
+
+  it("tâche du matin manquée : rattrapage sans doublon", () => {
+    expect(rappelEssai(inscription, null, "2027-02-09")).toBe("J-7");
+    expect(rappelEssai(inscription, null, "2027-02-13")).toBe("J-2");
+  });
+});
+
+describe("premierPrelevementPrevu : date annoncée avant la signature", () => {
+  it("essai en cours : la fin de l'essai", () => {
+    expect(premierPrelevementPrevu("2026-10-15T08:00:00Z", "2026-10-15")).toBe("2026-12-01");
+    expect(premierPrelevementPrevu("2027-01-15T10:00:00Z", "2027-02-07")).toBe("2027-02-14");
+  });
+
+  it("essai fini ou presque : rien d'annoncé", () => {
+    expect(premierPrelevementPrevu("2027-01-15T10:00:00Z", "2027-02-08")).toBeNull();
+    expect(premierPrelevementPrevu("2026-10-15T08:00:00Z", "2027-03-01")).toBeNull();
+  });
+});
+
+describe("phrasePrix : ligne de l'accueil", () => {
+  it("jusqu'au 1er novembre (Paris) : gratuit jusqu'au 1er décembre", () => {
+    expect(phrasePrix("2026-10-15T08:00:00Z")).toMatch(/^Gratuit jusqu'au 1er décembre 2026/);
+    expect(phrasePrix("2026-11-01T22:30:00Z")).toMatch(/^Gratuit jusqu'au 1er décembre 2026/);
+  });
+
+  it("à partir du 2 novembre (Paris) : 30 jours offerts", () => {
+    expect(phrasePrix("2026-11-01T23:30:00Z")).toMatch(/^30 jours offerts/);
+    expect(phrasePrix("2027-01-15T10:00:00Z")).toMatch(/^30 jours offerts/);
   });
 });
 
@@ -109,7 +191,8 @@ describe("situationImpaye : bandeau et écran de blocage", () => {
 });
 
 describe("doitSouscrire : écran « Choisis ton abonnement »", () => {
-  const ok = { configure: true, exempte: false, aujourdhui: "2026-12-15" };
+  // Inscrit le 15 octobre 2026 : essai jusqu'au 30 novembre.
+  const ok = { configure: true, exempte: false, aujourdhui: "2026-12-15", inscription: "2026-10-15T08:00:00Z" };
   const ligne = (statut: "actif" | "en_retard" | "annule", extra = {}) => ({
     statut,
     impaye_depuis: null,
@@ -117,8 +200,14 @@ describe("doitSouscrire : écran « Choisis ton abonnement »", () => {
     ...extra,
   });
 
-  it("sans abonnement : oui", () => {
+  it("sans abonnement : non pendant l'essai, oui ensuite", () => {
+    expect(doitSouscrire(null, { ...ok, aujourdhui: "2026-11-30" })).toBe(false);
+    expect(doitSouscrire(null, { ...ok, aujourdhui: "2026-12-01" })).toBe(true);
     expect(doitSouscrire(null, ok)).toBe(true);
+  });
+
+  it("résilié pendant l'essai : bloqué tout de suite", () => {
+    expect(doitSouscrire(ligne("annule"), { ...ok, aujourdhui: "2026-11-10" })).toBe(true);
   });
 
   it("actif ou en retard : non", () => {

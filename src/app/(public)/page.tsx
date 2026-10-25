@@ -2,6 +2,7 @@ import Link from "next/link";
 import { etapesEnTexte } from "@/lib/pwa/etapes";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { phrasePrix } from "@/lib/abonnement/regles";
 import { BoutonDemo } from "@/components/BoutonDemo";
 import { VideoAccueil } from "@/components/VideoAccueil";
 import { Button } from "@/components/ui/button";
@@ -60,11 +61,6 @@ const QUESTIONS = [
     reponse:
       `Oui : installe-la sur ton écran d'accueil, elle s'ouvre en plein écran comme une app, avec les notifications d'alerte. Sur iPhone, dans Safari : ${etapesEnTexte("ios").join(" ")} Sur Android, dans Chrome : ${etapesEnTexte("android").join(" ")}`,
   },
-  {
-    question: "Combien ça coûte ?",
-    reponse:
-      "Rien jusqu'au 1er décembre 2026 : tout le monde peut créer un compte et utiliser TCIF gratuitement jusque-là, quelle que soit sa date d'inscription. Ensuite, l'abonnement coûte 3,99 € par mois, sans engagement. La démo, elle, reste gratuite et sans inscription.",
-  },
 ];
 
 export default async function PageAccueil() {
@@ -73,6 +69,16 @@ export default async function PageAccueil() {
     data: { user },
   } = await supabase.auth.getUser();
   if (user) redirect("/dashboard");
+
+  // Calculée à chaque affichage : exacte pour qui s'inscrit aujourd'hui.
+  const prix = phrasePrix();
+  const questions = [
+    ...QUESTIONS,
+    {
+      question: "Combien ça coûte ?",
+      reponse: `${prix} Aucun prélèvement pendant l'essai, et tu peux résilier à tout moment. La démo, elle, reste gratuite et sans inscription.`,
+    },
+  ];
 
 
   return (
@@ -93,6 +99,7 @@ export default async function PageAccueil() {
             </Button>
             <BoutonDemo />
           </div>
+          <p className="-mt-3 text-sm text-muted">{prix}</p>
         </div>
 
         {/* Vidéo de présentation (30 s), visible dès l'arrivée : à droite du
@@ -232,7 +239,7 @@ export default async function PageAccueil() {
             Questions fréquentes
           </h2>
           <Accordion type="single" collapsible className="border-t border-border">
-            {QUESTIONS.map((q) => (
+            {questions.map((q) => (
               <AccordionItem key={q.question} value={q.question} className="border-border">
                 <AccordionTrigger className="py-5 text-base font-semibold text-foreground hover:no-underline">
                   {q.question}
@@ -258,6 +265,7 @@ export default async function PageAccueil() {
             </Button>
             <BoutonDemo />
           </div>
+          <p className="-mt-3 text-sm text-muted">{prix}</p>
         </div>
       </section>
     </>
