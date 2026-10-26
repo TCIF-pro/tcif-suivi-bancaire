@@ -410,7 +410,7 @@ Sandbox (Preview) :
       (sans le paramètre, la protection des Preview bloque GoCardless).
       Secret affiché une seule fois → Vercel, Preview :
       `GOCARDLESS_WEBHOOK_SECRET`, puis redéployer.
-- [ ] Jeton **live** créé par erreur le 30/09/2026 : le révoquer dans le
+- [x] Jeton créé par erreur le 30/09/2026 (« TCIF - Abonnement (dev) ») : désactivé (vérifié le 26/10/2026). Le révoquer dans le
       dashboard GoCardless live (Developers → Access tokens).
 
 Accès gratuit à vie (Tom et son père), indépendant de GoCardless : marqueur
@@ -426,7 +426,7 @@ where email in ('adresse-de-tom@exemple.fr', 'adresse-du-pere@exemple.fr');
 Effet immédiat : Réglages relit l'utilisateur auprès de Supabase Auth
 (`getUser()`) à chaque affichage.
 
-Passage en live (phase 5), plus tard : `0026` sur la prod, jeton live et
+Passage en live (phase 5) : FAIT le 01/10/2026, vérifié le 26/10/2026 (jeton « TCIF - Abonnement (live) », webhook « TCIF - Production » en 204) : `0026` sur la prod, jeton live et
 webhook live (`https://app.tcif-pro.fr/api/webhooks/gocardless`) en
 Production, `GOCARDLESS_ENVIRONMENT=live`.
 
