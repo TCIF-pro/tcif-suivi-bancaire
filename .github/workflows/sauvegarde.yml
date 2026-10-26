@@ -1,0 +1,64 @@
+# Sauvegarde de la base de PROD, chaque nuit, gratuite (voir
+# docs/sauvegardes.md pour la restaurer).
+#
+# Copie les tables de l'app (schéma public) et les comptes (schéma auth),
+# la chiffre avec SAUVEGARDE_MOT_DE_PASSE, puis la garde 30 jours dans les
+# « artifacts » de GitHub. Le dépôt est public : le fichier n'y est jamais
+# stocké en clair, seul le mot de passe (que Tom garde à part) l'ouvre.
+#
+# Pas copiés : les PDF des factures (Supabase Storage, hors base).
+#
+# Secrets à créer dans GitHub (Settings → Secrets and variables → Actions) :
+# - SUPABASE_DB_URL : adresse « Session pooler » de la base de PROD, avec
+#   son mot de passe ;
+# - SAUVEGARDE_MOT_DE_PASSE : long mot de passe aléatoire, aussi rangé dans
+#   le gestionnaire de mots de passe de Tom (perdu = sauvegardes illisibles).
+name: Sauvegarde
+
+on:
+  schedule:
+    - cron: "30 2 * * *" # 2h30 UTC : 3h30 ou 4h30 à Paris
+  workflow_dispatch: # bouton « Run workflow », pour une sauvegarde à la demande
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sauvegarde
+  cancel-in-progress: false
+
+jobs:
+  sauvegarder:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Copie de la base (tables de l'app et comptes)
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          test -n "$SUPABASE_DB_URL" || { echo "::error::Secret SUPABASE_DB_URL absent"; exit 1; }
+          echo "JOUR=$(date -u +%F)" >> "$GITHUB_ENV"
+          # pg_dump 17 lit aussi une base en version 15.
+          # L'adresse passe par une variable, jamais en clair dans la commande.
+          docker run --rm --user "$(id -u):$(id -g)" -e SUPABASE_DB_URL -v "$PWD:/out" postgres:17 \
+            sh -c 'pg_dump "$SUPABASE_DB_URL" --format=custom --no-owner --no-privileges --schema=public --schema=auth --file=/out/base.dump'
+          # Vérifie que la copie se relit, et dit combien de tables elle contient.
+          tables=$(docker run --rm -v "$PWD:/out" postgres:17 pg_restore --list /out/base.dump | grep -c "TABLE DATA")
+          echo "Tables copiées : $tables"
+          test "$tables" -gt 10 || { echo "::error::Copie anormalement petite"; exit 1; }
+
+      - name: Chiffrement
+        env:
+          SAUVEGARDE_MOT_DE_PASSE: ${{ secrets.SAUVEGARDE_MOT_DE_PASSE }}
+        run: |
+          test ${#SAUVEGARDE_MOT_DE_PASSE} -ge 20 || { echo "::error::Secret SAUVEGARDE_MOT_DE_PASSE absent ou trop court"; exit 1; }
+          gpg --batch --yes --symmetric --cipher-algo AES256 --passphrase-fd 0 \
+            --output base.dump.gpg base.dump <<< "$SAUVEGARDE_MOT_DE_PASSE"
+          shred -u base.dump
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sauvegarde-${{ env.JOUR }}
+          path: base.dump.gpg
+          retention-days: 30
+          if-no-files-found: error
