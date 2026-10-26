@@ -78,8 +78,11 @@ export async function verifierAbonnementsOrphelins(admin: SupabaseClient) {
   if (error) throw error;
   const connus = new Set((lignes ?? []).map((l) => l.gc_subscription));
 
+  // Le compte GoCardless sert aussi à d'autres activités de Tom (clients de
+  // sites internet) : seuls les abonnements créés par l'app (metadata.user_id,
+  // voir activer.ts) la concernent.
   const orphelins = actifs
-    .filter((a) => !connus.has(a.id))
+    .filter((a) => a.metadata?.user_id && !connus.has(a.id))
     .map((a) => ({ abonnement: a.id, mandat: a.links.mandate, utilisateur: a.metadata?.user_id ?? null }));
   for (const o of orphelins) {
     console.error(`[cron] abonnement GoCardless sans compte : ${o.abonnement} (mandat ${o.mandat}, utilisateur ${o.utilisateur})`);
